@@ -3,6 +3,10 @@ import 'dart:io';
 import 'package:aconsia_app/core/main/controllers/auth/authentication_provider.dart';
 import 'package:aconsia_app/core/services/image_picker_service.dart';
 import 'package:aconsia_app/core/main/data/models/dokter_profile_model.dart';
+import 'package:aconsia_app/presentation/dokter/home/controllers/get_pasien_count_by_dokter_id/fetch_pasien_count_by_dokter_id_provider.dart';
+import 'package:aconsia_app/presentation/dokter/home/controllers/reading_session_provider.dart';
+import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
+import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_count_by_dokter_id/fetch_konten_count_by_dokter_id_provider.dart';
 import 'package:aconsia_app/presentation/dokter/profile/controllers/get_dokter_profile/fetch_dokter_profile_provider.dart';
 import 'package:aconsia_app/presentation/dokter/profile/controllers/update_dokter_profile/patch_dokter_profile_provider.dart';
 import 'package:aconsia_app/presentation/dokter/profile/providers/upload_photo_provider.dart';
@@ -296,6 +300,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                             context.showSuccessEditDialog();
                             ref.invalidate(
                                 fetchDokterProfileProvider(uid: uid));
+                            ref.invalidate(fetchDokterProfileProvider);
+                            ref.invalidate(fetchKontenByDokterIdProvider);
+                            ref.invalidate(fetchKontenCountByDokterIdProvider);
+                            ref.invalidate(fetchPasienCountByDokterIdProvider);
+                            ref.invalidate(activeReadingSessionsStreamProvider);
                           },
                           onError: (error) {
                             context.showErrorSnackbar(context, error);

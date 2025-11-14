@@ -2,8 +2,10 @@ import 'package:aconsia_app/core/helpers/timestamp/timestamp_convert.dart';
 import 'package:aconsia_app/core/main/controllers/auth/authentication_provider.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
+import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/update_pasien_profile/patch_pasien_profile_provider.dart';
+import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -243,6 +245,9 @@ class EditProfilePasienPage extends HookConsumerWidget {
                           isCompleted: true,
                           onSuccess: (message) {
                             context.showSuccessDialog(context, message);
+                            ref.invalidate(fetchPasienProfileProvider);
+                            ref.invalidate(fetchKontenByDokterIdProvider);
+                            ref.invalidate(fetchQuizResultByKontenProvider);
                             context.goNamed(RouteName.mainPasien);
                           },
                           onError: (error) {
