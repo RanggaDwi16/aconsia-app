@@ -1,0 +1,60 @@
+rules_version = '2';
+
+// Firebase Storage Rules untuk Aconsia App
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function untuk check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function untuk check file size (max 1MB)
+    function isValidSize() {
+      return request.resource.size < 1 * 1024 * 1024;
+    }
+    
+    // Helper function untuk check image type
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Dokter profile photos
+    match /dokter_photos/{dokterId}/{fileName} {
+      // Allow read if authenticated
+      allow read: if isAuthenticated();
+      
+      // Allow write if:
+      // 1. User is authenticated
+      // 2. User is the owner (uid matches dokterId)
+      // 3. File is an image
+      // 4. File size < 1MB
+      allow write: if isAuthenticated() 
+                   && request.auth.uid == dokterId
+                   && isImage()
+                   && isValidSize();
+    }
+    
+    // Pasien profile photos
+    match /pasien_photos/{pasienId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+                   && request.auth.uid == pasienId
+                   && isImage()
+                   && isValidSize();
+    }
+    
+    // Konten images (untuk artikel/konten edukasi)
+    match /konten_images/{kontenId}/{fileName} {
+      allow read: if isAuthenticated();
+      // Hanya dokter yang bisa upload konten images
+      allow write: if isAuthenticated() && isImage() && isValidSize();
+    }
+    
+    // Chat attachments
+    match /chat_attachments/{chatId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImage() && isValidSize();
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "110712692231",
+    "project_id": "aconsia",
+    "storage_bucket": "aconsia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:110712692231:android:ff8611063432b1c17d94a2",
+        "android_client_info": {
+          "package_name": "com.example.aconsia_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTS1wKVuwnp_8Fn2kDhUYR0EIiwTiF1eU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

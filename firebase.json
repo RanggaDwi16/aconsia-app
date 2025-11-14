@@ -1,0 +1,25 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "aconsia",
+          "appId": "1:110712692231:android:ff8611063432b1c17d94a2",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "aconsia",
+          "configurations": {
+            "android": "1:110712692231:android:ff8611063432b1c17d94a2",
+            "ios": "1:110712692231:ios:253f6a81ca5349ad7d94a2"
+          }
+        }
+      }
+    }
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
