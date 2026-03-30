@@ -1,0 +1,94 @@
+{
+  "name": "Sistem Edukasi Informed Consent Anestesi",
+  "short_name": "IC Anestesi",
+  "description": "Platform edukasi berbasis AI untuk meningkatkan pemahaman pasien tentang prosedur anestesi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "categories": ["medical", "education", "health"],
+  "lang": "id-ID",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Dashboard Pasien",
+      "short_name": "Dashboard",
+      "description": "Akses cepat ke dashboard pasien",
+      "url": "/patient",
+      "icons": [
+        {
+          "src": "/icon-dashboard.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Chatbot AI",
+      "short_name": "Chatbot",
+      "description": "Tanya jawab dengan AI",
+      "url": "/patient/chatbot",
+      "icons": [
+        {
+          "src": "/icon-chatbot.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Materi Edukasi",
+      "short_name": "Edukasi",
+      "description": "Akses materi pembelajaran",
+      "url": "/patient/education",
+      "icons": [
+        {
+          "src": "/icon-education.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

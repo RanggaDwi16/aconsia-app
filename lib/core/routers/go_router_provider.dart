@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:aconsia_app/core/providers/token_manager_provider.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
 import 'package:aconsia_app/presentation/auth/pages/forgot_password_page.dart';
@@ -52,16 +50,15 @@ Raw<GoRouter> router(Ref ref) {
           final user = await tokenManager.getRole();
 
           if (user != null && user.isNotEmpty) {
-            if (user == 'dokter') {
-              if (!isProfileCompleted) {
-                return RouteName.editProfile;
-              }
-              return RouteName.mainDokter;
-            } else if (user == 'pasien') {
+            if (user == 'pasien') {
               if (!isProfileCompleted) {
                 return RouteName.editProfilePasien;
               }
               return RouteName.mainPasien;
+            } else {
+              // Phase 2: mobile app is pasien-only
+              await tokenManager.clearUserSession();
+              return null;
             }
           }
           return null;
@@ -76,11 +73,13 @@ Raw<GoRouter> router(Ref ref) {
         path: '/login-dokter',
         name: RouteName.loginDokter,
         builder: (context, state) => LoginDokterPage(),
+        redirect: (context, state) => RouteName.welcome,
       ),
       GoRoute(
         path: '/register-dokter',
         name: RouteName.registerDokter,
         builder: (context, state) => RegisterDokterPage(),
+        redirect: (context, state) => RouteName.welcome,
       ),
       GoRoute(
         path: '/login-pasien',
@@ -101,6 +100,7 @@ Raw<GoRouter> router(Ref ref) {
         path: '/main-dokter',
         name: RouteName.mainDokter,
         builder: (context, state) => MainDokterPage(),
+        redirect: (context, state) => RouteName.welcome,
       ),
       GoRoute(
           path: '/add-pasien-medic-information',

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ACONSIA.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            
+            <!-- Ultra Clean Design - Color System -->
+            <Color x:Key="PrimaryBlue">#2563EB</Color>
+            <Color x:Key="PrimaryEmerald">#059669</Color>
+            <Color x:Key="PrimaryPurple">#9333EA</Color>
+            
+            <Color x:Key="TextDark">#0F172A</Color>
+            <Color x:Key="TextMedium">#334155</Color>
+            <Color x:Key="TextLight">#64748B</Color>
+            <Color x:Key="TextLighter">#94A3B8</Color>
+            
+            <Color x:Key="BgWhite">#FFFFFF</Color>
+            <Color x:Key="BorderLight">#E2E8F0</Color>
+            <Color x:Key="BorderMedium">#CBD5E1</Color>
+            
+            <Color x:Key="ErrorRed">#DC2626</Color>
+            <Color x:Key="ErrorBg">#FEF2F2</Color>
+            <Color x:Key="ErrorBorder">#FECACA</Color>
+            
+            <Color x:Key="SuccessGreen">#059669</Color>
+            <Color x:Key="WarningYellow">#F59E0B</Color>
+            
+            <!-- Text Styles -->
+            <Style x:Key="Title1" TargetType="Label">
+                <Setter Property="FontSize" Value="36"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="TextColor" Value="{StaticResource TextDark}"/>
+            </Style>
+            
+            <Style x:Key="Title2" TargetType="Label">
+                <Setter Property="FontSize" Value="24"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="TextColor" Value="{StaticResource TextDark}"/>
+            </Style>
+            
+            <Style x:Key="Title3" TargetType="Label">
+                <Setter Property="FontSize" Value="18"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="TextColor" Value="{StaticResource TextDark}"/>
+            </Style>
+            
+            <Style x:Key="Body" TargetType="Label">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextColor" Value="{StaticResource TextLight}"/>
+                <Setter Property="LineHeight" Value="1.5"/>
+            </Style>
+            
+            <Style x:Key="Caption" TargetType="Label">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="TextColor" Value="{StaticResource TextLighter}"/>
+            </Style>
+            
+            <!-- Button Styles -->
+            <Style x:Key="PrimaryButton" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlue}"/>
+                <Setter Property="TextColor" Value="{StaticResource BgWhite}"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="HeightRequest" Value="56"/>
+                <Setter Property="CornerRadius" Value="12"/>
+            </Style>
+            
+            <Style x:Key="EmeraldButton" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryEmerald}"/>
+                <Setter Property="TextColor" Value="{StaticResource BgWhite}"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="HeightRequest" Value="56"/>
+                <Setter Property="CornerRadius" Value="12"/>
+            </Style>
+            
+            <Style x:Key="OutlineButton" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource BgWhite}"/>
+                <Setter Property="TextColor" Value="{StaticResource TextMedium}"/>
+                <Setter Property="BorderColor" Value="{StaticResource BorderMedium}"/>
+                <Setter Property="BorderWidth" Value="2"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="HeightRequest" Value="56"/>
+                <Setter Property="CornerRadius" Value="12"/>
+            </Style>
+            
+            <!-- Entry Styles -->
+            <Style x:Key="Input" TargetType="Entry">
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="TextColor" Value="{StaticResource TextDark}"/>
+                <Setter Property="PlaceholderColor" Value="{StaticResource TextLight}"/>
+                <Setter Property="HeightRequest" Value="48"/>
+            </Style>
+            
+            <!-- Frame Styles -->
+            <Style x:Key="Card" TargetType="Frame">
+                <Setter Property="BackgroundColor" Value="{StaticResource BgWhite}"/>
+                <Setter Property="BorderColor" Value="{StaticResource BorderLight}"/>
+                <Setter Property="CornerRadius" Value="16"/>
+                <Setter Property="HasShadow" Value="True"/>
+                <Setter Property="Padding" Value="0"/>
+            </Style>
+            
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

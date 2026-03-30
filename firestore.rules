@@ -1,0 +1,308 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------
+    // Helpers
+    // ----------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return isSignedIn() && request.auth.token.role != null
+        ? request.auth.token.role
+        : null;
+    }
+
+    function isPasien() {
+      return role() == 'pasien';
+    }
+
+    function isDokter() {
+      return role() == 'dokter';
+    }
+
+    function isAdmin() {
+      return role() == 'admin';
+    }
+
+    function isSystem() {
+      return request.auth.token.firebase.sign_in_provider == 'custom';
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdminOrSystem() {
+      return isAdmin() || isSystem();
+    }
+
+    function sameHospital(resourceData) {
+      return isAdminOrSystem() ||
+        (isSignedIn() && request.auth.token.hospitalId != null &&
+          resourceData.hospitalId == request.auth.token.hospitalId);
+    }
+
+    function pasienAssignedToDokter(profileData) {
+      return isDokter() && profileData.assignedDokterId == request.auth.uid;
+    }
+
+    function dokterNotChangingSensitivePasienFields() {
+      return !request.resource.data.diff(resource.data).changedKeys().hasAny([
+        'status',
+        'approvalDate',
+        'rejectionDate',
+        'rejectionReason',
+        'approvedByUid',
+        'approvedByRole',
+        'rejectedByUid',
+        'rejectedByRole'
+      ]);
+    }
+
+    function assignmentReadableByDokter(assignData) {
+      return isDokter() && (assignData.assignedBy == request.auth.uid || assignData.dokterId == request.auth.uid);
+    }
+
+    function chatParticipant(sessionData) {
+      return isSignedIn() && (sessionData.pasienId == request.auth.uid || sessionData.dokterId == request.auth.uid);
+    }
+
+    // ----------------------
+    // users
+    // ----------------------
+    match /users/{uid} {
+      allow create: if isOwner(uid) || isAdminOrSystem();
+
+      allow read: if isOwner(uid) || isAdminOrSystem();
+
+      allow update: if
+        // user update own non-sensitive fields only
+        (isOwner(uid)
+          && !('role' in request.resource.data.diff(resource.data).changedKeys())
+          && !('status' in request.resource.data.diff(resource.data).changedKeys())
+          && !('permissions' in request.resource.data.diff(resource.data).changedKeys())
+          && !('hospitalId' in request.resource.data.diff(resource.data).changedKeys()))
+        || isAdminOrSystem();
+
+      allow delete: if isOwner(uid) || isAdminOrSystem();
+    }
+
+    // ----------------------
+    // profiles
+    // ----------------------
+    match /pasien_profiles/{uid} {
+      allow create: if isOwner(uid) && isPasien() || isAdminOrSystem();
+
+      allow read: if
+        (isOwner(uid) && isPasien())
+        || isAdminOrSystem()
+        || (isDokter() && resource.data.assignedDokterId == request.auth.uid);
+
+      allow update: if
+        // pasien update own profile
+        (isOwner(uid) && isPasien())
+        // dokter update pasien in scope
+        || (
+          isDokter()
+          && resource.data.assignedDokterId == request.auth.uid
+          && dokterNotChangingSensitivePasienFields()
+        )
+        || isAdminOrSystem();
+
+      allow delete: if isAdminOrSystem();
+    }
+
+    match /dokter_profiles/{uid} {
+      allow create: if (isOwner(uid) && isDokter()) || isAdminOrSystem();
+
+      allow read: if
+        (isOwner(uid) && isDokter())
+        || isAdminOrSystem()
+        || (
+          isPasien() &&
+          exists(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)).data.assignedDokterId == uid
+        );
+
+      allow update: if (isOwner(uid) && isDokter()) || isAdminOrSystem();
+      allow delete: if isAdminOrSystem();
+    }
+
+    // ----------------------
+    // konten + sections
+    // ----------------------
+    match /konten/{kontenId} {
+      allow create: if isDokter() || isAdminOrSystem();
+
+      allow read: if
+        isAdminOrSystem()
+        || isDokter()
+        || (
+          isPasien() &&
+          (
+            resource.data.status == 'published'
+            || exists(/databases/$(database)/documents/assignments/$(kontenId + '_' + request.auth.uid))
+          )
+        );
+
+      allow update, delete: if
+        isAdminOrSystem()
+        || (isDokter() && resource.data.dokterId == request.auth.uid);
+
+      match /sections/{sectionId} {
+        allow read: if
+          isAdminOrSystem()
+          || isDokter()
+          || isPasien();
+
+        allow create, update, delete: if
+          isAdminOrSystem()
+          || (
+            isDokter()
+            && exists(/databases/$(database)/documents/konten/$(kontenId))
+            && get(/databases/$(database)/documents/konten/$(kontenId)).data.dokterId == request.auth.uid
+          );
+      }
+    }
+
+    // ----------------------
+    // assignments
+    // ----------------------
+    match /assignments/{assignmentId} {
+      allow create, delete: if isAdminOrSystem();
+
+      allow read: if
+        isAdminOrSystem()
+        || (isPasien() && resource.data.pasienId == request.auth.uid)
+        || assignmentReadableByDokter(resource.data);
+
+      allow update: if
+        isAdminOrSystem()
+        || (
+          isPasien()
+          && resource.data.pasienId == request.auth.uid
+          && request.resource.data.pasienId == resource.data.pasienId
+          && request.resource.data.assignedBy == resource.data.assignedBy
+          && request.resource.data.kontenId == resource.data.kontenId
+        )
+        || assignmentReadableByDokter(resource.data);
+    }
+
+    // ----------------------
+    // reading sessions
+    // ----------------------
+    match /reading_sessions/{sessionId} {
+      allow create: if
+        isAdminOrSystem()
+        || (isPasien() && request.resource.data.pasienId == request.auth.uid);
+
+      allow read: if
+        isAdminOrSystem()
+        || (isPasien() && resource.data.pasienId == request.auth.uid)
+        || (isDokter() && resource.data.dokterId == request.auth.uid);
+
+      allow update: if
+        isAdminOrSystem()
+        || (isPasien() && resource.data.pasienId == request.auth.uid);
+
+      allow delete: if isAdminOrSystem();
+    }
+
+    // ----------------------
+    // quiz results
+    // ----------------------
+    match /quiz_results/{resultId} {
+      allow create: if
+        isAdminOrSystem()
+        || (isPasien() && request.resource.data.pasienId == request.auth.uid);
+
+      allow read: if
+        isAdminOrSystem()
+        || (isPasien() && resource.data.pasienId == request.auth.uid)
+        || (isDokter() && resource.data.dokterId == request.auth.uid);
+
+      allow update: if isAdminOrSystem();
+      allow delete: if isAdminOrSystem();
+    }
+
+    // ----------------------
+    // chat sessions + messages
+    // ----------------------
+    match /chat_sessions/{sessionId} {
+      allow create: if
+        isAdminOrSystem()
+        || (
+          isSignedIn()
+          && request.resource.data.pasienId != null
+          && request.resource.data.dokterId != null
+          && (request.resource.data.pasienId == request.auth.uid || request.resource.data.dokterId == request.auth.uid)
+        );
+
+      allow read: if isAdminOrSystem() || chatParticipant(resource.data);
+
+      allow update: if isAdminOrSystem() || chatParticipant(resource.data);
+      allow delete: if isAdminOrSystem();
+
+      match /messages/{messageId} {
+        allow create: if
+          isAdminOrSystem()
+          || (
+            isSignedIn()
+            && exists(/databases/$(database)/documents/chat_sessions/$(sessionId))
+            && chatParticipant(get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data)
+            && request.resource.data.senderId == request.auth.uid
+          );
+
+        allow read: if
+          isAdminOrSystem()
+          || (
+            isSignedIn()
+            && exists(/databases/$(database)/documents/chat_sessions/$(sessionId))
+            && chatParticipant(get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data)
+          );
+
+        allow update: if
+          isAdminOrSystem()
+          || (
+            isSignedIn()
+            && exists(/databases/$(database)/documents/chat_sessions/$(sessionId))
+            && chatParticipant(get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data)
+          );
+
+        allow delete: if
+          isAdminOrSystem()
+          || (isSignedIn() && resource.data.senderId == request.auth.uid);
+      }
+    }
+
+    // ----------------------
+    // notifications
+    // ----------------------
+    match /notifications/{notificationId} {
+      allow create: if isAdminOrSystem();
+
+      allow read, update, delete: if
+        isAdminOrSystem()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // ----------------------
+    // audit logs (immutable)
+    // ----------------------
+    match /admin_audit_logs/{logId} {
+      allow create: if isSystem();
+      allow read: if isAdminOrSystem();
+      allow update, delete: if false;
+    }
+
+    // ----------------------
+    // fallback deny
+    // ----------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

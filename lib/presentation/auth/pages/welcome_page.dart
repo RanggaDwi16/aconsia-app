@@ -58,12 +58,6 @@ class WelcomePage extends StatelessWidget {
                       Gap(32),
                       Button.filled(
                         onPressed: () =>
-                            context.pushNamed(RouteName.loginDokter),
-                        label: 'Masuk Sebagai Dokter',
-                      ),
-                      Gap(16),
-                      Button.outlined(
-                        onPressed: () =>
                             context.pushNamed(RouteName.loginPasien),
                         label: 'Masuk Sebagai Pasien',
                       ),

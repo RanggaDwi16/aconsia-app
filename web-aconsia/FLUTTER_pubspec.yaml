@@ -1,0 +1,39 @@
+name: aconsia_flutter
+description: Platform Edukasi Anestesi Digital - ACONSIA
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.6
+  
+  # Local Storage
+  shared_preferences: ^2.2.2
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Date & Time
+  intl: ^0.18.1
+  
+  # UUID Generator
+  uuid: ^4.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  # Uncomment jika ada assets
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
