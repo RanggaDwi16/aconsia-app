@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/storage_service.dart';
+import 'services/storage_service.dart';
 
 class PatientLoginPage extends StatefulWidget {
   const PatientLoginPage({super.key});
@@ -29,13 +29,14 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
     });
 
     final mrn = _mrnController.text.trim();
-    
+
     // Find patient
     final patient = await StorageService.findPatientByMRN(mrn);
 
     if (patient == null) {
       setState(() {
-        _errorMessage = 'Nomor Medical Record tidak ditemukan. Silakan daftar terlebih dahulu.';
+        _errorMessage =
+            'Nomor Medical Record tidak ditemukan. Silakan daftar terlebih dahulu.';
         _isLoading = false;
       });
       return;
@@ -43,7 +44,8 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
 
     if (patient.status == 'pending') {
       setState(() {
-        _errorMessage = 'Akun Anda masih menunggu persetujuan dokter. Silakan hubungi rumah sakit.';
+        _errorMessage =
+            'Akun Anda masih menunggu persetujuan dokter. Silakan hubungi rumah sakit.';
         _isLoading = false;
       });
       return;
@@ -51,7 +53,8 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
 
     if (patient.status == 'rejected') {
       setState(() {
-        _errorMessage = 'Pendaftaran Anda ditolak. Silakan hubungi rumah sakit untuk informasi lebih lanjut.';
+        _errorMessage =
+            'Pendaftaran Anda ditolak. Silakan hubungi rumah sakit untuk informasi lebih lanjut.';
         _isLoading = false;
       });
       return;
@@ -90,9 +93,9 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Card
                     Container(
                       decoration: BoxDecoration(
@@ -111,7 +114,7 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
                         children: [
                           // Header - Blue
                           _buildHeader(),
-                          
+
                           // Form
                           _buildForm(),
                         ],
@@ -121,7 +124,7 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
                 ),
               ),
             ),
-            
+
             // Footer
             _buildFooter(),
           ],
@@ -182,9 +185,9 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           const Text(
             'Login Pasien',
             style: TextStyle(
@@ -193,9 +196,9 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
               color: Colors.white,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           const Text(
             'Masukkan Medical Record Number Anda',
             style: TextStyle(
@@ -249,7 +252,7 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
               ),
               const SizedBox(height: 24),
             ],
-            
+
             // MRN Input
             const Text(
               'Medical Record Number (MRN)',
@@ -260,12 +263,13 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             TextFormField(
               controller: _mrnController,
               decoration: const InputDecoration(
                 hintText: 'Contoh: MRN001234',
-                helperText: 'MRN Anda akan diberikan setelah registrasi disetujui dokter',
+                helperText:
+                    'MRN Anda akan diberikan setelah registrasi disetujui dokter',
                 helperMaxLines: 2,
               ),
               validator: (value) {
@@ -275,9 +279,9 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
                 return null;
               },
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Submit Button
             ElevatedButton(
               onPressed: _isLoading ? null : _handleLogin,
@@ -296,14 +300,14 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
                     )
                   : const Text('Masuk'),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Divider
             const Divider(color: Color(0xFFF1F5F9)),
-            
+
             const SizedBox(height: 24),
-            
+
             // Register Link
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -322,7 +326,8 @@ class _PatientLoginPageState extends State<PatientLoginPage> {
                       context: context,
                       builder: (context) => AlertDialog(
                         title: const Text('Info'),
-                        content: const Text('Fitur registrasi pasien sedang dalam pengembangan.'),
+                        content: const Text(
+                            'Fitur registrasi pasien sedang dalam pengembangan.'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),

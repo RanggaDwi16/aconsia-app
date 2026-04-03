@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
-import { Smartphone, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { BrandLogo } from "../components/BrandLogo";
 
 export function DesktopPatientRedirectPage() {
   const navigate = useNavigate();
@@ -8,9 +9,7 @@ export function DesktopPatientRedirectPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 flex items-center justify-center px-6">
       <div className="max-w-lg w-full bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
-          <Smartphone className="w-8 h-8 text-blue-600" />
-        </div>
+        <BrandLogo wrapperClassName="inline-flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-white rounded-full shadow-md" imageClassName="w-10 h-10 object-contain" />
 
         <h1 className="text-2xl font-bold text-slate-900 mb-3">Portal Pasien di Mobile App</h1>
         <p className="text-slate-600 mb-6">

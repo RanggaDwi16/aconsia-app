@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
 import { PatientReportCard } from "../../components/reports/PatientReportCard";
 import {
   FileText,
@@ -14,8 +13,6 @@ import {
   CheckCircle,
   Activity,
   ArrowLeft,
-  Calendar,
-  BarChart3,
 } from "lucide-react";
 import { getAdminDashboardPatients } from "../../../modules/admin/services/adminDashboardService";
 
@@ -46,98 +43,44 @@ export function ReportsPage() {
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterAnesthesia, setFilterAnesthesia] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     const loadPatients = async () => {
-      let allPatients: PatientData[] = [];
-
       try {
         const firestorePatients = await getAdminDashboardPatients();
-        allPatients = firestorePatients.map((p) => ({
+        const allPatients = firestorePatients.map((p) => ({
           id: p.id,
           fullName: p.fullName,
           mrn: p.mrn,
+          nik: p.nik,
+          dateOfBirth: p.dateOfBirth,
+          age: p.age,
+          gender: p.gender,
+          diagnosis: p.diagnosis,
           surgeryType: p.surgeryType,
           surgeryDate: p.surgeryDate,
           anesthesiaType: p.anesthesiaType,
           status: p.status,
           comprehensionScore: p.comprehensionScore,
           assignedDoctorId: p.assignedDoctorId,
+          materialsCompleted: p.materialsCompleted,
+          totalMaterials: p.totalMaterials,
+          lastActivity: p.lastActivity,
           scheduledConsentDate: p.scheduledConsentDate,
-          materialsCompleted: 0,
-          totalMaterials: 0,
-          lastActivity: "N/A",
+          createdAt: p.createdAt,
         }));
 
         setPatients(allPatients);
+        setLoadError("");
+        setIsLoading(false);
         return;
       } catch (error) {
-        console.warn("[ReportsPage] Firestore load failed, fallback mode", error);
+        console.error("[ReportsPage] Firestore load failed", error);
+        setLoadError("Gagal memuat laporan dari Firestore. Periksa koneksi dan konfigurasi Firebase.");
+        setIsLoading(false);
       }
-
-      // Load demo patients
-      const demoPatients = JSON.parse(localStorage.getItem("demoPatients") || "[]");
-      allPatients = demoPatients.map((p: any) => ({
-        id: p.id,
-        fullName: p.fullName,
-        mrn: p.mrn,
-        nik: p.nik,
-        dateOfBirth: p.dateOfBirth,
-        age: p.age,
-        gender: p.gender,
-        diagnosis: p.diagnosis,
-        surgeryType: p.surgeryType || "Belum ditentukan",
-        surgeryDate: p.surgeryDate || "Belum dijadwalkan",
-        anesthesiaType: p.anesthesiaType || null,
-        status: p.status || "pending",
-        comprehensionScore: p.comprehensionScore || 0,
-        assignedDoctorId: p.assignedDoctorId || "doctor-001",
-        materialsCompleted: p.materialsCompleted || 0,
-        totalMaterials: p.totalMaterials || 0,
-        lastActivity: p.lastActivity || "N/A",
-        scheduledConsentDate: p.scheduledConsentDate,
-        createdAt: p.createdAt,
-      }));
-
-      // Sync with currentPatient
-      const currentPatient = localStorage.getItem("currentPatient");
-      if (currentPatient) {
-        const patientData = JSON.parse(currentPatient);
-        const index = allPatients.findIndex((p) => p.id === patientData.id);
-        if (index !== -1) {
-          allPatients[index] = {
-            ...allPatients[index],
-            anesthesiaType: patientData.anesthesiaType || allPatients[index].anesthesiaType,
-            status: patientData.status || allPatients[index].status,
-            comprehensionScore: patientData.comprehensionScore || 0,
-            scheduledConsentDate: patientData.scheduledConsentDate,
-          };
-        } else {
-          allPatients.unshift({
-            id: patientData.id,
-            fullName: patientData.fullName || patientData.name || "Pasien Baru",
-            mrn: patientData.mrn || "N/A",
-            nik: patientData.nik,
-            dateOfBirth: patientData.dateOfBirth,
-            age: patientData.age,
-            gender: patientData.gender,
-            diagnosis: patientData.diagnosis,
-            surgeryType: patientData.surgeryType || "Belum ditentukan",
-            surgeryDate: patientData.surgeryDate || "Belum dijadwalkan",
-            anesthesiaType: patientData.anesthesiaType || null,
-            status: patientData.status || "pending",
-            comprehensionScore: patientData.comprehensionScore || 0,
-            assignedDoctorId: patientData.assignedDoctorId || "doctor-001",
-            materialsCompleted: patientData.materialsCompleted || 0,
-            totalMaterials: patientData.totalMaterials || 0,
-            lastActivity: "Baru saja",
-            scheduledConsentDate: patientData.scheduledConsentDate,
-            createdAt: patientData.createdAt,
-          });
-        }
-      }
-
-      setPatients(allPatients);
     };
 
     void loadPatients();
@@ -185,6 +128,34 @@ export function ReportsPage() {
     a.download = `patient-report-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Memuat laporan...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <Card className="max-w-lg w-full border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-700">Gagal Memuat Laporan</CardTitle>
+            <CardDescription>{loadError}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate("/admin")}>Kembali ke Dashboard</Button>
+            <Button onClick={() => window.location.reload()}>Coba Lagi</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">

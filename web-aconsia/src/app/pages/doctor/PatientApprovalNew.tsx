@@ -16,17 +16,11 @@ import {
   ArrowLeft,
   Stethoscope,
 } from "lucide-react";
-import { getDesktopSession } from "../../../core/auth/session";
 import {
   approvePatient,
   getPatientForApproval,
   rejectPatient,
 } from "../../../modules/doctor/services/patientApprovalService";
-import { writeAuditLog } from "../../../modules/admin/services/auditWriterService";
-
-function localApprovalFallbackEnabled() {
-  return import.meta.env.VITE_ALLOW_LOCALSTORAGE_PATIENT_APPROVAL_FALLBACK === "true";
-}
 
 export function PatientApprovalNew() {
   const navigate = useNavigate();
@@ -34,6 +28,8 @@ export function PatientApprovalNew() {
   const patientId = searchParams.get("patientId");
 
   const [patient, setPatient] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [medicalData, setMedicalData] = useState({
     diagnosis: "",
     surgeryType: "",
@@ -42,7 +38,11 @@ export function PatientApprovalNew() {
 
   useEffect(() => {
     const loadPatient = async () => {
-      if (!patientId) return;
+      if (!patientId) {
+        setLoadError("Parameter patientId tidak ditemukan.");
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const firestorePatient = await getPatientForApproval(patientId);
@@ -53,23 +53,20 @@ export function PatientApprovalNew() {
             surgeryType: firestorePatient.surgeryType || "",
             anesthesiaType: firestorePatient.anesthesiaType || "",
           });
+          setLoadError("");
+          setIsLoading(false);
           return;
         }
+
+        setLoadError("Pasien tidak ditemukan di Firestore.");
+        setIsLoading(false);
+        return;
       } catch (error) {
-        console.warn("[PatientApproval] Firestore load failed, fallback mode", error);
-      }
-
-      // fallback local storage mode
-      const demoPatients = JSON.parse(localStorage.getItem("demoPatients") || "[]");
-      const foundPatient = demoPatients.find((p: any) => p.id === patientId);
-
-      if (foundPatient) {
-        setPatient(foundPatient);
-        setMedicalData({
-          diagnosis: foundPatient.diagnosis || "",
-          surgeryType: foundPatient.surgeryType || "",
-          anesthesiaType: foundPatient.anesthesiaType || "",
-        });
+        console.error("[PatientApproval] Firestore load failed", error);
+        setLoadError(
+          "Gagal memuat data pasien. Periksa koneksi dan konfigurasi Firebase.",
+        );
+        setIsLoading(false);
       }
     };
 
@@ -86,27 +83,13 @@ export function PatientApprovalNew() {
       return;
     }
 
-    const session = getDesktopSession();
-
     try {
-      const result = await approvePatient({
+      await approvePatient({
         pasienId: patient.id,
         diagnosis: medicalData.diagnosis,
         surgeryType: medicalData.surgeryType,
         anesthesiaType: medicalData.anesthesiaType,
       });
-
-      if (result.mode === "fallback" && session?.uid) {
-        await writeAuditLog({
-          actorUid: session.uid,
-          actorRole: "doctor",
-          actorName: session.displayName || session.email,
-          actionType: "APPROVE_PATIENT",
-          entityType: "pasien_profiles",
-          entityId: patient.id,
-          message: `Approved patient ${patient.fullName} with ${medicalData.anesthesiaType}`,
-        });
-      }
 
       alert(
         `✅ PASIEN BERHASIL DISETUJUI!\n\n` +
@@ -117,116 +100,64 @@ export function PatientApprovalNew() {
       navigate("/doctor");
       return;
     } catch (error) {
-      if (!localApprovalFallbackEnabled()) {
-        console.error("[PatientApproval] Approve failed", error);
-        alert(
-          "Approve pasien gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
-        );
-        return;
-      }
-      console.warn("[PatientApproval] Approve failed, fallback localStorage mode", error);
+      console.error("[PatientApproval] Approve failed", error);
+      alert(
+        "Approve pasien gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
+      );
+      return;
     }
-
-    // Update patient data
-    const updatedPatient = {
-      ...patient,
-      ...medicalData,
-      status: "approved",
-      approvalDate: new Date().toISOString(),
-      totalMaterials: 10, // Set total materials
-    };
-
-    // ✅ SYNC TO MULTIPLE LOCATIONS
-    
-    // 1. Update demoPatients array (MOST IMPORTANT!)
-    const demoPatients = JSON.parse(localStorage.getItem("demoPatients") || "[]");
-    const updatedDemoPatients = demoPatients.map((p: any) =>
-      p.id === updatedPatient.id ? updatedPatient : p
-    );
-    localStorage.setItem("demoPatients", JSON.stringify(updatedDemoPatients));
-    
-    // 2. Update patient_{NIK} (for patient login)
-    localStorage.setItem(`patient_${updatedPatient.nik}`, JSON.stringify(updatedPatient));
-    
-    // 3. Update currentPatient if same ID
-    const currentPatient = localStorage.getItem("currentPatient");
-    if (currentPatient) {
-      const current = JSON.parse(currentPatient);
-      if (current.id === updatedPatient.id) {
-        localStorage.setItem("currentPatient", JSON.stringify(updatedPatient));
-      }
-    }
-
-    console.log("✅ Patient approved and synced:", updatedPatient);
-
-    alert(
-      `✅ PASIEN BERHASIL DISETUJUI!\n\n` +
-      `Nama: ${updatedPatient.fullName}\n` +
-      `Diagnosis: ${medicalData.diagnosis}\n` +
-      `Jenis Anestesi: ${medicalData.anesthesiaType}\n\n` +
-      `Pasien sekarang bisa mengakses materi pembelajaran yang relevan.`
-    );
-    
-    navigate("/doctor");
   };
 
   const handleReject = async () => {
     if (!confirm("Yakin ingin menolak pasien ini?")) return;
 
-    const session = getDesktopSession();
-
     try {
-      const result = await rejectPatient({ pasienId: patient.id });
-
-      if (result.mode === "fallback" && session?.uid) {
-        await writeAuditLog({
-          actorUid: session.uid,
-          actorRole: "doctor",
-          actorName: session.displayName || session.email,
-          actionType: "REJECT_PATIENT",
-          entityType: "pasien_profiles",
-          entityId: patient.id,
-          message: `Rejected patient ${patient.fullName}`,
-        });
-      }
+      await rejectPatient({ pasienId: patient.id });
 
       alert("Pasien ditolak.");
       navigate("/doctor/dashboard");
       return;
     } catch (error) {
-      if (!localApprovalFallbackEnabled()) {
-        console.error("[PatientApproval] Reject failed", error);
-        alert(
-          "Reject pasien gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
-        );
-        return;
-      }
-      console.warn("[PatientApproval] Reject failed, fallback localStorage mode", error);
+      console.error("[PatientApproval] Reject failed", error);
+      alert(
+        "Reject pasien gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
+      );
+      return;
     }
-
-    const updatedPatient = {
-      ...patient,
-      status: "rejected",
-      rejectionDate: new Date().toISOString(),
-    };
-
-    const demoPatients = JSON.parse(localStorage.getItem("demoPatients") || "[]");
-    const updatedDemoPatients = demoPatients.map((p: any) =>
-      p.id === updatedPatient.id ? updatedPatient : p,
-    );
-    localStorage.setItem("demoPatients", JSON.stringify(updatedDemoPatients));
-    
-    const currentPatient = localStorage.getItem("currentPatient");
-    if (currentPatient) {
-      const current = JSON.parse(currentPatient);
-      if (current.id === patient.id) {
-        localStorage.setItem("currentPatient", JSON.stringify(updatedPatient));
-      }
-    }
-
-    alert("Pasien ditolak.");
-    navigate("/doctor/dashboard");
   };
+
+  if (isLoading) {
+    return (
+      <DoctorLayout>
+        <div className="p-8">
+          <Card>
+            <CardContent className="p-8 text-center text-gray-600">
+              Memuat data pasien...
+            </CardContent>
+          </Card>
+        </div>
+      </DoctorLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <DoctorLayout>
+        <div className="p-8">
+          <Card className="border-red-200">
+            <CardContent className="p-8 text-center">
+              <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2 text-red-700">Gagal Memuat Data</h3>
+              <p className="text-gray-600 mb-4">{loadError}</p>
+              <Button onClick={() => navigate("/doctor/dashboard")}>
+                Kembali ke Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DoctorLayout>
+    );
+  }
 
   if (!patient) {
     return (

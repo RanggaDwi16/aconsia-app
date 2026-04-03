@@ -1,29 +1,96 @@
 import { Outlet } from "react-router";
+import { useEffect } from "react";
+import React from "react";
 import { Toaster } from "../components/ui/sonner";
 import { InstallPrompt } from "../components/InstallPrompt";
 import { OfflineIndicator } from "../components/OfflineIndicator";
-import { useEffect } from "react";
+import {
+  hydrateDesktopSessionFromFirebaseAuth,
+  subscribeDesktopSessionSync,
+} from "../../core/auth/session";
+
+type GuardedWidgetState = {
+  hasError: boolean;
+};
+
+class GuardedWidget extends React.Component<React.PropsWithChildren, GuardedWidgetState> {
+  constructor(props: React.PropsWithChildren) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.warn("[RootLayout] Global widget failed and was isolated:", error);
+  }
+
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
 
 export function RootLayout() {
   useEffect(() => {
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered:', registration);
+    let unsubscribe = () => {};
+    let active = true;
+
+    const bootstrapSession = async () => {
+      await hydrateDesktopSessionFromFirebaseAuth();
+      if (!active) return;
+      unsubscribe = subscribeDesktopSessionSync();
+    };
+
+    void bootstrapSession();
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    if (import.meta.env.DEV) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => {
+            void registration.unregister();
+          });
         })
         .catch((error) => {
-          console.log('SW registration failed:', error);
+          console.log("[RootLayout] SW cleanup failed:", error);
         });
+      return;
     }
+
+    navigator.serviceWorker.register("/sw.js").catch((error) => {
+      console.log("[RootLayout] SW registration failed:", error);
+    });
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
-      <OfflineIndicator />
+      <GuardedWidget>
+        <OfflineIndicator />
+      </GuardedWidget>
+
       <Outlet />
-      <InstallPrompt />
-      <Toaster />
+
+      <GuardedWidget>
+        <InstallPrompt />
+      </GuardedWidget>
+
+      <GuardedWidget>
+        <Toaster />
+      </GuardedWidget>
     </div>
   );
 }

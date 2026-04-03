@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -15,10 +15,23 @@ import {
   FileText,
   LogOut,
 } from "lucide-react";
-import { getAdminDashboardPatients } from "../../../modules/admin/services/adminDashboardService";
+import {
+  getAdminDashboardPatients,
+  getAdminDoctorPerformance,
+} from "../../../modules/admin/services/adminDashboardService";
+import {
+  getAdminModerationSnapshot,
+  type AdminModerationContent,
+  type AdminModerationUser,
+} from "../../../modules/admin/services/adminModerationDataService";
+import {
+  setKontenPublishStatus,
+  setUserLifecycleStatus,
+} from "../../../modules/admin/services/adminModerationService";
 import { getDesktopSession } from "../../../core/auth/session";
 import { signOutDesktop } from "../../../core/auth/service";
 import { writeAuditLog } from "../../../modules/admin/services/auditWriterService";
+import { finishNavigationMetric } from "../../perf/navigationMetrics";
 
 interface PatientData {
   id: string;
@@ -43,11 +56,19 @@ interface DoctorData {
 export function EnhancedAdminDashboard() {
   const navigate = useNavigate();
   const [patients, setPatients] = useState<PatientData[]>([]);
+  const [doctors, setDoctors] = useState<DoctorData[]>([]);
+  const [moderationUsers, setModerationUsers] = useState<AdminModerationUser[]>([]);
+  const [moderationContents, setModerationContents] = useState<AdminModerationContent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
+  const [moderationMessage, setModerationMessage] = useState<string>("");
+  const [moderationError, setModerationError] = useState<string>("");
   const [adminName, setAdminName] = useState("Admin");
 
   // Resolve current admin session
   useEffect(() => {
+    finishNavigationMetric("login_to_admin_dashboard", { route: "/admin" });
     const session = getDesktopSession();
     if (!session || session.role !== "admin") {
       navigate("/login");
@@ -57,70 +78,36 @@ export function EnhancedAdminDashboard() {
     setAdminName(session.displayName || session.email || "Admin");
   }, [navigate]);
 
-  // Load patients from Firestore first, fallback to localStorage
-  useEffect(() => {
-    const loadData = async () => {
-      let allPatients: PatientData[] = [];
-
-      try {
-        allPatients = await getAdminDashboardPatients();
-        setPatients(allPatients);
-        setIsLoading(false);
-        return;
-      } catch (error) {
-        console.warn("[AdminDashboard] Firestore load failed, fallback mode", error);
-      }
-
-      // Fallback local storage mode
-      const demoPatients = JSON.parse(localStorage.getItem("demoPatients") || "[]");
-      allPatients = demoPatients.map((p: any) => ({
-        id: p.id,
-        fullName: p.fullName,
-        mrn: p.mrn,
-        surgeryType: p.surgeryType || "Belum ditentukan",
-        surgeryDate: p.surgeryDate || "Belum dijadwalkan",
-        anesthesiaType: p.anesthesiaType || null,
-        status: p.status || "pending",
-        comprehensionScore: p.comprehensionScore || 0,
-        assignedDoctorId: p.assignedDoctorId || "doctor-001",
-        scheduledConsentDate: p.scheduledConsentDate,
-      }));
-
-      // 2. Sync with current patient from localStorage (new registrations)
-      const currentPatient = localStorage.getItem("currentPatient");
-      if (currentPatient) {
-        const patientData = JSON.parse(currentPatient);
-        const index = allPatients.findIndex((p) => p.id === patientData.id);
-        if (index !== -1) {
-          // Update existing patient
-          allPatients[index] = {
-            ...allPatients[index],
-            anesthesiaType: patientData.anesthesiaType || allPatients[index].anesthesiaType,
-            status: patientData.status || allPatients[index].status,
-            comprehensionScore: patientData.comprehensionScore || 0,
-            scheduledConsentDate: patientData.scheduledConsentDate,
-          };
-        } else {
-          // Add new patient (from registration)
-          allPatients.unshift({
-            id: patientData.id,
-            fullName: patientData.fullName || patientData.name || "Pasien Baru",
-            mrn: patientData.mrn || "N/A",
-            surgeryType: patientData.surgeryType || "Belum ditentukan",
-            surgeryDate: patientData.surgeryDate || "Belum dijadwalkan",
-            anesthesiaType: patientData.anesthesiaType || null,
-            status: patientData.status || "pending",
-            comprehensionScore: patientData.comprehensionScore || 0,
-            assignedDoctorId: patientData.assignedDoctorId || "doctor-001",
-            scheduledConsentDate: patientData.scheduledConsentDate,
-          });
-        }
-      }
+  const loadData = useCallback(async () => {
+    try {
+      const [allPatients, moderationSnapshot] = await Promise.all([
+        getAdminDashboardPatients(),
+        getAdminModerationSnapshot(),
+      ]);
 
       setPatients(allPatients);
-      setIsLoading(false);
-    };
+      setModerationUsers(moderationSnapshot.users);
+      setModerationContents(moderationSnapshot.contents);
 
+      const doctorPerformance = await getAdminDoctorPerformance(allPatients);
+      setDoctors(doctorPerformance);
+      setLoadError("");
+
+      setIsLoading(false);
+      return;
+    } catch (error) {
+      console.error("[AdminDashboard] Firestore load failed", error);
+      setLoadError("Gagal memuat dashboard dari Firestore. Periksa koneksi dan konfigurasi Firebase.");
+      setPatients([]);
+      setDoctors([]);
+      setModerationUsers([]);
+      setModerationContents([]);
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Load patients from Firestore (authoritative source)
+  useEffect(() => {
     void loadData();
 
     // Auto-sync every 5 seconds
@@ -128,7 +115,65 @@ export function EnhancedAdminDashboard() {
       void loadData();
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadData]);
+
+  const handleUserLifecycleAction = async (user: AdminModerationUser) => {
+    const targetStatus = user.status === "suspended" ? "active" : "suspended";
+    if (!window.confirm(`Ubah status ${user.displayName} menjadi ${targetStatus}?`)) {
+      return;
+    }
+
+    setActionLoadingKey(`user-${user.id}`);
+    setModerationMessage("");
+    setModerationError("");
+
+    try {
+      await setUserLifecycleStatus({
+        userId: user.id,
+        targetStatus,
+        reason:
+          targetStatus === "suspended"
+            ? "Suspended by admin desktop moderation"
+            : "Reactivated by admin desktop moderation",
+      });
+      setModerationMessage(`Status user ${user.displayName} berhasil diubah ke ${targetStatus}.`);
+      await loadData();
+    } catch (error) {
+      console.error("[AdminDashboard] User moderation action failed", error);
+      setModerationError(`Gagal mengubah status user ${user.displayName}.`);
+    } finally {
+      setActionLoadingKey(null);
+    }
+  };
+
+  const handleContentPublishAction = async (content: AdminModerationContent) => {
+    const targetStatus = content.status === "published" ? "draft" : "published";
+    if (!window.confirm(`Ubah status konten \"${content.title}\" menjadi ${targetStatus}?`)) {
+      return;
+    }
+
+    setActionLoadingKey(`content-${content.id}`);
+    setModerationMessage("");
+    setModerationError("");
+
+    try {
+      await setKontenPublishStatus({
+        kontenId: content.id,
+        targetStatus,
+        reason:
+          targetStatus === "published"
+            ? "Published by admin desktop moderation"
+            : "Unpublished by admin desktop moderation",
+      });
+      setModerationMessage(`Status konten ${content.title} berhasil diubah ke ${targetStatus}.`);
+      await loadData();
+    } catch (error) {
+      console.error("[AdminDashboard] Content moderation action failed", error);
+      setModerationError(`Gagal mengubah status konten ${content.title}.`);
+    } finally {
+      setActionLoadingKey(null);
+    }
+  };
 
   const handleLogout = async () => {
     const session = getDesktopSession();
@@ -168,32 +213,6 @@ export function EnhancedAdminDashboard() {
     local: patients.filter((p) => p.anesthesiaType === "Local Anesthesia + Sedation").length,
   };
 
-  // Doctor performance (mock)
-  const doctors: DoctorData[] = [
-    {
-      id: "doctor-001",
-      fullName: "Dr. Ahmad Suryadi, Sp.An",
-      patientsCount: patients.filter((p) => p.assignedDoctorId === "doctor-001").length,
-      avgComprehension: Math.round(
-        patients
-          .filter((p) => p.assignedDoctorId === "doctor-001")
-          .reduce((sum, p) => sum + p.comprehensionScore, 0) /
-          patients.filter((p) => p.assignedDoctorId === "doctor-001").length || 0
-      ),
-    },
-    {
-      id: "doctor-002",
-      fullName: "Dr. Siti Rahmawati, Sp.An",
-      patientsCount: patients.filter((p) => p.assignedDoctorId === "doctor-002").length,
-      avgComprehension: Math.round(
-        patients
-          .filter((p) => p.assignedDoctorId === "doctor-002")
-          .reduce((sum, p) => sum + p.comprehensionScore, 0) /
-          patients.filter((p) => p.assignedDoctorId === "doctor-002").length || 0
-      ),
-    },
-  ];
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
@@ -201,6 +220,23 @@ export function EnhancedAdminDashboard() {
           <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Memuat data...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <Card className="max-w-lg w-full border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-700">Gagal Memuat Dashboard</CardTitle>
+            <CardDescription>{loadError}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate("/login")}>Kembali ke Login</Button>
+            <Button onClick={() => window.location.reload()}>Coba Lagi</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -228,7 +264,7 @@ export function EnhancedAdminDashboard() {
             <div className="flex items-center gap-3">
               <Badge className="bg-purple-100 text-purple-800 text-sm px-4 py-2">
                 <Activity className="w-4 h-4 mr-2" />
-                Auto-sync setiap 2 detik
+                Auto-sync setiap 5 detik
               </Badge>
               <Button
                 variant="outline"
@@ -543,6 +579,130 @@ export function EnhancedAdminDashboard() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Moderation Control Center */}
+          <Card className="lg:col-span-2 border-purple-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-purple-600" />
+                Moderasi Admin (Callable-Only)
+              </CardTitle>
+              <CardDescription>
+                Kontrol status user dan publish status konten. Semua aksi tercatat di audit trail immutable.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {moderationMessage && (
+                <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                  {moderationMessage}
+                </div>
+              )}
+              {moderationError && (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {moderationError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">User Lifecycle</h4>
+                  <div className="space-y-2">
+                    {moderationUsers.length === 0 ? (
+                      <p className="text-sm text-gray-500">Belum ada data user.</p>
+                    ) : (
+                      moderationUsers.map((user) => {
+                        const isAdminUser = user.role === "admin";
+                        return (
+                          <div
+                            key={user.id}
+                            className="border rounded-lg p-3 flex items-center justify-between gap-3"
+                          >
+                            <div>
+                              <p className="font-semibold text-sm text-gray-900">{user.displayName}</p>
+                              <p className="text-xs text-gray-500">{user.email}</p>
+                              <div className="flex gap-2 mt-1">
+                                <Badge className="bg-slate-100 text-slate-700">{user.role}</Badge>
+                                <Badge
+                                  className={
+                                    user.status === "active"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
+                                  }
+                                >
+                                  {user.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={
+                                isAdminUser ||
+                                actionLoadingKey === `user-${user.id}`
+                              }
+                              onClick={() => {
+                                void handleUserLifecycleAction(user);
+                              }}
+                            >
+                              {actionLoadingKey === `user-${user.id}`
+                                ? "Memproses..."
+                                : user.status === "suspended"
+                                ? "Activate"
+                                : "Suspend"}
+                            </Button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Content Publish Control</h4>
+                  <div className="space-y-2">
+                    {moderationContents.length === 0 ? (
+                      <p className="text-sm text-gray-500">Belum ada data konten.</p>
+                    ) : (
+                      moderationContents.map((content) => (
+                        <div
+                          key={content.id}
+                          className="border rounded-lg p-3 flex items-center justify-between gap-3"
+                        >
+                          <div>
+                            <p className="font-semibold text-sm text-gray-900">{content.title}</p>
+                            <p className="text-xs text-gray-500">Dokter: {content.doctorName}</p>
+                            <Badge
+                              className={
+                                content.status === "published"
+                                  ? "mt-1 bg-green-100 text-green-700"
+                                  : "mt-1 bg-yellow-100 text-yellow-700"
+                              }
+                            >
+                              {content.status}
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={actionLoadingKey === `content-${content.id}`}
+                            onClick={() => {
+                              void handleContentPublishAction(content);
+                            }}
+                          >
+                            {actionLoadingKey === `content-${content.id}`
+                              ? "Memproses..."
+                              : content.status === "published"
+                              ? "Unpublish"
+                              : "Publish"}
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

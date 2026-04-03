@@ -1,18 +1,12 @@
 import {
   doc,
   getDoc,
-  serverTimestamp,
-  updateDoc,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { firebaseFunctions, firestore } from "../../../core/firebase/client";
 
 const approvePatientCallable = httpsCallable(firebaseFunctions, "approvePasienProfile");
 const rejectPatientCallable = httpsCallable(firebaseFunctions, "rejectPasienProfile");
-
-function legacyModerationFallbackEnabled() {
-  return import.meta.env.VITE_ALLOW_LEGACY_DOCTOR_MODERATION_FALLBACK === "true";
-}
 
 export interface DoctorApprovalPatient {
   id: string;
@@ -82,31 +76,12 @@ export async function approvePatient(params: {
 }) {
   const { pasienId, diagnosis, surgeryType, anesthesiaType } = params;
 
-  try {
-    await approvePatientCallable({
-      pasienId,
-      diagnosis,
-      surgeryType,
-      anesthesiaType,
-    });
-    return { mode: "callable" as const };
-  } catch (error) {
-    if (!legacyModerationFallbackEnabled()) {
-      throw error;
-    }
-    console.warn("[PatientApprovalService] Callable approve failed, using fallback", error);
-  }
-
-  await updateDoc(doc(firestore, "pasien_profiles", pasienId), {
+  await approvePatientCallable({
+    pasienId,
     diagnosis,
-    jenisOperasi: surgeryType,
-    jenisAnestesi: anesthesiaType,
-    status: "approved",
-    approvalDate: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    surgeryType,
+    anesthesiaType,
   });
-
-  return { mode: "fallback" as const };
 }
 
 export async function rejectPatient(params: {
@@ -115,25 +90,8 @@ export async function rejectPatient(params: {
 }) {
   const { pasienId, reason } = params;
 
-  try {
-    await rejectPatientCallable({
-      pasienId,
-      reason,
-    });
-    return { mode: "callable" as const };
-  } catch (error) {
-    if (!legacyModerationFallbackEnabled()) {
-      throw error;
-    }
-    console.warn("[PatientApprovalService] Callable reject failed, using fallback", error);
-  }
-
-  await updateDoc(doc(firestore, "pasien_profiles", pasienId), {
-    status: "rejected",
-    rejectionDate: serverTimestamp(),
-    rejectionReason: reason || "Ditolak oleh dokter",
-    updatedAt: serverTimestamp(),
+  await rejectPatientCallable({
+    pasienId,
+    reason,
   });
-
-  return { mode: "fallback" as const };
 }

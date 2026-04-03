@@ -31,24 +31,63 @@ import {
   assignAnesthesiaToPatient,
   getDoctorScopedPatients,
 } from "../../../modules/doctor/services/doctorDashboardService";
-import { writeAuditLog } from "../../../modules/admin/services/auditWriterService";
-
-function localAssignmentFallbackEnabled() {
-  return (
-    import.meta.env.VITE_ALLOW_LOCALSTORAGE_PATIENT_APPROVAL_FALLBACK === "true"
-  );
-}
+import { finishNavigationMetric } from "../../perf/navigationMetrics";
 
 export function DoctorDashboardNew() {
   const navigate = useNavigate();
   const [doctorData, setDoctorData] = useState<any>(null);
+  const [allPatients, setAllPatients] = useState<any[]>([]);
   const [pendingPatients, setPendingPatients] = useState<any[]>([]);
   const [approvedPatients, setApprovedPatients] = useState<any[]>([]);
   const [patientsNeedAnesthesia, setPatientsNeedAnesthesia] = useState<any[]>([]); // NEW
   const [selectedPatient, setSelectedPatient] = useState<any>(null); // For modal
   const [selectedAnesthesia, setSelectedAnesthesia] = useState<string>(""); // Selected type
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [loadErrorCode, setLoadErrorCode] = useState("");
+
+  const mapLoadErrorMessage = (error: unknown) => {
+    const code =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof (error as { code?: unknown }).code === "string"
+        ? String((error as { code?: string }).code)
+        : "";
+
+    if (code === "permission-denied") {
+      return {
+        code,
+        message:
+          "Akses Firestore ditolak (permission-denied). Pastikan akun dokter memiliki role yang benar di Firebase.",
+      };
+    }
+
+    if (code === "auth/not-authenticated" || code === "unauthenticated") {
+      return {
+        code,
+        message:
+          "Sesi login Firebase belum aktif. Silakan logout lalu login ulang dokter.",
+      };
+    }
+
+    if (code === "auth/session-mismatch") {
+      return {
+        code,
+        message:
+          "Sesi lokal tidak sinkron dengan sesi Firebase. Silakan logout lalu login ulang.",
+      };
+    }
+
+    return {
+      code: code || "unknown",
+      message:
+        "Gagal memuat data dashboard dokter. Periksa koneksi dan konfigurasi Firebase.",
+    };
+  };
 
   useEffect(() => {
+    finishNavigationMetric("login_to_doctor_dashboard", { route: "/doctor" });
     void loadData();
     const interval = setInterval(() => {
       void loadData();
@@ -58,20 +97,20 @@ export function DoctorDashboardNew() {
 
   const loadData = async () => {
     const session = getDesktopSession();
-    if (session) {
-      setDoctorData({
-        id: session.uid,
-        name: session.displayName || "Dokter",
-        email: session.email,
-      });
+    if (!session?.uid) {
+      navigate("/login");
+      return;
     }
 
-    try {
-      if (!session?.uid) {
-        throw new Error("No desktop session");
-      }
+    setDoctorData({
+      id: session.uid,
+      name: session.displayName || "Dokter",
+      email: session.email,
+    });
 
+    try {
       const firestorePatients = await getDoctorScopedPatients(session.uid);
+      setAllPatients(firestorePatients);
 
       setPendingPatients(
         firestorePatients.filter((p: any) => p.status === "pending"),
@@ -89,32 +128,25 @@ export function DoctorDashboardNew() {
           (p: any) => p.status === "approved" && !p.anesthesiaType,
         ),
       );
+      setLoadError("");
+      setLoadErrorCode("");
+      setIsLoading(false);
       return;
     } catch (error) {
-      console.warn("[DoctorDashboard] Firestore load failed, using fallback", error);
+      const parsedError = mapLoadErrorMessage(error);
+      console.error("[DoctorDashboard] Firestore load failed", {
+        error,
+        code: parsedError.code,
+        sessionUid: session.uid,
+      });
+      setAllPatients([]);
+      setPendingPatients([]);
+      setApprovedPatients([]);
+      setPatientsNeedAnesthesia([]);
+      setLoadError(parsedError.message);
+      setLoadErrorCode(parsedError.code);
+      setIsLoading(false);
     }
-
-    // Fallback to legacy localStorage mode
-    const currentDoctor = localStorage.getItem("currentDoctor");
-    if (currentDoctor) {
-      setDoctorData(JSON.parse(currentDoctor));
-    }
-
-    const demoPatients = JSON.parse(localStorage.getItem("demoPatients") || "[]");
-    const myPatients = demoPatients;
-
-    setPendingPatients(myPatients.filter((p: any) => p.status === "pending"));
-    setApprovedPatients(
-      myPatients.filter(
-        (p: any) =>
-          p.status === "approved" ||
-          p.status === "in_progress" ||
-          p.status === "ready",
-      ),
-    );
-    setPatientsNeedAnesthesia(
-      myPatients.filter((p: any) => p.status === "approved" && !p.anesthesiaType),
-    );
   };
 
   const handleReviewPatient = (patientId: string) => {
@@ -133,25 +165,11 @@ export function DoctorDashboardNew() {
       return;
     }
 
-    const session = getDesktopSession();
-
     try {
-      const result = await assignAnesthesiaToPatient({
+      await assignAnesthesiaToPatient({
         pasienId: selectedPatient.id,
         anesthesiaType: selectedAnesthesia,
       });
-
-      if (result.mode === "fallback" && session?.uid) {
-        await writeAuditLog({
-          actorUid: session.uid,
-          actorRole: "doctor",
-          actorName: session.displayName || session.email,
-          actionType: "ASSIGN_ANESTHESIA",
-          entityType: "pasien_profiles",
-          entityId: selectedPatient.id,
-          message: `Assigned anesthesia ${selectedAnesthesia} to patient ${selectedPatient.fullName}`,
-        });
-      }
 
       alert(
         `✅ Berhasil assign ${selectedAnesthesia} untuk ${selectedPatient.fullName}!`,
@@ -161,52 +179,15 @@ export function DoctorDashboardNew() {
       void loadData();
       return;
     } catch (error) {
-      if (!localAssignmentFallbackEnabled()) {
-        console.error("[DoctorDashboard] Assign anesthesia failed", error);
-        alert(
-          "Assign anestesi gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
-        );
-        return;
-      }
-      console.warn("[DoctorDashboard] Assign failed, fallback localStorage mode", error);
+      console.error("[DoctorDashboard] Assign anesthesia failed", error);
+      alert(
+        "Assign anestesi gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
+      );
+      return;
     }
-
-    // Update patient data
-    const updatedPatient = {
-      ...selectedPatient,
-      anesthesiaType: selectedAnesthesia,
-      status: "in_progress", // Change status from approved to in_progress
-      totalMaterials: 10, // Set total materials
-    };
-
-    // 1. Update demoPatients array
-    const demoPatients = JSON.parse(localStorage.getItem("demoPatients") || "[]");
-    const updatedDemoPatients = demoPatients.map((p: any) =>
-      p.id === updatedPatient.id ? updatedPatient : p
-    );
-    localStorage.setItem("demoPatients", JSON.stringify(updatedDemoPatients));
-
-    // 2. Update individual patient storage
-    localStorage.setItem(`patient_${updatedPatient.nik}`, JSON.stringify(updatedPatient));
-
-    // 3. Update currentPatient if it's the same patient
-    const currentPatient = localStorage.getItem("currentPatient");
-    if (currentPatient) {
-      const current = JSON.parse(currentPatient);
-      if (current.id === updatedPatient.id) {
-        localStorage.setItem("currentPatient", JSON.stringify(updatedPatient));
-      }
-    }
-
-    alert(`✅ Berhasil assign ${selectedAnesthesia} untuk ${updatedPatient.fullName}!\\n\\nPasien sekarang bisa login dan akses materi pembelajaran.`);
-    
-    // Close modal and refresh
-    setSelectedPatient(null);
-    setSelectedAnesthesia("");
-    void loadData();
   };
 
-  const totalPatients = pendingPatients.length + approvedPatients.length + patientsNeedAnesthesia.length;
+  const totalPatients = allPatients.length;
   const completionRate =
     approvedPatients.length > 0
       ? Math.round(
@@ -227,6 +208,31 @@ export function DoctorDashboardNew() {
   return (
     <DoctorLayout>
       <div className="p-8">
+        {isLoading && (
+          <Card className="mb-6">
+            <CardContent className="p-6 text-center text-gray-600">
+              Memuat dashboard dokter...
+            </CardContent>
+          </Card>
+        )}
+
+        {!isLoading && loadError && (
+          <Card className="mb-6 border-red-200">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="w-10 h-10 text-red-600 mx-auto mb-3" />
+              <p className="text-red-700 font-medium mb-3">{loadError}</p>
+              {loadErrorCode && (
+                <p className="text-xs text-red-600/80 mb-3">
+                  Kode error: <span className="font-mono">{loadErrorCode}</span>
+                </p>
+              )}
+              <Button variant="outline" onClick={() => void loadData()}>
+                Coba Lagi
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">

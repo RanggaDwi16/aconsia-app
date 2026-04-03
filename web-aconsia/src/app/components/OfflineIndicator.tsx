@@ -1,9 +1,37 @@
+import { useEffect, useRef, useState } from "react";
 import { usePWA } from '../hooks/usePWA';
 import { WifiOff, Wifi } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function OfflineIndicator() {
   const { isOnline } = usePWA();
+  const [showOnlineNotice, setShowOnlineNotice] = useState(false);
+  const isFirstRenderRef = useRef(true);
+  const previousOnlineRef = useRef(isOnline);
+
+  useEffect(() => {
+    const wasOnline = previousOnlineRef.current;
+    previousOnlineRef.current = isOnline;
+
+    // Skip initial paint to avoid showing "Kembali online!" every page load.
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+
+    if (!wasOnline && isOnline) {
+      setShowOnlineNotice(true);
+      const timer = window.setTimeout(() => {
+        setShowOnlineNotice(false);
+      }, 2500);
+
+      return () => window.clearTimeout(timer);
+    }
+
+    if (!isOnline) {
+      setShowOnlineNotice(false);
+    }
+  }, [isOnline]);
 
   return (
     <AnimatePresence>
@@ -21,7 +49,7 @@ export function OfflineIndicator() {
         </motion.div>
       )}
       
-      {isOnline && (
+      {showOnlineNotice && (
         <motion.div
           initial={{ y: -100 }}
           animate={{ y: 0 }}

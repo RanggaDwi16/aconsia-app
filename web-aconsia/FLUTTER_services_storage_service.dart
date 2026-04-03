@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/patient.dart';
-import '../models/doctor.dart';
+import 'models/patient.dart';
+import 'models/doctor.dart';
 
 class StorageService {
   static SharedPreferences? _prefs;
@@ -15,7 +15,7 @@ class StorageService {
   // Initialize demo data
   static Future<void> _initDemoData() async {
     final initialized = _prefs?.getBool('demoInitialized') ?? false;
-    
+
     if (!initialized) {
       // Create demo doctor
       final demoDoctor = Doctor(
@@ -42,7 +42,7 @@ class StorageService {
       await saveDoctors([demoDoctor]);
       await savePatients([demoPatient]);
       await _prefs?.setBool('demoInitialized', true);
-      
+
       print('✅ Demo data initialized!');
       print('📧 Doctor: dokter@aconsia.com / dokter123');
       print('🏥 Patient: MRN001');
@@ -72,7 +72,8 @@ class StorageService {
   }
 
   // Find doctor by email
-  static Future<Doctor?> findDoctorByEmail(String email, String password) async {
+  static Future<Doctor?> findDoctorByEmail(
+      String email, String password) async {
     final doctors = await getDoctors();
     try {
       return doctors.firstWhere(
@@ -119,7 +120,7 @@ class StorageService {
   static Future<void> updatePatient(String mrn, Patient updatedPatient) async {
     final patients = await getPatients();
     final index = patients.indexWhere((p) => p.mrn == mrn);
-    
+
     if (index != -1) {
       patients[index] = updatedPatient;
       await savePatients(patients);

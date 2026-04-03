@@ -1,10 +1,69 @@
+import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router";
 import { Shield } from "lucide-react";
-import logoImage from "figma:asset/1c448958f0817c176999b741d53bcc5ce9b3930d.png";
+import { BrandLogo } from "../components/BrandLogo";
+import {
+  resolveDesktopSession,
+} from "../../core/auth/session";
+import {
+  prefetchCriticalRoutesOnIdle,
+  prefetchLoginPage,
+} from "../routes/prefetch";
+import { startNavigationMetric } from "../perf/navigationMetrics";
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const [isResolvingSession, setIsResolvingSession] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const routeBySession = (role: string) => {
+      if (role === "admin") {
+        navigate("/admin", { replace: true });
+        return true;
+      }
+
+      if (role === "doctor") {
+        navigate("/doctor", { replace: true });
+        return true;
+      }
+
+      return false;
+    };
+
+    const resolveSession = async () => {
+      const hydratedSession = await resolveDesktopSession();
+      if (!active) return;
+
+      if (hydratedSession && routeBySession(hydratedSession.role)) {
+        return;
+      }
+
+      prefetchCriticalRoutesOnIdle();
+      setIsResolvingSession(false);
+    };
+
+    void resolveSession();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  if (isResolvingSession) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-6">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-slate-600 font-medium">
+            Mengecek sesi login...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -16,13 +75,7 @@ export function LandingPage() {
           {/* Logo & Title */}
           <div className="text-center mb-12">
             {/* Logo - Clean & Simple */}
-            <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full shadow-md mb-8">
-              <img 
-                src={logoImage} 
-                alt="ACONSIA Logo" 
-                className="w-16 h-16 object-contain"
-              />
-            </div>
+            <BrandLogo wrapperClassName="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full shadow-md mb-8" imageClassName="w-16 h-16 object-contain" />
             
             {/* Title - Bold & Clean */}
             <h1 className="text-4xl font-bold text-slate-900 mb-3">
@@ -42,26 +95,31 @@ export function LandingPage() {
 
           {/* Clean Buttons - NO Gradient */}
           <div className="space-y-3 mb-10">
+            <p className="text-xs text-slate-500 text-center">
+              Portal desktop khusus dokter dan admin. Pasien menggunakan aplikasi mobile.
+            </p>
+
             {/* Dokter Button - Solid Emerald */}
             <Button
-              onClick={() => navigate('/login')}
+              onMouseEnter={() => void prefetchLoginPage()}
+              onFocus={() => void prefetchLoginPage()}
+              onClick={() => {
+                startNavigationMetric("landing_to_login");
+                navigate('/login');
+              }}
               className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold rounded-lg transition-colors"
             >
               Masuk sebagai Dokter
             </Button>
 
-            {/* Pasien Button - Outline */}
-            <Button
-              onClick={() => navigate('/login')}
-              variant="outline"
-              className="w-full h-14 border-2 border-slate-300 hover:border-blue-600 text-slate-700 hover:text-blue-600 hover:bg-blue-50 text-base font-semibold rounded-lg transition-colors"
-            >
-              Pasien: gunakan aplikasi mobile
-            </Button>
-
             {/* Admin Button - NEW! */}
             <Button
-              onClick={() => navigate('/login')}
+              onMouseEnter={() => void prefetchLoginPage()}
+              onFocus={() => void prefetchLoginPage()}
+              onClick={() => {
+                startNavigationMetric("landing_to_login");
+                navigate('/login');
+              }}
               variant="outline"
               className="w-full h-14 border-2 border-purple-300 hover:border-purple-600 text-purple-700 hover:text-purple-600 hover:bg-purple-50 text-base font-semibold rounded-lg transition-colors"
             >

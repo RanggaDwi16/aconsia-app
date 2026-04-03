@@ -17,17 +17,17 @@ import {
   Calendar,
   BarChart3,
 } from "lucide-react";
-import { auditTrail, AuditLog } from "../../../utils/auditTrail";
-import { getAdminAuditLogs } from "../../../modules/admin/services/adminAuditService";
+import { getAdminAuditLogs, type AdminAuditLog } from "../../../modules/admin/services/adminAuditService";
 
 export function AuditTrailPage() {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
+  const [logs, setLogs] = useState<AdminAuditLog[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<AdminAuditLog[]>([]);
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterAction, setFilterAction] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [summary, setSummary] = useState<any>(null);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     void loadLogs();
@@ -41,7 +41,7 @@ export function AuditTrailPage() {
     applyFilters();
   }, [logs, filterRole, filterAction, searchQuery]);
 
-  const buildSummary = (allLogs: AuditLog[]) => {
+  const buildSummary = (allLogs: AdminAuditLog[]) => {
     const byRole: Record<string, number> = {};
     const byAction: Record<string, number> = {};
 
@@ -61,17 +61,17 @@ export function AuditTrailPage() {
   const loadLogs = async () => {
     try {
       const firestoreLogs = await getAdminAuditLogs();
-      const mappedLogs: AuditLog[] = firestoreLogs.map((log) => ({ ...log }));
+      const mappedLogs: AdminAuditLog[] = firestoreLogs.map((log) => ({ ...log }));
       setLogs(mappedLogs);
       setSummary(buildSummary(mappedLogs));
+      setLoadError("");
       return;
     } catch (error) {
-      console.warn("[AuditTrailPage] Firestore load failed, fallback mode", error);
+      console.error("[AuditTrailPage] Firestore load failed", error);
+      setLoadError("Gagal memuat audit trail dari Firestore. Periksa koneksi dan konfigurasi Firebase.");
+      setLogs([]);
+      setSummary(buildSummary([]));
     }
-
-    const legacyLogs = auditTrail.getAllLogs();
-    setLogs(legacyLogs);
-    setSummary(buildSummary(legacyLogs));
   };
 
   const applyFilters = () => {
@@ -264,6 +264,15 @@ export function AuditTrailPage() {
         )}
 
         {/* Filters & Search */}
+        {loadError && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardHeader>
+              <CardTitle className="text-red-700 text-base">Gagal Memuat Data Audit</CardTitle>
+              <CardDescription className="text-red-700">{loadError}</CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">

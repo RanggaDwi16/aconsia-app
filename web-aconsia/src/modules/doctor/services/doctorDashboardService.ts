@@ -1,23 +1,21 @@
+import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   collection,
-  doc,
   getDocs,
   query,
-  serverTimestamp,
-  updateDoc,
   where,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { firebaseFunctions, firestore } from "../../../core/firebase/client";
+import {
+  firebaseAuth,
+  firebaseFunctions,
+  firestore,
+} from "../../../core/firebase/client";
 
 const assignAnesthesiaCallable = httpsCallable(
   firebaseFunctions,
   "assignPasienAnesthesia",
 );
-
-function legacyAssignFallbackEnabled() {
-  return import.meta.env.VITE_ALLOW_LEGACY_DOCTOR_MODERATION_FALLBACK === "true";
-}
 
 export type DoctorDashboardPatient = {
   id: string;
@@ -33,9 +31,47 @@ export type DoctorDashboardPatient = {
   assignedDoctorId?: string;
 };
 
+async function waitForAuthenticatedUser(timeoutMs = 2000): Promise<User | null> {
+  if (firebaseAuth.currentUser) {
+    return firebaseAuth.currentUser;
+  }
+
+  return await new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      resolve(null);
+    }, timeoutMs);
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+      if (!user) return;
+      clearTimeout(timeout);
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
 export async function getDoctorScopedPatients(
   doctorUid: string,
 ): Promise<DoctorDashboardPatient[]> {
+  const authUser = await waitForAuthenticatedUser();
+
+  if (!authUser) {
+    const err = new Error("Firebase auth session belum siap.") as Error & {
+      code?: string;
+    };
+    err.code = "auth/not-authenticated";
+    throw err;
+  }
+
+  if (authUser.uid !== doctorUid) {
+    const err = new Error("UID sesi lokal tidak sama dengan UID Firebase.") as Error & {
+      code?: string;
+    };
+    err.code = "auth/session-mismatch";
+    throw err;
+  }
+
   const pasienRef = collection(firestore, "pasien_profiles");
   const pasienQuery = query(
     pasienRef,
@@ -70,29 +106,8 @@ export async function assignAnesthesiaToPatient(params: {
 }) {
   const { pasienId, anesthesiaType } = params;
 
-  try {
-    await assignAnesthesiaCallable({
-      pasienId,
-      anesthesiaType,
-    });
-    return { mode: "callable" as const };
-  } catch (error) {
-    if (!legacyAssignFallbackEnabled()) {
-      throw error;
-    }
-    console.warn(
-      "[DoctorDashboardService] Callable assign anesthesia failed, using fallback",
-      error,
-    );
-  }
-
-  const pasienDocRef = doc(firestore, "pasien_profiles", pasienId);
-
-  await updateDoc(pasienDocRef, {
-    jenisAnestesi: anesthesiaType,
-    status: "in_progress",
-    updatedAt: serverTimestamp(),
+  await assignAnesthesiaCallable({
+    pasienId,
+    anesthesiaType,
   });
-
-  return { mode: "fallback" as const };
 }

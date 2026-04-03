@@ -1,57 +1,163 @@
-import { DashboardLayout } from "../../components/DashboardLayout";
+import { useEffect, useMemo, useState } from "react";
+import { DoctorLayout } from "../../layouts/DoctorLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
-import { Edit, Save, TrendingUp, Award } from "lucide-react";
-import { useState } from "react";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
+import { Edit, Save, AlertCircle } from "lucide-react";
+import { getDesktopSession } from "../../../core/auth/session";
+import {
+  getDoctorPerformance,
+  getDoctorProfile,
+  updateDoctorProfile,
+  type DoctorProfileData,
+  type DoctorPerformanceData,
+} from "../../../modules/doctor/services/doctorProfileService";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^(\+62|62|0)[0-9]{9,12}$/;
+
+function emptyPerformance(): DoctorPerformanceData {
+  return {
+    totalPatients: 0,
+    avgComprehension: 0,
+    approvedPatients: 0,
+    pendingPatients: 0,
+  };
+}
 
 export function DoctorProfile() {
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    fullName: "Dr. Ahmad Suryadi, Sp.An",
-    dateOfBirth: "1985-05-15",
-    gender: "Laki-laki",
-    strNumber: "STR-123456789",
-    sipNumber: "SIP-987654321",
-    email: "ahmad.suryadi@rs.com",
-    phoneNumber: "+62 812-3456-7890",
-    specialty: "Anestesiologi dan Terapi Intensif",
-  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [profile, setProfile] = useState<DoctorProfileData | null>(null);
+  const [draft, setDraft] = useState<DoctorProfileData | null>(null);
+  const [performance, setPerformance] = useState<DoctorPerformanceData>(emptyPerformance);
 
-  const performanceMetrics = [
-    { label: "Total Pasien", value: "32", trend: "+5 minggu ini" },
-    { label: "Rata-rata Pemahaman", value: "92%", trend: "+3% dari bulan lalu" },
-    { label: "Konten Dibuat", value: "18", trend: "6 jenis anestesi" },
-    { label: "Rating Pasien", value: "4.8/5", trend: "Berdasarkan 28 ulasan" },
-  ];
+  const session = getDesktopSession();
 
-  const achievements = [
-    { title: "Educator Expert", description: "Membuat 15+ konten edukasi", icon: Award, color: "text-yellow-500" },
-    { title: "High Comprehension", description: "Rata-rata pemahaman >90%", icon: TrendingUp, color: "text-green-500" },
-    { title: "Active Teacher", description: "Mengedukasi 30+ pasien", icon: Award, color: "text-blue-500" },
-  ];
+  const initials = useMemo(() => {
+    const name = draft?.fullName || profile?.fullName || "Dokter";
+    return name
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase())
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("");
+  }, [draft?.fullName, profile?.fullName]);
+
+  const statusLabel = useMemo(() => {
+    const status = (draft?.status || profile?.status || "active").toLowerCase();
+    return status === "active" ? "Aktif" : status;
+  }, [draft?.status, profile?.status]);
+
+  const loadData = async () => {
+    if (!session?.uid) {
+      setLoadError("Sesi login tidak ditemukan. Silakan login ulang.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const [profileData, performanceData] = await Promise.all([
+        getDoctorProfile(session.uid),
+        getDoctorPerformance(session.uid),
+      ]);
+
+      setProfile(profileData);
+      setDraft(profileData);
+      setPerformance(performanceData);
+      setLoadError("");
+    } catch (error) {
+      console.error("[DoctorProfile] load failed", error);
+      setLoadError("Gagal memuat profil dokter dari Firestore.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  const handleEditToggle = () => {
+    if (!profile) return;
+    setSaveError("");
+
+    if (isEditing) {
+      setDraft(profile);
+      setIsEditing(false);
+      return;
+    }
+
+    setIsEditing(true);
+  };
+
+  const validateDraft = () => {
+    if (!draft) return "Data profil belum siap.";
+    if (draft.fullName.trim().length < 3) return "Nama lengkap minimal 3 karakter.";
+    if (!EMAIL_REGEX.test(draft.email.trim().toLowerCase())) return "Format email tidak valid.";
+    if (!PHONE_REGEX.test(draft.phoneNumber.trim())) {
+      return "Format no. telepon tidak valid (08xx / 62xx / +62xx).";
+    }
+    if (!draft.hospitalName.trim()) return "Rumah sakit wajib diisi.";
+    if (!draft.sipNumber.trim()) return "No. SIP wajib diisi.";
+    if (!draft.strNumber.trim()) return "No. STR wajib diisi.";
+    return "";
+  };
+
+  const handleSave = async () => {
+    if (!session?.uid || !draft) return;
+
+    const validationError = validateDraft();
+    if (validationError) {
+      setSaveError(validationError);
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setSaveError("");
+      await updateDoctorProfile(session.uid, draft);
+      setIsEditing(false);
+      await loadData();
+    } catch (error) {
+      console.error("[DoctorProfile] save failed", error);
+      setSaveError("Gagal menyimpan perubahan profil ke Firestore.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
-    <DashboardLayout role="doctor" userName="Dr. Ahmad Suryadi, Sp.An">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Profil Dokter</h1>
-            <p className="text-gray-600 mt-1">Kelola informasi profil dan lihat performa Anda</p>
-          </div>
+    <DoctorLayout>
+      <div className="p-8 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Profil Dokter</h1>
+          <p className="text-gray-600 mt-1">Kelola informasi profil dan lihat performa Anda</p>
         </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="profile">Informasi Profil</TabsTrigger>
-            <TabsTrigger value="performance">Performa</TabsTrigger>
-          </TabsList>
+        {isLoading && (
+          <Card>
+            <CardContent className="p-6 text-center text-gray-600">Memuat data profil...</CardContent>
+          </Card>
+        )}
 
-          <TabsContent value="profile" className="space-y-6">
+        {!isLoading && loadError && (
+          <Card className="border-red-200">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="w-10 h-10 text-red-600 mx-auto mb-3" />
+              <p className="text-red-700 font-medium">{loadError}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {!isLoading && !loadError && draft && (
+          <>
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -59,87 +165,80 @@ export function DoctorProfile() {
                     <CardTitle>Data Pribadi</CardTitle>
                     <CardDescription>Informasi identitas dan kontak</CardDescription>
                   </div>
-                  <Button
-                    variant={isEditing ? "default" : "outline"}
-                    onClick={() => setIsEditing(!isEditing)}
-                    className="gap-2"
-                  >
-                    {isEditing ? (
-                      <>
-                        <Save className="w-4 h-4" />
-                        Simpan
-                      </>
-                    ) : (
-                      <>
-                        <Edit className="w-4 h-4" />
-                        Edit
-                      </>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={isEditing ? "default" : "outline"}
+                      onClick={isEditing ? handleSave : handleEditToggle}
+                      disabled={isSaving}
+                      className="gap-2"
+                    >
+                      {isEditing ? (
+                        <>
+                          <Save className="w-4 h-4" />
+                          {isSaving ? "Menyimpan..." : "Simpan"}
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </>
+                      )}
+                    </Button>
+                    {isEditing && (
+                      <Button variant="outline" onClick={handleEditToggle} disabled={isSaving}>
+                        Batal
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-6">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src="" />
                     <AvatarFallback className="bg-blue-600 text-white text-2xl">
-                      AS
+                      {initials || "D"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <Badge className="bg-green-500 mb-2">Status: Aktif</Badge>
-                    <p className="text-sm text-gray-600">Bergabung sejak: Oktober 2025</p>
+                    <Badge className="bg-green-500 mb-2">Status: {statusLabel}</Badge>
+                    <p className="text-sm text-gray-600">
+                      Bergabung sejak: {draft.joinedAtLabel || "-"}
+                    </p>
                   </div>
                 </div>
+
+                {saveError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {saveError}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Nama Lengkap</Label>
                     <Input
                       id="fullName"
-                      value={profile.fullName}
-                      onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+                      value={draft.fullName}
+                      onChange={(e) =>
+                        setDraft((prev) => (prev ? { ...prev, fullName: e.target.value } : prev))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Tanggal Lahir</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={profile.dateOfBirth}
-                      onChange={(e) => setProfile({ ...profile, dateOfBirth: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="gender">Jenis Kelamin</Label>
-                    <Input
-                      id="gender"
-                      value={profile.gender}
-                      onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="specialty">Spesialisasi</Label>
-                    <Input
-                      id="specialty"
-                      value={profile.specialty}
-                      onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
-                      disabled={!isEditing}
-                    />
+                    <Label htmlFor="specialization">Spesialisasi</Label>
+                    <Input id="specialization" value={draft.specialization} disabled />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="strNumber">No. STR</Label>
                     <Input
                       id="strNumber"
-                      value={profile.strNumber}
-                      onChange={(e) => setProfile({ ...profile, strNumber: e.target.value })}
+                      value={draft.strNumber}
+                      onChange={(e) =>
+                        setDraft((prev) => (prev ? { ...prev, strNumber: e.target.value } : prev))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -148,8 +247,10 @@ export function DoctorProfile() {
                     <Label htmlFor="sipNumber">No. SIP</Label>
                     <Input
                       id="sipNumber"
-                      value={profile.sipNumber}
-                      onChange={(e) => setProfile({ ...profile, sipNumber: e.target.value })}
+                      value={draft.sipNumber}
+                      onChange={(e) =>
+                        setDraft((prev) => (prev ? { ...prev, sipNumber: e.target.value } : prev))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -159,8 +260,10 @@ export function DoctorProfile() {
                     <Input
                       id="email"
                       type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                      value={draft.email}
+                      onChange={(e) =>
+                        setDraft((prev) => (prev ? { ...prev, email: e.target.value } : prev))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -169,86 +272,58 @@ export function DoctorProfile() {
                     <Label htmlFor="phoneNumber">No. WhatsApp</Label>
                     <Input
                       id="phoneNumber"
-                      value={profile.phoneNumber}
-                      onChange={(e) => setProfile({ ...profile, phoneNumber: e.target.value })}
+                      value={draft.phoneNumber}
+                      onChange={(e) =>
+                        setDraft((prev) => (prev ? { ...prev, phoneNumber: e.target.value } : prev))
+                      }
+                      disabled={!isEditing}
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="hospitalName">Rumah Sakit</Label>
+                    <Input
+                      id="hospitalName"
+                      value={draft.hospitalName}
+                      onChange={(e) =>
+                        setDraft((prev) => (prev ? { ...prev, hospitalName: e.target.value } : prev))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="performance" className="space-y-6">
-            {/* Performance Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {performanceMetrics.map((metric) => (
-                <Card key={metric.label}>
-                  <CardContent className="p-6">
-                    <p className="text-sm text-gray-600">{metric.label}</p>
-                    <p className="text-3xl font-bold mt-2">{metric.value}</p>
-                    <p className="text-xs text-gray-500 mt-2">{metric.trend}</p>
-                  </CardContent>
-                </Card>
-              ))}
+              <Card>
+                <CardContent className="p-6">
+                  <p className="text-sm text-gray-600">Total Pasien</p>
+                  <p className="text-3xl font-bold mt-2">{performance.totalPatients}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <p className="text-sm text-gray-600">Pasien Disetujui</p>
+                  <p className="text-3xl font-bold mt-2">{performance.approvedPatients}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <p className="text-sm text-gray-600">Menunggu Review</p>
+                  <p className="text-3xl font-bold mt-2">{performance.pendingPatients}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <p className="text-sm text-gray-600">Rata-rata Pemahaman</p>
+                  <p className="text-3xl font-bold mt-2">{performance.avgComprehension}%</p>
+                </CardContent>
+              </Card>
             </div>
-
-            {/* Achievements */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Pencapaian</CardTitle>
-                <CardDescription>Badge dan penghargaan yang telah diraih</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {achievements.map((achievement) => (
-                    <div key={achievement.title} className="p-4 border rounded-lg flex items-start gap-4">
-                      <div className={`p-3 rounded-lg bg-gray-100 ${achievement.color}`}>
-                        <achievement.icon className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{achievement.title}</p>
-                        <p className="text-sm text-gray-600 mt-1">{achievement.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Patient Satisfaction */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Kepuasan Pasien</CardTitle>
-                <CardDescription>Feedback dari pasien yang telah diedukasi</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: "Ibu Sarah Wijaya", rating: 5, comment: "Dokter sangat profesional dan menjelaskan dengan detail. Terima kasih!" },
-                    { name: "Bapak Andi Pratama", rating: 5, comment: "Dokter sangat sabar menjawab pertanyaan. Konten edukasinya mudah dipahami." },
-                    { name: "Ibu Dewi Lestari", rating: 4, comment: "Sangat membantu. Penjelasan artikelnya bagus sekali." },
-                  ].map((review, index) => (
-                    <div key={index} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium">{review.name}</p>
-                        <div className="flex gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <span key={i} className={i < review.rating ? "text-yellow-400" : "text-gray-300"}>
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">{review.comment}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </>
+        )}
       </div>
-    </DashboardLayout>
+    </DoctorLayout>
   );
 }

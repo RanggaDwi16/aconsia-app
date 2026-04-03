@@ -86,6 +86,7 @@ Kunjungi: **`/demo`** untuk melihat walkthrough lengkap sistem dari awal hingga 
 2. Isi semua variable `VITE_FIREBASE_*`.
 3. Isi `VITE_FIREBASE_FUNCTIONS_REGION` (default `us-central1`).
 4. Pastikan dokumen `users/{uid}` memiliki field `role` bernilai `dokter` atau `admin` untuk akun desktop.
+5. Portal desktop hanya menerima login `dokter`/`admin`; pasien menggunakan aplikasi mobile Flutter.
 
 ### **Setup Cloud Functions (Wajib untuk audit immutable)**
 
