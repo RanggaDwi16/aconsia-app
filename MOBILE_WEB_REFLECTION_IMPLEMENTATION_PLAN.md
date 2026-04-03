@@ -201,3 +201,19 @@ Deliverable:
    - Komponen alert pasien membaca ditingkatkan (visual lebih konsisten + action tap ke daftar pasien).
    - Halaman edit profil pasien diselaraskan visualnya (header card + gradient background).
    - `flutter analyze` untuk file polish pass: `No issues found`.
+11. QA hardening pass (auth flow):
+   - Error handling Firebase Auth dinormalisasi agar pesan login/register/forgot lebih jelas dan konsisten di bahasa Indonesia.
+   - Validasi input register dokter dan register pasien ditingkatkan (nama, format email, panjang password, konfirmasi password).
+   - Validasi input forgot password ditingkatkan (required + format email).
+   - Copywriting auth dirapikan untuk konsistensi.
+   - `flutter analyze` untuk file auth terkait: `No issues found`.
+12. QA hardening pass (session & route guard):
+   - Router kini memakai global redirect guard berbasis session (`uid`, `role`, `isProfileCompleted`) untuk mencegah akses silang role.
+   - Akses route publik/auth kini otomatis diarahkan ke halaman target role saat user sudah login.
+   - Akses route protected kini otomatis kembali ke welcome bila session tidak valid.
+   - Splash flow diperbaiki (otomatis lanjut ke welcome) agar bootstrap route tidak macet.
+   - `flutter analyze` untuk file router/splash/auth terkait: `No issues found`.
+13. Final QA package:
+   - Checklist QA manual end-to-end lintas role dokter/pasien dibuat.
+   - Checklist mencakup auth, dashboard, konten, profil, quiz, session persistence, dan route guard.
+   - Dokumen output: `MOBILE_E2E_QA_CHECKLIST.md`.

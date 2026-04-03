@@ -5,7 +5,6 @@ import 'package:aconsia_app/core/main/controllers/auth/authentication_provider.d
 import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -13,6 +12,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 final passwordVisibleProvider = StateProvider.autoDispose<bool>((ref) => false);
 final confirmPasswordVisibleProvider =
     StateProvider.autoDispose<bool>((ref) => false);
+const _emailPattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$';
 
 class RegisterDokterPage extends HookConsumerWidget {
   const RegisterDokterPage({super.key});
@@ -34,6 +34,64 @@ class RegisterDokterPage extends HookConsumerWidget {
     useListenable(passwordController);
     useListenable(confirmPasswordController);
 
+    bool isValidEmail(String value) {
+      return RegExp(_emailPattern).hasMatch(value.trim());
+    }
+
+    void handleRegister() {
+      final nama = namaController.text.trim();
+      final email = emailController.text.trim();
+      final password = passwordController.text.trim();
+      final confirmPassword = confirmPasswordController.text.trim();
+
+      if (nama.isEmpty) {
+        context.showErrorSnackbar(context, 'Nama lengkap wajib diisi.');
+        return;
+      }
+
+      if (email.isEmpty) {
+        context.showErrorSnackbar(context, 'Email wajib diisi.');
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        context.showErrorSnackbar(context, 'Format email tidak valid.');
+        return;
+      }
+
+      if (password.isEmpty) {
+        context.showErrorSnackbar(context, 'Password wajib diisi.');
+        return;
+      }
+
+      if (password.length < 6) {
+        context.showErrorSnackbar(context, 'Password minimal 6 karakter.');
+        return;
+      }
+
+      if (confirmPassword.isEmpty) {
+        context.showErrorSnackbar(context, 'Konfirmasi password wajib diisi.');
+        return;
+      }
+
+      if (password != confirmPassword) {
+        context.showErrorSnackbar(context, 'Konfirmasi password tidak sama.');
+        return;
+      }
+
+      ref.read(authenticationProvider.notifier).registerDokter(
+            email: email,
+            password: password,
+            name: nama,
+            onSuccess: (message) {
+              context.showSuccessDialog(context, message);
+            },
+            onError: (error) {
+              context.showErrorSnackbar(context, error);
+            },
+          );
+    }
+
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Daftar Akun',
@@ -53,7 +111,7 @@ class RegisterDokterPage extends HookConsumerWidget {
             ),
             Gap(8),
             Text(
-              'Kelola materi edukasi anestesi untuk pasien anda',
+              'Kelola materi edukasi anestesi untuk pasien Anda',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColor.textGrayColor,
@@ -112,18 +170,7 @@ class RegisterDokterPage extends HookConsumerWidget {
                   passwordController.text.trim() !=
                       confirmPasswordController.text.trim() ||
                   auth.isLoading,
-              onPressed: () =>
-                  ref.read(authenticationProvider.notifier).registerDokter(
-                        email: emailController.text.trim(),
-                        password: passwordController.text.trim(),
-                        name: namaController.text.trim(),
-                        onSuccess: (message) {
-                          context.showSuccessDialog(context, message);
-                        },
-                        onError: (error) {
-                          context.showErrorSnackbar(context, error);
-                        },
-                      ),
+              onPressed: handleRegister,
               label: auth.isLoading ? 'Memproses...' : 'Daftar',
             )
           ],

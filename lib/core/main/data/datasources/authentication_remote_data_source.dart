@@ -50,6 +50,37 @@ class AuthenticationRemoteDataSourceImpl
     required this.firestore,
   });
 
+  String _mapFirebaseAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Format email tidak valid.';
+      case 'user-disabled':
+        return 'Akun ini telah dinonaktifkan.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Email atau password salah.';
+      case 'too-many-requests':
+        return 'Terlalu banyak percobaan. Coba lagi beberapa saat.';
+      case 'network-request-failed':
+        return 'Koneksi internet bermasalah. Cek jaringan Anda.';
+      case 'email-already-in-use':
+        return 'Email sudah terdaftar. Gunakan email lain.';
+      case 'weak-password':
+        return 'Password terlalu lemah. Gunakan minimal 6 karakter.';
+      case 'operation-not-allowed':
+        return 'Metode login ini belum diaktifkan.';
+      case 'requires-recent-login':
+        return 'Sesi sudah lama. Silakan login ulang.';
+      default:
+        final message = e.message?.trim();
+        if (message != null && message.isNotEmpty) {
+          return message;
+        }
+        return 'Terjadi kesalahan autentikasi.';
+    }
+  }
+
   @override
   Future<Either<String, UserModel>> login(
       {required String email, required String password}) async {
@@ -89,9 +120,9 @@ class AuthenticationRemoteDataSourceImpl
       final normalizedUser = userModel.copyWith(role: normalizedRole);
       return Right(normalizedUser);
     } on FirebaseAuthException catch (e) {
-      return Left("Error FirebaseAuthException: ${e.message}");
+      return Left(_mapFirebaseAuthError(e));
     } catch (e) {
-      return Left("Error: ${e.toString()}");
+      return Left("Terjadi kesalahan saat login: ${e.toString()}");
     }
   }
 
@@ -99,9 +130,9 @@ class AuthenticationRemoteDataSourceImpl
   Future<Either<String, String>> logout() async {
     try {
       await firebaseAuth.signOut();
-      return Right("Logout successful");
+      return Right("Logout berhasil");
     } on FirebaseAuthException catch (e) {
-      return Left(e.message ?? "An error occurred");
+      return Left(_mapFirebaseAuthError(e));
     }
   }
 
@@ -133,9 +164,9 @@ class AuthenticationRemoteDataSourceImpl
 
       return Right("Registrasi dokter berhasil");
     } on FirebaseAuthException catch (e) {
-      return Left(e.message ?? "An error occurred");
+      return Left(_mapFirebaseAuthError(e));
     } catch (e) {
-      return Left(e.toString());
+      return Left("Gagal registrasi dokter: $e");
     }
   }
 
@@ -167,9 +198,9 @@ class AuthenticationRemoteDataSourceImpl
 
       return Right("Registrasi pasien berhasil");
     } on FirebaseAuthException catch (e) {
-      return Left(e.message ?? "An error occurred");
+      return Left(_mapFirebaseAuthError(e));
     } catch (e) {
-      return Left(e.toString());
+      return Left("Gagal registrasi pasien: $e");
     }
   }
 
@@ -179,7 +210,7 @@ class AuthenticationRemoteDataSourceImpl
       await firebaseAuth.sendPasswordResetEmail(email: email);
       return Right("Email reset password telah dikirim");
     } on FirebaseAuthException catch (e) {
-      return Left(e.message ?? "An error occurred");
+      return Left(_mapFirebaseAuthError(e));
     }
   }
 

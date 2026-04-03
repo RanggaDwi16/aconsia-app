@@ -33,8 +33,94 @@ part 'go_router_provider.g.dart';
 @Riverpod(keepAlive: true)
 Raw<GoRouter> router(Ref ref) {
   return GoRouter(
-    initialLocation: '/welcome',
+    initialLocation: RouteName.splash,
     debugLogDiagnostics: false,
+    redirect: (context, state) async {
+      final tokenManager = await ref.read(tokenManagerProvider.future);
+      final isAuthenticated = await tokenManager.isAuthenticated();
+      final normalizedRole = normalizeRole(await tokenManager.getRole());
+      final isProfileCompleted = await tokenManager.isProfileCompleted();
+      final currentPath = state.matchedLocation;
+
+      const publicPaths = <String>{
+        RouteName.splash,
+        RouteName.welcome,
+        RouteName.loginDokter,
+        RouteName.loginPasien,
+        RouteName.registerDokter,
+        RouteName.registerPasien,
+        RouteName.forgotPassword,
+        RouteName.helpdesk,
+      };
+
+      const dokterOnlyPaths = <String>{
+        RouteName.mainDokter,
+        RouteName.detailPasien,
+        RouteName.addPasienMedicInformation,
+        RouteName.listActivePasien,
+        RouteName.addKonten,
+        RouteName.editKonten,
+        RouteName.editProfile,
+      };
+
+      const pasienOnlyPaths = <String>{
+        RouteName.mainPasien,
+        RouteName.profilePasien,
+        RouteName.editProfilePasien,
+        RouteName.chatAi,
+        RouteName.hasilChatAi,
+        RouteName.quizResult,
+        RouteName.allRecommendations,
+      };
+
+      const sharedProtectedPaths = <String>{
+        RouteName.detailKonten,
+      };
+
+      if (!isAuthenticated) {
+        if (!publicPaths.contains(currentPath)) {
+          return RouteName.welcome;
+        }
+        return null;
+      }
+
+      if (normalizedRole != 'dokter' && normalizedRole != 'pasien') {
+        await tokenManager.clearUserSession();
+        return RouteName.welcome;
+      }
+
+      final homePath =
+          normalizedRole == 'dokter' ? RouteName.mainDokter : RouteName.mainPasien;
+      final profilePath = normalizedRole == 'dokter'
+          ? RouteName.editProfile
+          : RouteName.editProfilePasien;
+      final targetPath = isProfileCompleted ? homePath : profilePath;
+
+      if (publicPaths.contains(currentPath)) {
+        return targetPath;
+      }
+
+      if (sharedProtectedPaths.contains(currentPath)) {
+        return null;
+      }
+
+      if (normalizedRole == 'dokter' && pasienOnlyPaths.contains(currentPath)) {
+        return targetPath;
+      }
+
+      if (normalizedRole == 'pasien' && dokterOnlyPaths.contains(currentPath)) {
+        return targetPath;
+      }
+
+      if (!isProfileCompleted &&
+          (dokterOnlyPaths.contains(currentPath) ||
+              pasienOnlyPaths.contains(currentPath)) &&
+          currentPath != profilePath) {
+        return profilePath;
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -45,27 +131,6 @@ Raw<GoRouter> router(Ref ref) {
         path: '/welcome',
         name: RouteName.welcome,
         builder: (context, state) => const WelcomePage(),
-        redirect: (context, state) async {
-          final tokenManager = await ref.read(tokenManagerProvider.future);
-          final isProfileCompleted = await tokenManager.isProfileCompleted();
-          final user = normalizeRole(await tokenManager.getRole());
-
-          if (user.isNotEmpty) {
-            if (user == 'pasien') {
-              if (!isProfileCompleted) {
-                return RouteName.editProfilePasien;
-              }
-              return RouteName.mainPasien;
-            }
-            if (user == 'dokter') {
-              if (!isProfileCompleted) {
-                return RouteName.editProfile;
-              }
-              return RouteName.mainDokter;
-            }
-          }
-          return null;
-        },
       ),
       GoRoute(
         path: '/forgot-password',
