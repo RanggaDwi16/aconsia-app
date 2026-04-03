@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:aconsia_app/core/utils/role_normalizer.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'user_model.freezed.dart';
@@ -21,15 +22,26 @@ class UserModel with _$UserModel {
 
   /// Create from Firestore DocumentSnapshot
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = (doc.data() as Map<String, dynamic>?) ?? <String, dynamic>{};
+
+    DateTime parseDate(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) {
+        final parsed = DateTime.tryParse(value);
+        if (parsed != null) return parsed;
+      }
+      return DateTime.now();
+    }
+
     return UserModel(
       uid: doc.id,
       email: data['email'] ?? '',
-      name: data['name'],
-      role: data['role'] ?? '',
+      name: data['name'] ?? data['displayName'],
+      role: normalizeRole(data['role']?.toString()),
       isProfileCompleted: data['isProfileCompleted'] ?? false,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: parseDate(data['createdAt']),
+      updatedAt: parseDate(data['updatedAt']),
     );
   }
 
@@ -38,7 +50,7 @@ class UserModel with _$UserModel {
     return {
       'email': user.email,
       'name': user.name,
-      'role': user.role,
+      'role': normalizeRole(user.role),
       'isProfileCompleted': user.isProfileCompleted,
       'createdAt': Timestamp.fromDate(user.createdAt),
       'updatedAt': Timestamp.fromDate(user.updatedAt),

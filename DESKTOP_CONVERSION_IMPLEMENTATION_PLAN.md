@@ -2,6 +2,25 @@
 
 Target: mengubah UI web-aconsia menjadi desktop app produksi untuk role dokter + admin.
 
+## Status Implementasi Terkini (30 Maret 2026)
+
+### Sudah Selesai
+- Firebase Auth desktop + role guard route dokter/admin.
+- Lockout role pasien di desktop route + desktop login UX.
+- Migrasi doctor approval/reject ke callable backend (`approvePasienProfile`, `rejectPasienProfile`).
+- Migrasi assign anestesi ke callable backend (`assignPasienAnesthesia`).
+- Immutable audit logging via callable backend (`writeAdminAuditLog`) + hook login/logout/approval/assign/reject.
+- Hardening Firestore rules untuk field sensitif approval/rejection.
+- Admin dashboard doctor performance dari Firestore (tanpa mock dokter statis).
+- `DoctorDashboardNew` dan `PatientApprovalNew` pada route aktif sudah tanpa localStorage fallback.
+- Service action sensitif aktif (assign/approve/reject/audit) sudah callable-only.
+
+### Masih Berjalan / Pending
+- Freeze/hapus halaman legacy yang belum dipakai namun masih localStorage-centric.
+- Migrasi action admin sensitif lain (publish/unpublish content, suspend/activate user) ke callable backend.
+- Tambah automated tests untuk rules + callable authorization matrix.
+- UAT staging end-to-end lintas role.
+
 ## 1) Target Architecture
 
 ## 1.1 App Layers

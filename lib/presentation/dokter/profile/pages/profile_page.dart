@@ -1,7 +1,6 @@
 import 'package:aconsia_app/presentation/dokter/profile/controllers/get_dokter_profile/fetch_dokter_profile_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';
@@ -60,73 +59,110 @@ class ProfilePage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // Invalidate profile provider to refresh data
-          ref.invalidate(fetchDokterProfileProvider);
-
-          // Wait for provider to rebuild
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Gap(context.deviceHeight * 0.1),
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: profileDokter.value?.fotoProfilUrl != null &&
-                          profileDokter.value!.fotoProfilUrl!.isNotEmpty
-                      ? NetworkImage(profileDokter.value!.fotoProfilUrl!)
-                      : AssetImage(Assets.images.placeholderImg.path)
-                          as ImageProvider,
-                ),
-                Gap(8),
-                Text(
-                  namaController.text,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Gap(8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColor.backgroundStatusAktifColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Aktif',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColor.primaryWhite,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFEFFAF3),
+              Color(0xFFFFFFFF),
+            ],
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(fetchDokterProfileProvider);
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Gap(16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFD8EFDF)),
+                    ),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 44,
+                          backgroundImage:
+                              profileDokter.value?.fotoProfilUrl != null &&
+                                      profileDokter.value!.fotoProfilUrl!.isNotEmpty
+                                  ? NetworkImage(profileDokter.value!.fotoProfilUrl!)
+                                  : AssetImage(Assets.images.placeholderImg.path)
+                                      as ImageProvider,
+                        ),
+                        const Gap(10),
+                        Text(
+                          namaController.text.isEmpty
+                              ? 'Dokter'
+                              : namaController.text,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const Gap(4),
+                        Text(
+                          spesialisasiController.text.isEmpty
+                              ? 'Anestesiologi'
+                              : spesialisasiController.text,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColor.textGrayColor,
+                          ),
+                        ),
+                        const Gap(8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColor.backgroundStatusAktifColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Status: Aktif',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColor.primaryWhite,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                Gap(24),
-                DoctorProfesionalInformationWidget(
-                  spesialisasiController: spesialisasiController,
-                  nomorstrController: nomorstrController,
-                  nomorsipController: nomorsipController,
-                  tanggalGabungController: tanggalGabungController,
-                ),
-                Gap(16),
-                DoctorPersonalInformationWidget(
-                  namaController: namaController,
-                  tempatLahirController: tempatLahirController,
-                  tanggalLahirController: tanggalLahirController,
-                  jenisKelaminController: jenisKelaminController,
-                ),
-                Gap(16),
-                DoctorContactWidget(
-                  emailController: emailController,
-                  nomorHpController: nomorHpController,
-                ),
-              ],
+                  const Gap(20),
+                  DoctorProfesionalInformationWidget(
+                    spesialisasiController: spesialisasiController,
+                    nomorstrController: nomorstrController,
+                    nomorsipController: nomorsipController,
+                    tanggalGabungController: tanggalGabungController,
+                  ),
+                  const Gap(16),
+                  DoctorPersonalInformationWidget(
+                    namaController: namaController,
+                    tempatLahirController: tempatLahirController,
+                    tanggalLahirController: tanggalLahirController,
+                    jenisKelaminController: jenisKelaminController,
+                  ),
+                  const Gap(16),
+                  DoctorContactWidget(
+                    emailController: emailController,
+                    nomorHpController: nomorHpController,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

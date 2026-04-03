@@ -28,9 +28,9 @@ class MainDokterPage extends ConsumerWidget {
     ];
 
     final labels = [
-      'Home',
+      'Dashboard',
       'Konten',
-      'Profile',
+      'Profil',
     ];
 
     return Scaffold(
@@ -43,9 +43,11 @@ class MainDokterPage extends ConsumerWidget {
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
           currentIndex: selectedIndex,
           selectedItemColor: AppColor.primaryColor,
           unselectedItemColor: Colors.grey,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
           onTap: (index) {
             ref.read(selectedIndexProvider.notifier).state = index;
           },

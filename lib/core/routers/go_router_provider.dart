@@ -1,5 +1,6 @@
 import 'package:aconsia_app/core/providers/token_manager_provider.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
+import 'package:aconsia_app/core/utils/role_normalizer.dart';
 import 'package:aconsia_app/presentation/auth/pages/forgot_password_page.dart';
 import 'package:aconsia_app/presentation/auth/pages/helpdesk_page.dart';
 import 'package:aconsia_app/presentation/auth/pages/login_dokter_page.dart';
@@ -47,18 +48,20 @@ Raw<GoRouter> router(Ref ref) {
         redirect: (context, state) async {
           final tokenManager = await ref.read(tokenManagerProvider.future);
           final isProfileCompleted = await tokenManager.isProfileCompleted();
-          final user = await tokenManager.getRole();
+          final user = normalizeRole(await tokenManager.getRole());
 
-          if (user != null && user.isNotEmpty) {
+          if (user.isNotEmpty) {
             if (user == 'pasien') {
               if (!isProfileCompleted) {
                 return RouteName.editProfilePasien;
               }
               return RouteName.mainPasien;
-            } else {
-              // Phase 2: mobile app is pasien-only
-              await tokenManager.clearUserSession();
-              return null;
+            }
+            if (user == 'dokter') {
+              if (!isProfileCompleted) {
+                return RouteName.editProfile;
+              }
+              return RouteName.mainDokter;
             }
           }
           return null;
@@ -73,13 +76,11 @@ Raw<GoRouter> router(Ref ref) {
         path: '/login-dokter',
         name: RouteName.loginDokter,
         builder: (context, state) => LoginDokterPage(),
-        redirect: (context, state) => RouteName.welcome,
       ),
       GoRoute(
         path: '/register-dokter',
         name: RouteName.registerDokter,
         builder: (context, state) => RegisterDokterPage(),
-        redirect: (context, state) => RouteName.welcome,
       ),
       GoRoute(
         path: '/login-pasien',
@@ -100,7 +101,6 @@ Raw<GoRouter> router(Ref ref) {
         path: '/main-dokter',
         name: RouteName.mainDokter,
         builder: (context, state) => MainDokterPage(),
-        redirect: (context, state) => RouteName.welcome,
       ),
       GoRoute(
           path: '/add-pasien-medic-information',
@@ -178,21 +178,21 @@ Raw<GoRouter> router(Ref ref) {
         name: RouteName.quizResult,
         builder: (context, state) {
           final data = state.extra as Map<String, dynamic>;
-          
+
           // Safe casting for quizResults
           final quizResultsRaw = data['quizResults'];
           final List<Map<String, dynamic>> quizResults;
-          
+
           if (quizResultsRaw is List) {
             quizResults = quizResultsRaw
-                .map((e) => e is Map<String, dynamic> 
-                    ? e 
+                .map((e) => e is Map<String, dynamic>
+                    ? e
                     : (e as Map).cast<String, dynamic>())
                 .toList();
           } else {
             quizResults = [];
           }
-          
+
           return QuizResultPage(
             konten: data['konten'],
             sessionId: data['sessionId'],

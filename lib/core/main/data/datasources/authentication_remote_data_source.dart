@@ -1,4 +1,5 @@
 import 'package:aconsia_app/core/main/data/models/user_model.dart';
+import 'package:aconsia_app/core/utils/role_normalizer.dart';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -70,7 +71,23 @@ class AuthenticationRemoteDataSourceImpl
 
       // Convert to UserModel
       final userModel = UserModel.fromFirestore(doc);
-      return Right(userModel);
+      final normalizedRole = normalizeRole(userModel.role);
+
+      if (normalizedRole.isEmpty) {
+        return const Left("Role user tidak valid");
+      }
+
+      if (normalizedRole == 'admin') {
+        return const Left(
+            "Akun admin hanya bisa masuk melalui web desktop ACONSIA.");
+      }
+
+      if (normalizedRole != 'dokter' && normalizedRole != 'pasien') {
+        return Left("Role tidak didukung di aplikasi mobile: $normalizedRole");
+      }
+
+      final normalizedUser = userModel.copyWith(role: normalizedRole);
+      return Right(normalizedUser);
     } on FirebaseAuthException catch (e) {
       return Left("Error FirebaseAuthException: ${e.message}");
     } catch (e) {

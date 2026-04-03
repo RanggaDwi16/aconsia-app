@@ -12,7 +12,6 @@ import 'package:aconsia_app/presentation/dokter/profile/controllers/update_dokte
 import 'package:aconsia_app/presentation/dokter/profile/providers/upload_photo_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';

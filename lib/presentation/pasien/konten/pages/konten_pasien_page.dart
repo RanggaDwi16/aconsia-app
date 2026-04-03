@@ -7,7 +7,6 @@ import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_pro
 import 'package:aconsia_app/presentation/pasien/home/widgets/tag_widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_search_field.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
@@ -79,7 +78,18 @@ class KontenPasienPage extends HookConsumerWidget {
           ),
         ],
       ),
-      body: profilePasien.when(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF4FAFF),
+              Color(0xFFFFFFFF),
+            ],
+          ),
+        ),
+        child: profilePasien.when(
         data: (profile) {
           if (profile?.dokterId == null || profile!.dokterId!.isEmpty) {
             return Center(
@@ -133,11 +143,38 @@ class KontenPasienPage extends HookConsumerWidget {
                             searchQuery.value = value.toLowerCase();
                           },
                         ),
-                        Gap(32),
+                        Gap(16),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFDCEAFF)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.lightbulb_outline,
+                                  color: AppColor.primaryColor),
+                              Gap(10),
+                              Expanded(
+                                child: Text(
+                                  'Baca konten dari dokter sampai selesai, lalu kerjakan quiz untuk cek pemahaman.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF23415F),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Gap(22),
                         Text(
                           'Materi Pembelajaran',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -237,6 +274,7 @@ class KontenPasienPage extends HookConsumerWidget {
         error: (error, stack) => Center(
           child: Text('Error: $error'),
         ),
+      ),
       ),
     );
   }

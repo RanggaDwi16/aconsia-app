@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 class ListPasienWidget extends StatelessWidget {
   final PasienProfileModel pasien;
+
   const ListPasienWidget({
     required this.pasien,
     super.key,
@@ -16,72 +17,105 @@ class ListPasienWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isReadyForEducation = _isMedicalReady(pasien);
+    final statusText = isReadyForEducation ? 'Siap Edukasi' : 'Menunggu Review';
+    final statusColor =
+        isReadyForEducation ? const Color(0xFF22C35D) : const Color(0xFFF59E0B);
+
     return InkWell(
       onTap: () => context.pushNamed(
         RouteName.detailPasien,
         extra: pasien.uid,
       ),
-      borderRadius: BorderRadius.circular(8),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: const Color(0xFFD0EDFF),
-                child: SvgPicture.asset(
-                  Assets.icons.icPerson.path,
-                  width: 24,
-                  height: 24,
-                  color: AppColor.primaryColor,
-                ),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE3EAF4)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFFD0EDFF),
+              child: SvgPicture.asset(
+                Assets.icons.icPerson.path,
+                width: 24,
+                height: 24,
+                color: AppColor.primaryColor,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pasien.namaLengkap ?? '-',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pasien.namaLengkap ?? '-',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      pasien.noRekamMedis ?? '-',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColor.textGrayColor,
-                      ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    pasien.noRekamMedis?.isNotEmpty == true
+                        ? 'No RM: ${pasien.noRekamMedis}'
+                        : 'No RM belum diisi',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColor.textGrayColor,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF22C35D),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Aktif',
-                  style: TextStyle(
-                    color: AppColor.primaryWhite,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+            ),
+            const Gap(8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: AppColor.primaryWhite,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Gap(12),
-          Divider(color: AppColor.borderColor)
-        ],
+                const Gap(8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFF8FA0B8),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  bool _isMedicalReady(PasienProfileModel pasien) {
+    final operasi = (pasien.jenisOperasi ?? '').trim();
+    final anestesi = (pasien.jenisAnestesi ?? '').trim();
+    final asa = (pasien.klasifikasiAsa ?? '').trim();
+    return operasi.isNotEmpty && anestesi.isNotEmpty && asa.isNotEmpty;
   }
 }

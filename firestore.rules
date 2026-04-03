@@ -20,7 +20,7 @@ service cloud.firestore {
     }
 
     function isDokter() {
-      return role() == 'dokter';
+      return role() in ['dokter', 'doctor'];
     }
 
     function isAdmin() {
@@ -35,18 +35,118 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function emailValid(email) {
+      return email is string
+        && email.size() >= 6
+        && email.size() <= 120
+        && email.matches('^[^@ ]+@[^@ ]+\\.[^@ ]+$');
+    }
+
+    function phoneValid(phone) {
+      return phone is string && phone.matches('^(\\+62|62|0)[0-9]{9,12}$');
+    }
+
+    function licenseTextValid(value) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= 80;
+    }
+
+    function nonEmptyText(value, minSize, maxSize) {
+      return value is string && value.size() >= minSize && value.size() <= maxSize;
+    }
+
+    function ownerHasStoredDokterRole(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.role in ['dokter', 'doctor'];
+    }
+
+    function isDokterLike() {
+      return isDokter() || (isSignedIn() && ownerHasStoredDokterRole(request.auth.uid));
+    }
+
+    function doctorUserDocShapeValid(uid) {
+      return request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'name',
+          'displayName',
+          'role',
+          'status',
+          'phone',
+          'hospital',
+          'specialization',
+          'sipNumber',
+          'strNumber',
+          'isProfileCompleted',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'dokter'
+        && request.resource.data.status == 'active'
+        && request.resource.data.specialization == 'Anestesiologi'
+        && request.resource.data.isProfileCompleted == true
+        && emailValid(request.resource.data.email)
+        && nonEmptyText(request.resource.data.name, 3, 80)
+        && nonEmptyText(request.resource.data.displayName, 3, 80)
+        && phoneValid(request.resource.data.phone)
+        && nonEmptyText(request.resource.data.hospital, 3, 120)
+        && licenseTextValid(request.resource.data.sipNumber)
+        && licenseTextValid(request.resource.data.strNumber);
+    }
+
+    function doctorProfileDocShapeValid(uid) {
+      return request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'fullName',
+          'nama',
+          'phoneNumber',
+          'noTelepon',
+          'hospitalName',
+          'namaRumahSakit',
+          'specialization',
+          'sipNumber',
+          'strNumber',
+          'fotoProfilUrl',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.specialization == 'Anestesiologi'
+        && emailValid(request.resource.data.email)
+        && nonEmptyText(request.resource.data.fullName, 3, 80)
+        && nonEmptyText(request.resource.data.nama, 3, 80)
+        && request.resource.data.fullName == request.resource.data.nama
+        && phoneValid(request.resource.data.phoneNumber)
+        && request.resource.data.phoneNumber == request.resource.data.noTelepon
+        && nonEmptyText(request.resource.data.hospitalName, 3, 120)
+        && request.resource.data.hospitalName == request.resource.data.namaRumahSakit
+        && licenseTextValid(request.resource.data.sipNumber)
+        && licenseTextValid(request.resource.data.strNumber)
+        && (
+          !('fotoProfilUrl' in request.resource.data)
+          || (
+            request.resource.data.fotoProfilUrl is string
+            && request.resource.data.fotoProfilUrl.size() <= 500
+          )
+        );
+    }
+
+    function userLifecycleNotChanged() {
+      return !request.resource.data.diff(resource.data).changedKeys().hasAny([
+        'status',
+        'statusReason',
+        'statusUpdatedAt',
+        'statusUpdatedByUid'
+      ]);
+    }
+
     function isAdminOrSystem() {
       return isAdmin() || isSystem();
-    }
-
-    function sameHospital(resourceData) {
-      return isAdminOrSystem() ||
-        (isSignedIn() && request.auth.token.hospitalId != null &&
-          resourceData.hospitalId == request.auth.token.hospitalId);
-    }
-
-    function pasienAssignedToDokter(profileData) {
-      return isDokter() && profileData.assignedDokterId == request.auth.uid;
     }
 
     function dokterNotChangingSensitivePasienFields() {
@@ -62,8 +162,19 @@ service cloud.firestore {
       ]);
     }
 
+    function kontenModerationFieldsNotChanged() {
+      return !request.resource.data.diff(resource.data).changedKeys().hasAny([
+        'status',
+        'publishedAt',
+        'moderationReason',
+        'moderatedByUid',
+        'moderatedByRole',
+        'moderatedAt'
+      ]);
+    }
+
     function assignmentReadableByDokter(assignData) {
-      return isDokter() && (assignData.assignedBy == request.auth.uid || assignData.dokterId == request.auth.uid);
+      return isDokterLike() && (assignData.assignedBy == request.auth.uid || assignData.dokterId == request.auth.uid);
     }
 
     function chatParticipant(sessionData) {
@@ -74,7 +185,24 @@ service cloud.firestore {
     // users
     // ----------------------
     match /users/{uid} {
-      allow create: if isOwner(uid) || isAdminOrSystem();
+      allow create: if
+        isAdminOrSystem()
+        || (
+          isOwner(uid)
+          && request.resource.data.uid == uid
+          && request.resource.data.email is string
+          && request.resource.data.role in ['pasien', 'dokter']
+          && !('permissions' in request.resource.data)
+          && !('hospitalId' in request.resource.data)
+          && (
+            !('status' in request.resource.data)
+            || request.resource.data.status == 'active'
+          )
+          && (
+            request.resource.data.role != 'dokter'
+            || doctorUserDocShapeValid(uid)
+          )
+        );
 
       allow read: if isOwner(uid) || isAdminOrSystem();
 
@@ -84,8 +212,12 @@ service cloud.firestore {
           && !('role' in request.resource.data.diff(resource.data).changedKeys())
           && !('status' in request.resource.data.diff(resource.data).changedKeys())
           && !('permissions' in request.resource.data.diff(resource.data).changedKeys())
-          && !('hospitalId' in request.resource.data.diff(resource.data).changedKeys()))
-        || isAdminOrSystem();
+          && !('hospitalId' in request.resource.data.diff(resource.data).changedKeys())
+          && (
+            resource.data.role != 'dokter'
+            || doctorUserDocShapeValid(uid)
+          ))
+        || (isAdminOrSystem() && (isSystem() || userLifecycleNotChanged()));
 
       allow delete: if isOwner(uid) || isAdminOrSystem();
     }
@@ -99,14 +231,14 @@ service cloud.firestore {
       allow read: if
         (isOwner(uid) && isPasien())
         || isAdminOrSystem()
-        || (isDokter() && resource.data.assignedDokterId == request.auth.uid);
+        || (isDokterLike() && resource.data.assignedDokterId == request.auth.uid);
 
       allow update: if
         // pasien update own profile
         (isOwner(uid) && isPasien())
         // dokter update pasien in scope
         || (
-          isDokter()
+          isDokterLike()
           && resource.data.assignedDokterId == request.auth.uid
           && dokterNotChangingSensitivePasienFields()
         )
@@ -116,10 +248,16 @@ service cloud.firestore {
     }
 
     match /dokter_profiles/{uid} {
-      allow create: if (isOwner(uid) && isDokter()) || isAdminOrSystem();
+      allow create: if
+        isAdminOrSystem()
+        || (
+          isOwner(uid)
+          && (isDokter() || ownerHasStoredDokterRole(uid))
+          && doctorProfileDocShapeValid(uid)
+        );
 
       allow read: if
-        (isOwner(uid) && isDokter())
+        (isOwner(uid) && (isDokter() || ownerHasStoredDokterRole(uid)))
         || isAdminOrSystem()
         || (
           isPasien() &&
@@ -127,7 +265,13 @@ service cloud.firestore {
           get(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)).data.assignedDokterId == uid
         );
 
-      allow update: if (isOwner(uid) && isDokter()) || isAdminOrSystem();
+      allow update: if
+        isAdminOrSystem()
+        || (
+          isOwner(uid)
+          && (isDokter() || ownerHasStoredDokterRole(uid))
+          && doctorProfileDocShapeValid(uid)
+        );
       allow delete: if isAdminOrSystem();
     }
 
@@ -135,11 +279,11 @@ service cloud.firestore {
     // konten + sections
     // ----------------------
     match /konten/{kontenId} {
-      allow create: if isDokter() || isAdminOrSystem();
+      allow create: if isDokterLike() || isAdminOrSystem();
 
       allow read: if
         isAdminOrSystem()
-        || isDokter()
+        || isDokterLike()
         || (
           isPasien() &&
           (
@@ -148,20 +292,24 @@ service cloud.firestore {
           )
         );
 
-      allow update, delete: if
+      allow update: if
+        (isAdminOrSystem() && (isSystem() || kontenModerationFieldsNotChanged()))
+        || (isDokterLike() && resource.data.dokterId == request.auth.uid && kontenModerationFieldsNotChanged());
+
+      allow delete: if
         isAdminOrSystem()
-        || (isDokter() && resource.data.dokterId == request.auth.uid);
+        || (isDokterLike() && resource.data.dokterId == request.auth.uid);
 
       match /sections/{sectionId} {
         allow read: if
           isAdminOrSystem()
-          || isDokter()
+          || isDokterLike()
           || isPasien();
 
         allow create, update, delete: if
           isAdminOrSystem()
           || (
-            isDokter()
+            isDokterLike()
             && exists(/databases/$(database)/documents/konten/$(kontenId))
             && get(/databases/$(database)/documents/konten/$(kontenId)).data.dokterId == request.auth.uid
           );
@@ -202,7 +350,7 @@ service cloud.firestore {
       allow read: if
         isAdminOrSystem()
         || (isPasien() && resource.data.pasienId == request.auth.uid)
-        || (isDokter() && resource.data.dokterId == request.auth.uid);
+        || (isDokterLike() && resource.data.dokterId == request.auth.uid);
 
       allow update: if
         isAdminOrSystem()
@@ -222,7 +370,7 @@ service cloud.firestore {
       allow read: if
         isAdminOrSystem()
         || (isPasien() && resource.data.pasienId == request.auth.uid)
-        || (isDokter() && resource.data.dokterId == request.auth.uid);
+        || (isDokterLike() && resource.data.dokterId == request.auth.uid);
 
       allow update: if isAdminOrSystem();
       allow delete: if isAdminOrSystem();

@@ -1,0 +1,22 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.dart_tool": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.dart_tool": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.dart_tool/**": true
+  },
+  "dart.analysisExcludedFolders": [
+    "${workspaceFolder}/functions/node_modules",
+    "${workspaceFolder}/web-aconsia/node_modules",
+    "${workspaceFolder}/web-aconsia/dist"
+  ]
+}

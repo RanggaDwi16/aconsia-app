@@ -43,7 +43,7 @@ abstract class PasienProfileRepository {
   });
 
   /// Check if pasien profile exists
-  Future<Either<String, bool>> checkProfileExists();
+  Future<Either<String, bool>> checkProfileExists({required String uid});
 
   Future<Either<String, List<DokterProfileModel>>> getAllDokterOptions();
 }

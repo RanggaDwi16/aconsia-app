@@ -3,7 +3,6 @@ import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by
 import 'package:aconsia_app/presentation/dokter/profile/controllers/get_dokter_profile/fetch_dokter_profile_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_search_field.dart';
@@ -13,7 +12,6 @@ import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/dokter/konten/widgets/item_konten_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -74,60 +72,99 @@ class KontenPage extends HookConsumerWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // Invalidate providers to refresh data
-          ref.invalidate(fetchKontenByDokterIdProvider);
-          ref.invalidate(fetchDokterProfileProvider);
-
-          // Wait for providers to rebuild
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Manajemen Konten',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF4FAFF),
+              Color(0xFFFFFFFF),
+            ],
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(fetchKontenByDokterIdProvider);
+            ref.invalidate(fetchDokterProfileProvider);
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Manajemen Konten',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const Gap(8),
-              Text(
-                'Kelola materi edukasi anestesi Anda',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColor.textGrayColor,
+                const Gap(8),
+                Text(
+                  'Kelola materi edukasi anestesi Anda',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColor.textGrayColor,
+                  ),
                 ),
-              ),
-              const Gap(32),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: CustomSearchField(
-                      hintText: 'Cari konten...',
-                      controller: searchController,
-                      onChanged: (value) {
-                        searchQuery.value = value.trim().toLowerCase();
-                      },
+                const Gap(14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFDCEAFF)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: AppColor.primaryColor),
+                      const Gap(10),
+                      Expanded(
+                        child: Text(
+                          allKonten.when(
+                            data: (items) =>
+                                '${items?.length ?? 0} konten aktif siap dibagikan ke pasien.',
+                            loading: () => 'Memuat jumlah konten...',
+                            error: (_, __) => 'Data konten belum tersedia.',
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF23415F),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: CustomSearchField(
+                        hintText: 'Cari konten...',
+                        controller: searchController,
+                        onChanged: (value) {
+                          searchQuery.value = value.trim().toLowerCase();
+                        },
+                      ),
                     ),
-                  ),
-                  const Gap(12),
-                  Button.filled(
-                    onPressed: () => context.pushNamed(RouteName.addKonten),
-                    height: 52,
-                    width: context.deviceWidth * 0.4,
-                    label: 'Konten Baru',
-                    icon: const Icon(Icons.add, color: Colors.white),
-                  ),
-                ],
-              ),
-              const Gap(32),
-              allKonten.when(
+                    const Gap(12),
+                    Button.filled(
+                      onPressed: () => context.pushNamed(RouteName.addKonten),
+                      height: 52,
+                      width: context.deviceWidth * 0.4,
+                      label: 'Konten Baru',
+                      icon: const Icon(Icons.add, color: Colors.white),
+                    ),
+                  ],
+                ),
+                const Gap(24),
+                allKonten.when(
                 data: (kontens) {
                   if (kontens == null || kontens.isEmpty) {
                     return emptyListData(context);
@@ -191,8 +228,9 @@ class KontenPage extends HookConsumerWidget {
                     const Center(child: CircularProgressIndicator.adaptive()),
                 error: (err, _) =>
                     Center(child: Text('Gagal memuat konten: $err')),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

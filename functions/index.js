@@ -67,6 +67,14 @@ async function ensureDoctorOrAdmin(auth) {
   return role;
 }
 
+async function ensureAdmin(auth) {
+  const role = await resolveRoleRaw(auth);
+  if (role !== "admin") {
+    throw new HttpsError("permission-denied", "Only admin can perform this action.");
+  }
+  return role;
+}
+
 async function writeImmutableAuditLog(params) {
   const {
     actorUid,
@@ -321,6 +329,136 @@ exports.rejectPasienProfile = onCall(async (request) => {
   await batch.commit();
 
   return { ok: true };
+});
+
+exports.setUserLifecycleStatus = onCall(async (request) => {
+  ensureSignedIn(request.auth);
+  await ensureAdmin(request.auth);
+
+  const userId = String(request.data?.userId || "").trim();
+  const targetStatus = String(request.data?.targetStatus || "").trim();
+  const reasonRaw = String(request.data?.reason || "").trim();
+
+  if (!userId || (targetStatus !== "active" && targetStatus !== "suspended")) {
+    throw new HttpsError("invalid-argument", "userId and valid targetStatus (active|suspended) are required.");
+  }
+
+  const userRef = db.collection("users").doc(userId);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    throw new HttpsError("not-found", "User not found.");
+  }
+
+  const actorName = String(request.auth.token.name || request.auth.token.email || request.auth.uid);
+  const reason = reasonRaw || (targetStatus === "suspended" ? "Suspended by admin" : "Activated by admin");
+
+  const batch = db.batch();
+  batch.update(userRef, {
+    status: targetStatus,
+    statusReason: reason,
+    statusUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    statusUpdatedByUid: request.auth.uid,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const auditRef = db.collection("admin_audit_logs").doc();
+  const actionType = targetStatus === "suspended" ? "SUSPEND_USER" : "ACTIVATE_USER";
+  batch.set(auditRef, {
+    actorUid: request.auth.uid,
+    actorRole: "admin",
+    actorName,
+    actionType,
+    entityType: "users",
+    entityId: userId,
+    message: `${actionType} ${userId}: ${reason}`,
+    status: "success",
+    meta: {
+      targetStatus,
+      reason,
+    },
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    userId: request.auth.uid,
+    userRole: "admin",
+    userName: actorName,
+    action: actionType,
+    target: "users",
+    details: `${actionType} ${userId}: ${reason}`,
+    timestamp: new Date().toISOString(),
+  });
+
+  await batch.commit();
+
+  try {
+    await admin.auth().updateUser(userId, { disabled: targetStatus === "suspended" });
+  } catch (error) {
+    logger.error("Failed to sync Firebase Auth disabled state", { userId, targetStatus, error });
+  }
+
+  return { ok: true, userId, status: targetStatus };
+});
+
+exports.setKontenPublishStatus = onCall(async (request) => {
+  ensureSignedIn(request.auth);
+  await ensureAdmin(request.auth);
+
+  const kontenId = String(request.data?.kontenId || "").trim();
+  const targetStatus = String(request.data?.targetStatus || "").trim();
+  const reasonRaw = String(request.data?.reason || "").trim();
+
+  if (!kontenId || (targetStatus !== "draft" && targetStatus !== "published")) {
+    throw new HttpsError("invalid-argument", "kontenId and valid targetStatus (draft|published) are required.");
+  }
+
+  const kontenRef = db.collection("konten").doc(kontenId);
+  const kontenSnap = await kontenRef.get();
+  if (!kontenSnap.exists) {
+    throw new HttpsError("not-found", "Konten not found.");
+  }
+
+  const actorName = String(request.auth.token.name || request.auth.token.email || request.auth.uid);
+  const reason = reasonRaw || (targetStatus === "published" ? "Published by admin" : "Set to draft by admin");
+  const actionType = targetStatus === "published" ? "PUBLISH_CONTENT" : "UNPUBLISH_CONTENT";
+
+  const updatePayload = {
+    status: targetStatus,
+    moderationReason: reason,
+    moderatedByUid: request.auth.uid,
+    moderatedByRole: "admin",
+    moderatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    publishedAt: targetStatus === "published" ? admin.firestore.FieldValue.serverTimestamp() : null,
+  };
+
+  const batch = db.batch();
+  batch.update(kontenRef, updatePayload);
+
+  const auditRef = db.collection("admin_audit_logs").doc();
+  batch.set(auditRef, {
+    actorUid: request.auth.uid,
+    actorRole: "admin",
+    actorName,
+    actionType,
+    entityType: "konten",
+    entityId: kontenId,
+    message: `${actionType} ${kontenId}: ${reason}`,
+    status: "success",
+    meta: {
+      targetStatus,
+      reason,
+    },
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    userId: request.auth.uid,
+    userRole: "admin",
+    userName: actorName,
+    action: actionType,
+    target: "konten",
+    details: `${actionType} ${kontenId}: ${reason}`,
+    timestamp: new Date().toISOString(),
+  });
+
+  await batch.commit();
+
+  return { ok: true, kontenId, status: targetStatus };
 });
 
 logger.info("ACONSIA functions loaded", { region: process.env.FUNCTIONS_REGION || "us-central1" });

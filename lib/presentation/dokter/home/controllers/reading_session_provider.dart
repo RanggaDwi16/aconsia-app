@@ -6,7 +6,6 @@ import 'package:aconsia_app/presentation/dokter/home/data/repositories/reading_s
 import 'package:aconsia_app/presentation/dokter/home/domain/repositories/reading_session_repository.dart';
 import 'package:aconsia_app/presentation/dokter/home/domain/usecases/get_active_reading_sessions.dart';
 import 'package:aconsia_app/presentation/dokter/home/domain/usecases/stream_active_reading_sessions.dart';
-import 'package:dartz/dartz.dart';
 
 part 'reading_session_provider.g.dart';
 
@@ -75,7 +74,7 @@ int activeReadersCount(
       ref.watch(activeReadingSessionsStreamProvider(dokterId));
   return sessionsAsync.when(
     data: (sessions) {
-      // Count unique pasien IDshj
+      // Count unique pasien IDs
       final uniquePasienIds = sessions.map((s) => s.pasienId).toSet();
       return uniquePasienIds.length;
     },

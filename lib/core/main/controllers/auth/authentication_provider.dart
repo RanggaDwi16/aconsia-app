@@ -13,8 +13,8 @@ import 'package:aconsia_app/core/main/domain/usecases/get_current_user.dart';
 import 'package:aconsia_app/core/main/domain/usecases/update_profile_completed.dart';
 import 'package:aconsia_app/core/main/domain/usecases/delete_account.dart';
 import 'package:aconsia_app/core/providers/token_manager_provider.dart';
-import 'package:aconsia_app/core/routers/router_name.dart';
 import 'package:aconsia_app/core/main/data/models/user_model.dart';
+import 'package:aconsia_app/core/utils/role_normalizer.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'authentication_provider.g.dart';
@@ -50,7 +50,7 @@ class Authentication extends _$Authentication {
           uid: userModel.uid,
           email: userModel.email,
           name: userModel.name!,
-          role: userModel.role,
+          role: normalizeRole(userModel.role),
           isProfileCompleted: userModel.isProfileCompleted,
         );
         await tokenManager.saveUid(userModel.uid);

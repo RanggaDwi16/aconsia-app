@@ -9,10 +9,19 @@
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test:rules": "npx firebase emulators:exec --only firestore \"node --test tests/firestore.rules.test.js\"",
+    "create:admin": "node scripts/create-admin-user.js",
+    "seed:bootstrap": "node scripts/bootstrap-initial-data.js",
+    "db:normalize-contract": "node scripts/normalize-mobile-web-contract.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.4.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.11.0",
+    "firebase-tools": "^15.12.0"
   }
 }

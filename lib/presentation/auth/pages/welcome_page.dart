@@ -58,8 +58,22 @@ class WelcomePage extends StatelessWidget {
                       Gap(32),
                       Button.filled(
                         onPressed: () =>
+                            context.pushNamed(RouteName.loginDokter),
+                        label: 'Masuk Sebagai Dokter',
+                      ),
+                      Gap(12),
+                      Button.outlined(
+                        onPressed: () =>
                             context.pushNamed(RouteName.loginPasien),
                         label: 'Masuk Sebagai Pasien',
+                      ),
+                      Gap(16),
+                      Text(
+                        'Admin menggunakan portal web desktop.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColor.textGrayColor,
+                        ),
                       ),
                       Gap(16),
                       Row(

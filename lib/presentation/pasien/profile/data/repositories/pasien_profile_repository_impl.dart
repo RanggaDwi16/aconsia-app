@@ -28,9 +28,9 @@ class PasienProfileRepositoryImpl implements PasienProfileRepository {
   }
 
   @override
-  Future<Either<String, bool>> checkProfileExists() async {
+  Future<Either<String, bool>> checkProfileExists({required String uid}) async {
     try {
-      final result = await remoteDataSource.checkProfileExists();
+      final result = await remoteDataSource.checkProfileExists(uid: uid);
       return result.fold(
         (failure) => Left(failure),
         (exists) => Right(exists),

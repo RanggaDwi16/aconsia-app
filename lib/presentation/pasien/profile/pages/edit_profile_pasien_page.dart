@@ -6,10 +6,8 @@ import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/update_pasien_profile/patch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/utils/constant/app_colors.dart';
@@ -58,7 +56,6 @@ class EditProfilePasienPage extends HookConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(authenticationProvider.notifier).getCurrentUser(
           onSuccess: (user) {
-            print('user di edit profile: $user');
             namaController.text = user.name ?? '';
             emailController.text = user.email;
           },
@@ -74,11 +71,10 @@ class EditProfilePasienPage extends HookConsumerWidget {
           namaController.text = pasienProfile.namaLengkap ?? '';
           noRekamMedisController.text = pasienProfile.noRekamMedis ?? '';
           nikController.text = pasienProfile.nik ?? '';
-          tanggalLahirController.text = tanggalLahirController.text =
-              pasienProfile.tanggalLahir != null
-                  ? DateFormat('d/M/yyyy')
-                      .format(pasienProfile.tanggalLahir!.toDate())
-                  : '';
+          tanggalLahirController.text = pasienProfile.tanggalLahir != null
+              ? DateFormat('d/M/yyyy')
+                  .format(pasienProfile.tanggalLahir!.toDate())
+              : '';
 
           jenisKelaminController.text = pasienProfile.jenisKelamin ?? '';
           emailController.text = pasienProfile.email ?? '';
@@ -140,74 +136,101 @@ class EditProfilePasienPage extends HookConsumerWidget {
         title: 'Edit Profile',
         centertitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                namaController.text,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Gap(8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColor.primaryColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Pasien',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColor.primaryWhite,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF2F8FF),
+              Color(0xFFFFFFFF),
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFDCEAFF)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        namaController.text.isEmpty ? 'Pasien' : namaController.text,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const Gap(8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColor.primaryColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Perbarui data profil pasien',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColor.primaryWhite,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              Gap(24),
-              PasienChooseDokterWidget(
-                dokterController: dokterController,
-                isEditable: true,
-              ),
-              Gap(24),
-              PasienPersonalInformationWidget(
-                isEditable: true,
-                namaController: namaController,
-                noRekamMedisController: noRekamMedisController,
-                nikController: nikController,
-                tanggalLahirController: tanggalLahirController,
-                jenisKelaminController: jenisKelaminController,
-              ),
-              Gap(16),
-              PasienContactWidget(
-                isEditable: true,
-                emailController: emailController,
-                phoneController: phoneController,
-              ),
-              Gap(16),
-              PasienMedicInformationWidget(
-                isEditable: true,
-                jenisOperasiController: jenisOperasiController,
-                jenisAnestesiController: jenisAnestesiController,
-                klasifikasiasaController: klasifikasiasaController,
-                tinggiBadanController: tinggiBadanController,
-                beratBadanController: beratBadanController,
-                isDokterInput: false,
-              ),
-              Gap(16),
-              PasienWaliInformationWidget(
-                isEditable: true,
-                namaController: namaWaliController,
-                hubunganController: hubunganController,
-                nomorHpController: nomorHpController,
-                alamatController: alamatController,
-              ),
-            ],
+                const Gap(20),
+                PasienChooseDokterWidget(
+                  dokterController: dokterController,
+                  isEditable: true,
+                ),
+                const Gap(24),
+                PasienPersonalInformationWidget(
+                  isEditable: true,
+                  namaController: namaController,
+                  noRekamMedisController: noRekamMedisController,
+                  nikController: nikController,
+                  tanggalLahirController: tanggalLahirController,
+                  jenisKelaminController: jenisKelaminController,
+                ),
+                const Gap(16),
+                PasienContactWidget(
+                  isEditable: true,
+                  emailController: emailController,
+                  phoneController: phoneController,
+                ),
+                const Gap(16),
+                PasienMedicInformationWidget(
+                  isEditable: true,
+                  jenisOperasiController: jenisOperasiController,
+                  jenisAnestesiController: jenisAnestesiController,
+                  klasifikasiasaController: klasifikasiasaController,
+                  tinggiBadanController: tinggiBadanController,
+                  beratBadanController: beratBadanController,
+                  isDokterInput: false,
+                ),
+                const Gap(16),
+                PasienWaliInformationWidget(
+                  isEditable: true,
+                  namaController: namaWaliController,
+                  hubunganController: hubunganController,
+                  nomorHpController: nomorHpController,
+                  alamatController: alamatController,
+                ),
+              ],
+            ),
           ),
         ),
       ),
