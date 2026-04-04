@@ -4,8 +4,11 @@ import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_dropdown.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_text_field.dart';
 import 'package:aconsia_app/core/services/image_picker_service.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/core/main/data/models/konten_model.dart';
 import 'package:aconsia_app/core/main/data/models/konten_section_model.dart';
@@ -15,8 +18,6 @@ import 'package:aconsia_app/presentation/dokter/profile/providers/upload_photo_p
 import 'package:aconsia_app/presentation/dokter/konten/data/data_konten.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
@@ -80,166 +81,130 @@ class AddKontenPage extends HookConsumerWidget {
         isiKontenController.text.isEmpty;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        customTitleWidget: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Buat Konten Baru',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
+      body: AconsiaPageBackground(
+        colors: const [Color(0xFFF8FAFC), UiPalette.white],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(UiSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AconsiaTopActionRow(
+                title: 'Buat Konten Baru',
+                subtitle: 'Tambah materi edukasi untuk pasien',
+                onBack: () => context.pop(),
               ),
-            ),
-            Gap(4),
-            Text(
-              'Tambahkan materi edukasi anestesi',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
+              const Gap(UiSpacing.md),
+              const AconsiaSectionTitle(
+                title: 'Informasi Dasar',
+                subtitle: 'Detail umum tentang konten edukasi',
+                titleSize: 22,
               ),
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Dasar',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Gap(8),
-            Text(
-              'Detail umum tentang Konten Edukasi',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
-                color: AppColor.textGrayColor,
-              ),
-            ),
-            Gap(16),
+              const Gap(UiSpacing.md),
             CustomTextField(
               isRequired: true,
               controller: judulController,
               labelText: 'Judul Konten',
               hintText: 'Masukkan judul konten',
             ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             CustomDropdown(
               isRequired: true,
               items: jenisAnestesi,
               title: 'Jenis Anestesi',
               onChanged: (p0) {
-                jenisAnestesiController.text = p0 ?? '';
+                jenisAnestesiController.text = p0;
               },
               selectedValue: jenisAnestesiController.text.isEmpty
                   ? null
                   : jenisAnestesiController.text,
             ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             CustomDropdown(
               isRequired: true,
               items: tataCara,
               title: 'Tata Cara',
               onChanged: (p0) {
-                tataCaraController.text = p0 ?? '';
+                tataCaraController.text = p0;
               },
               selectedValue: tataCaraController.text.isEmpty
                   ? null
                   : tataCaraController.text,
             ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             CustomDropdown(
               isRequired: true,
               items: resikoTindakan,
               title: 'Resiko Tindakan',
               onChanged: (p0) {
-                resikoTindakanController.text = p0 ?? '';
+                resikoTindakanController.text = p0;
               },
               selectedValue: resikoTindakanController.text.isEmpty
                   ? null
                   : resikoTindakanController.text,
             ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             CustomDropdown(
               isRequired: true,
               items: komplikasi,
               title: 'Komplikasi',
               onChanged: (p0) {
-                komplikasiController.text = p0 ?? '';
+                komplikasiController.text = p0;
               },
               selectedValue: komplikasiController.text.isEmpty
                   ? null
                   : komplikasiController.text,
             ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             CustomDropdown(
               isRequired: true,
               items: indikasiTindakan,
               title: 'Indikasi Tindakan',
               onChanged: (p0) {
-                indikasiTindakanController.text = p0 ?? '';
+                indikasiTindakanController.text = p0;
               },
               selectedValue: indikasiTindakanController.text.isEmpty
                   ? null
                   : indikasiTindakanController.text,
             ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             CustomTextField(
               controller: prognosisController,
               labelText: 'Prognosis',
               hintText: 'Masukkan prognosis',
               isRequired: true,
             ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             CustomTextField(
               controller: alternatifLainController,
               labelText: 'Alternatif Lain dan resiko',
               hintText: 'Masukkan alternatif lain dan resiko',
               isRequired: true,
             ),
-            Gap(32),
-            Text(
-              'Gambar Konten',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            const Gap(UiSpacing.xxl),
+            const AconsiaSectionTitle(
+              title: 'Gambar Konten',
+              subtitle: 'Berikan gambaran tentang konten edukasi Anda',
+              titleSize: 22,
             ),
-            Gap(8),
-            Text(
-              'Berikan gambaran tentang konten edukasi Anda',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
-                color: AppColor.textGrayColor,
-              ),
-            ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             GestureDetector(
               onTap: pickImage,
               child: Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(UiSpacing.md),
                 height: context.deviceHeight * 0.2,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: AppColor.borderColor,
+                    color: UiPalette.slate200,
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: selectedImage.value != null
                     ? Stack(
                         children: [
                           // Preview gambar
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             child: Image.file(
                               selectedImage.value!,
                               width: double.infinity,
@@ -250,7 +215,7 @@ class AddKontenPage extends HookConsumerWidget {
                           // Overlay dengan tombol ganti
                           Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               color: Colors.black.withOpacity(0.3),
                             ),
                             child: Center(
@@ -286,16 +251,16 @@ class AddKontenPage extends HookConsumerWidget {
                               width: 48,
                               height: 48,
                               colorFilter: const ColorFilter.mode(
-                                AppColor.textGrayColor,
+                                UiPalette.slate500,
                                 BlendMode.srcIn,
                               ),
                             ),
-                            Gap(8),
+                            const Gap(UiSpacing.sm),
                             Text(
                               'Upload Gambar Konten',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: AppColor.textGrayColor,
+                                color: UiPalette.slate500,
                               ),
                             ),
                           ],
@@ -303,51 +268,41 @@ class AddKontenPage extends HookConsumerWidget {
                       ),
               ),
             ),
-            Gap(32),
-            Text(
-              'Bagian Konten',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            const Gap(UiSpacing.xxl),
+            const AconsiaSectionTitle(
+              title: 'Bagian Konten',
+              subtitle: 'Materi edukasi yang akan dipelajari pasien',
+              titleSize: 22,
             ),
-            Gap(8),
-            Text(
-              'Materi edukasi yang akan dipelajari pasien',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
-                color: AppColor.textGrayColor,
-              ),
-            ),
-            Gap(16),
+            const Gap(UiSpacing.md),
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(UiSpacing.md),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: AppColor.borderColor,
+                  color: UiPalette.slate200,
                   width: 1,
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Bagian',
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: UiPalette.slate900,
                     ),
                   ),
-                  Gap(16),
+                  const Gap(UiSpacing.md),
                   CustomTextField(
                     isRequired: true,
                     controller: judulBagianController,
                     labelText: 'Judul Bagian',
                     hintText: 'Masukkan judul bagian konten',
                   ),
-                  Gap(16),
+                  const Gap(UiSpacing.md),
                   CustomTextField(
                     isRequired: true,
                     controller: isiKontenController,
@@ -357,9 +312,10 @@ class AddKontenPage extends HookConsumerWidget {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
+      ),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -420,7 +376,6 @@ class AddKontenPage extends HookConsumerWidget {
                     context.pop();
                   },
                   onError: (messagge) {
-                    print('error di sini $messagge');
                     context.showErrorSnackbar(context, messagge);
                   },
                 );

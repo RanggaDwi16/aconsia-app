@@ -1,6 +1,9 @@
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_learning_summary_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
@@ -83,17 +86,11 @@ class ProfilePasienPage extends HookConsumerWidget {
     }, [profilePasien]);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF2F8FF),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
+      body: AconsiaPageBackground(
+        colors: const [
+          UiPalette.blue50,
+          UiPalette.white,
+        ],
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(fetchPasienProfileProvider);
@@ -110,25 +107,25 @@ class ProfilePasienPage extends HookConsumerWidget {
             await Future.delayed(const Duration(milliseconds: 500));
           },
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             child: Center(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Gap(16),
+                  const Gap(UiSpacing.md),
                   _buildHeader(
                     nama: namaController.text,
                     email: emailController.text,
                   ),
-                  const Gap(14),
+                  const Gap(UiSpacing.sm),
                   _buildTabSwitcher(
                     selectedTab: selectedTab.value,
                     onSelect: (tab) => selectedTab.value = tab,
                   ),
-                  const Gap(16),
+                  const Gap(UiSpacing.md),
                   if (selectedTab.value == _ProfileTab.info) ...[
                     PasienChooseDokterWidget(dokterController: dokterController),
-                    const Gap(16),
+                    const Gap(UiSpacing.md),
                     PasienPersonalInformationWidget(
                       namaController: namaController,
                       noRekamMedisController: noRekamMedisController,
@@ -136,12 +133,12 @@ class ProfilePasienPage extends HookConsumerWidget {
                       tanggalLahirController: tanggalLahirController,
                       jenisKelaminController: jenisKelaminController,
                     ),
-                    const Gap(16),
+                    const Gap(UiSpacing.md),
                     PasienContactWidget(
                       emailController: emailController,
                       phoneController: phoneController,
                     ),
-                    const Gap(16),
+                    const Gap(UiSpacing.md),
                     PasienMedicInformationWidget(
                       jenisOperasiController: jenisOperasiController,
                       jenisAnestesiController: jenisAnestesiController,
@@ -150,7 +147,7 @@ class ProfilePasienPage extends HookConsumerWidget {
                       beratBadanController: beratBadanController,
                       isDokterInput: true,
                     ),
-                    const Gap(16),
+                    const Gap(UiSpacing.md),
                     PasienWaliInformationWidget(
                       namaController: namaWaliController,
                       hubunganController: hubunganController,
@@ -158,7 +155,7 @@ class ProfilePasienPage extends HookConsumerWidget {
                       alamatController: alamatController,
                     ),
                   ] else ...[
-                    _buildPerformaTab(learningSummaryAsync),
+                    _buildPerformaTab(context, learningSummaryAsync),
                   ],
                 ],
               ),
@@ -167,20 +164,24 @@ class ProfilePasienPage extends HookConsumerWidget {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(UiSpacing.md),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Button.filled(
               onPressed: () => context.pushNamed(RouteName.editProfilePasien),
               label: 'Edit Data Diri',
+              color: UiPalette.blue600,
+              borderColor: UiPalette.blue600,
+              borderRadius: 12,
+              height: 52,
             ),
-            const Gap(12),
+            const Gap(UiSpacing.sm),
             Button.outlined(
               onPressed: () => context.showLogoutDialog(ref),
               label: 'Keluar',
-              borderColor: AppColor.primaryRed,
-              textColor: AppColor.primaryRed,
+              borderColor: UiPalette.red600,
+              textColor: UiPalette.red600,
             ),
           ],
         ),
@@ -189,14 +190,10 @@ class ProfilePasienPage extends HookConsumerWidget {
   }
 
   Widget _buildHeader({required String nama, required String email}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFDCEAFF)),
-      ),
+    return AconsiaCardSurface(
+      padding: const EdgeInsets.all(UiSpacing.md),
+      borderColor: const Color(0xFFDCEAFF),
+      radius: 14,
       child: Column(
         children: [
           CircleAvatar(
@@ -204,43 +201,39 @@ class ProfilePasienPage extends HookConsumerWidget {
             backgroundColor: const Color(0xFFE6F0FF),
             child: Text(
               (nama.isNotEmpty ? nama : 'Pasien').substring(0, 1).toUpperCase(),
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColor.primaryColor,
+              style: UiTypography.h2.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: UiPalette.blue600,
               ),
             ),
           ),
-          const Gap(10),
+          const Gap(UiSpacing.xs),
           Text(
             nama.isEmpty ? 'Pasien' : nama,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            style: UiTypography.title.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
             ),
             textAlign: TextAlign.center,
           ),
-          const Gap(4),
+          const Gap(UiSpacing.xxs),
           Text(
             email,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColor.textGrayColor,
-            ),
+            style: UiTypography.caption,
             textAlign: TextAlign.center,
           ),
-          const Gap(8),
+          const Gap(UiSpacing.xs),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColor.primaryColor,
+              color: UiPalette.blue600,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
+            child: Text(
               'Role: Pasien',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColor.primaryWhite,
+              style: UiTypography.caption.copyWith(
+                color: UiPalette.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -266,19 +259,18 @@ class ProfilePasienPage extends HookConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? const Color(0xFF0EA5E9) : Colors.white,
+              color: selected ? UiPalette.blue600 : Colors.white,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected ? const Color(0xFF0EA5E9) : const Color(0xFFDCE7F5),
+                color: selected ? UiPalette.blue600 : const Color(0xFFDCE7F5),
               ),
             ),
             child: Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
+              style: UiTypography.caption.copyWith(
                 fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : const Color(0xFF3E536C),
+                color: selected ? Colors.white : UiPalette.slate600,
               ),
             ),
           ),
@@ -289,21 +281,18 @@ class ProfilePasienPage extends HookConsumerWidget {
     return Row(
       children: [
         pill(text: 'Informasi', tab: _ProfileTab.info),
-        const Gap(8),
+        const Gap(UiSpacing.xs),
         pill(text: 'Performa', tab: _ProfileTab.performa),
       ],
     );
   }
 
-  Widget _buildPerformaTab(AsyncValue<PasienLearningSummary> summaryAsync) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2EAF4)),
-      ),
+  Widget _buildPerformaTab(
+    BuildContext context,
+    AsyncValue<PasienLearningSummary> summaryAsync,
+  ) {
+    return AconsiaCardSurface(
+      borderColor: const Color(0xFFE2EAF4),
       child: summaryAsync.when(
         data: (summary) {
           return Column(
@@ -311,21 +300,14 @@ class ProfilePasienPage extends HookConsumerWidget {
             children: [
               const Text(
                 'Ringkasan Performa',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF132A45),
-                ),
+                style: UiTypography.title,
               ),
-              const Gap(8),
+              const Gap(UiSpacing.xs),
               Text(
-                'Progress belajar dan hasil quiz terbaru Anda.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColor.textGrayColor,
-                ),
+                'Progress belajar dan hasil sesi pembelajaran terbaru Anda.',
+                style: UiTypography.bodySmall,
               ),
-              const Gap(14),
+              const Gap(UiSpacing.sm),
               Row(
                 children: [
                   Expanded(
@@ -335,7 +317,7 @@ class ProfilePasienPage extends HookConsumerWidget {
                       color: const Color(0xFF0EA5E9),
                     ),
                   ),
-                  const Gap(8),
+                  const Gap(UiSpacing.xs),
                   Expanded(
                     child: _metric(
                       title: 'Materi Selesai',
@@ -345,7 +327,7 @@ class ProfilePasienPage extends HookConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(10),
+              const Gap(UiSpacing.xs),
               Row(
                 children: [
                   Expanded(
@@ -355,31 +337,39 @@ class ProfilePasienPage extends HookConsumerWidget {
                       color: const Color(0xFFF59E0B),
                     ),
                   ),
-                  const Gap(8),
+                  const Gap(UiSpacing.xs),
                   Expanded(
                     child: _metric(
-                      title: 'Rata-rata Quiz',
+                      title: 'Rata-rata Sesi AI',
                       value: '${summary.averageQuizScore.toStringAsFixed(0)}%',
                       color: const Color(0xFF7C3AED),
                     ),
                   ),
                 ],
               ),
-              const Gap(12),
+              const Gap(UiSpacing.sm),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => context.pushNamed(
+                    RouteName.chatAi,
+                    extra: const {'source': 'profile_performa'},
+                  ),
+                  icon: const Icon(Icons.smart_toy_outlined),
+                  label: const Text('Diskusi dengan AI'),
+                ),
+              ),
+              const Gap(UiSpacing.xs),
               if (summary.latestQuiz == null)
                 Text(
-                  'Belum ada hasil quiz. Lanjutkan pembelajaran untuk melihat insight lebih detail.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColor.textGrayColor,
-                  ),
+                  'Belum ada hasil sesi. Lanjutkan pembelajaran untuk melihat insight lebih detail.',
+                  style: UiTypography.caption,
                 )
               else
                 Text(
-                  'Quiz terakhir: ${summary.latestQuiz!.overallScore}% • ${summary.latestQuiz!.status}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF51657D),
+                  'Sesi terakhir: ${summary.latestQuiz!.overallScore}% • ${summary.latestQuiz!.status}',
+                  style: UiTypography.caption.copyWith(
+                    color: const Color(0xFF51657D),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -393,8 +383,8 @@ class ProfilePasienPage extends HookConsumerWidget {
         error: (error, _) => Text(
           'Gagal memuat performa: $error',
           style: const TextStyle(
-            color: AppColor.primaryRed,
-            fontSize: 12,
+            color: UiPalette.red600,
+            fontSize: 13,
           ),
         ),
       ),
@@ -418,7 +408,7 @@ class ProfilePasienPage extends HookConsumerWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               color: Color(0xFF5F748B),
               fontWeight: FontWeight.w500,
             ),
@@ -426,8 +416,8 @@ class ProfilePasienPage extends HookConsumerWidget {
           const Gap(6),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
+            style: UiTypography.title.copyWith(
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: color,
             ),

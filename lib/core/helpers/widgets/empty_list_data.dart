@@ -1,7 +1,7 @@
 // A widget that displays a styled message indicating an empty data list.
 
 import 'package:flutter/material.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 
 Widget emptyListData(BuildContext context) {
@@ -34,7 +34,7 @@ Widget emptyListData(BuildContext context) {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: AppColor.primaryColor.withOpacity(0.1),
+                    color: UiPalette.blue50,
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -49,7 +49,7 @@ Widget emptyListData(BuildContext context) {
                   child: Icon(
                     Icons.hourglass_empty_outlined,
                     size: 40,
-                    color: AppColor.textGrayColor,
+                    color: UiPalette.slate500,
                   ),
                 ),
               ),

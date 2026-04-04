@@ -19,7 +19,6 @@ import 'package:aconsia_app/presentation/dokter/profile/pages/edit_profile_page.
 import 'package:aconsia_app/presentation/pasien/home/pages/all_recommendations_page.dart';
 import 'package:aconsia_app/presentation/pasien/konten/pages/chat_ai_page.dart';
 import 'package:aconsia_app/presentation/pasien/konten/pages/detail_konten_page.dart';
-import 'package:aconsia_app/presentation/pasien/konten/pages/hasil_chat_ai_page.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/pages/quiz_result_page.dart';
 import 'package:aconsia_app/presentation/pasien/main/pages/main_pasien_page.dart';
 import 'package:aconsia_app/presentation/pasien/profile/pages/edit_profile_pasien_page.dart';
@@ -68,7 +67,6 @@ Raw<GoRouter> router(Ref ref) {
         RouteName.profilePasien,
         RouteName.editProfilePasien,
         RouteName.chatAi,
-        RouteName.hasilChatAi,
         RouteName.quizResult,
         RouteName.allRecommendations,
       };
@@ -231,12 +229,16 @@ Raw<GoRouter> router(Ref ref) {
       GoRoute(
         path: '/chat-ai',
         name: RouteName.chatAi,
-        builder: (context, state) => ChatAiPage(),
-      ),
-      GoRoute(
-        path: '/hasil-chat-ai',
-        name: RouteName.hasilChatAi,
-        builder: (context, state) => HasilChatAiPage(),
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            return ChatAiPage(
+              kontenId: extra['kontenId'] as String?,
+              sourceScreen: extra['source'] as String?,
+            );
+          }
+          return const ChatAiPage();
+        },
       ),
       GoRoute(
         path: '/quiz-result',
@@ -263,6 +265,7 @@ Raw<GoRouter> router(Ref ref) {
             sessionId: data['sessionId'],
             quizResults: quizResults,
             preGeneratedSummary: data['summary'], // For free chat mode
+            source: data['source'] as String?,
           );
         },
       ),

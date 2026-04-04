@@ -1,4 +1,5 @@
 import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -54,98 +55,44 @@ class AppTheme {
           ),
         ),
       ),
-      primaryTextTheme: const TextTheme(
-        displayLarge: TextStyle(
-            color: Colors.white, fontSize: 32, fontWeight: FontWeight.w600),
-        displayMedium: TextStyle(
-            color: Colors.white, fontSize: 28, fontWeight: FontWeight.w500),
-        displaySmall: TextStyle(
-            color: Colors.white, fontSize: 24, fontWeight: FontWeight.w600),
-        headlineLarge: TextStyle(
-            color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
-        headlineMedium: TextStyle(
-            color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
-        headlineSmall: TextStyle(
-            color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-        titleLarge: TextStyle(
-            color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
-        titleMedium: TextStyle(
-            color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
-        titleSmall: TextStyle(
-            color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400),
-        bodyLarge: TextStyle(
-            color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
-        bodyMedium: TextStyle(
-            color: Colors.white, fontSize: 14, fontWeight: FontWeight.w400),
-        bodySmall: TextStyle(color: Colors.white, fontSize: 12),
-        labelLarge: TextStyle(
-            color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-        labelMedium: TextStyle(
-            color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-        labelSmall: TextStyle(
-            color: Colors.white, fontSize: 10, fontWeight: FontWeight.w400),
+      primaryTextTheme: TextTheme(
+        displayLarge: UiTypography.display.copyWith(color: Colors.white),
+        displayMedium: UiTypography.h1.copyWith(color: Colors.white),
+        displaySmall: UiTypography.h2.copyWith(color: Colors.white),
+        headlineLarge: UiTypography.h2.copyWith(color: Colors.white),
+        headlineMedium: UiTypography.title.copyWith(color: Colors.white),
+        headlineSmall: UiTypography.title.copyWith(color: Colors.white),
+        titleLarge: UiTypography.label.copyWith(color: Colors.white),
+        titleMedium: UiTypography.body.copyWith(color: Colors.white),
+        titleSmall: UiTypography.caption.copyWith(color: Colors.white),
+        bodyLarge: UiTypography.body.copyWith(color: Colors.white),
+        bodyMedium: UiTypography.bodySmall.copyWith(color: Colors.white),
+        bodySmall: UiTypography.caption.copyWith(color: Colors.white),
+        labelLarge: UiTypography.button.copyWith(color: Colors.white),
+        labelMedium: UiTypography.caption.copyWith(color: Colors.white),
+        labelSmall: UiTypography.caption.copyWith(color: Colors.white),
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 32,
-            fontWeight: FontWeight.w600),
-        displayMedium: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 28,
-            fontWeight: FontWeight.w500),
-        displaySmall: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 24,
-            fontWeight: FontWeight.w600),
-        headlineLarge: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 22,
-            fontWeight: FontWeight.w600),
-        headlineMedium: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 20,
-            fontWeight: FontWeight.w600),
-        headlineSmall: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 18,
-            fontWeight: FontWeight.w600),
-        titleLarge: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 16,
-            fontWeight: FontWeight.w500),
-        titleMedium: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 14,
-            fontWeight: FontWeight.w500),
-        titleSmall: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 12,
-            fontWeight: FontWeight.w400),
-        bodyLarge: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 16,
-            fontWeight: FontWeight.w400),
-        bodyMedium: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 14,
-            fontWeight: FontWeight.w400),
-        bodySmall: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 12,
-            fontWeight: FontWeight.w400),
-        labelLarge: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 14,
-            fontWeight: FontWeight.w600),
-        labelMedium: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 12,
-            fontWeight: FontWeight.w500),
-        labelSmall: TextStyle(
-            color: AppColor.primaryBlack,
-            fontSize: 10,
-            fontWeight: FontWeight.w400),
+      textTheme: TextTheme(
+        displayLarge:
+            UiTypography.display.copyWith(color: AppColor.primaryBlack),
+        displayMedium: UiTypography.h1.copyWith(color: AppColor.primaryBlack),
+        displaySmall: UiTypography.h2.copyWith(color: AppColor.primaryBlack),
+        headlineLarge: UiTypography.h2.copyWith(color: AppColor.primaryBlack),
+        headlineMedium:
+            UiTypography.title.copyWith(color: AppColor.primaryBlack),
+        headlineSmall:
+            UiTypography.title.copyWith(color: AppColor.primaryBlack),
+        titleLarge: UiTypography.label.copyWith(color: AppColor.primaryBlack),
+        titleMedium: UiTypography.body.copyWith(color: AppColor.primaryBlack),
+        titleSmall: UiTypography.caption.copyWith(color: AppColor.primaryBlack),
+        bodyLarge: UiTypography.body.copyWith(color: AppColor.primaryBlack),
+        bodyMedium:
+            UiTypography.bodySmall.copyWith(color: AppColor.primaryBlack),
+        bodySmall: UiTypography.caption.copyWith(color: AppColor.primaryBlack),
+        labelLarge: UiTypography.button.copyWith(color: AppColor.primaryBlack),
+        labelMedium:
+            UiTypography.caption.copyWith(color: AppColor.primaryBlack),
+        labelSmall: UiTypography.caption.copyWith(color: AppColor.primaryBlack),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
@@ -228,68 +175,39 @@ class AppTheme {
         ),
       ),
     ),
-    primaryTextTheme: const TextTheme(
-      displayLarge: TextStyle(
-          color: AppColor.textColor, fontSize: 32, fontWeight: FontWeight.w600),
-      displayMedium: TextStyle(
-          color: AppColor.textColor, fontSize: 28, fontWeight: FontWeight.w500),
-      displaySmall: TextStyle(
-          color: AppColor.textColor, fontSize: 24, fontWeight: FontWeight.w600),
-      headlineLarge: TextStyle(
-          color: AppColor.textColor, fontSize: 22, fontWeight: FontWeight.w600),
-      headlineMedium: TextStyle(
-          color: AppColor.textColor, fontSize: 20, fontWeight: FontWeight.w600),
-      headlineSmall: TextStyle(
-          color: AppColor.textColor, fontSize: 18, fontWeight: FontWeight.w600),
-      titleLarge: TextStyle(
-          color: AppColor.textColor, fontSize: 16, fontWeight: FontWeight.w500),
-      titleMedium: TextStyle(
-          color: AppColor.textColor, fontSize: 14, fontWeight: FontWeight.w500),
-      titleSmall: TextStyle(
-          color: AppColor.textColor, fontSize: 12, fontWeight: FontWeight.w400),
-      bodyLarge: TextStyle(
-          color: AppColor.textColor, fontSize: 16, fontWeight: FontWeight.w400),
-      bodyMedium: TextStyle(
-          color: AppColor.textColor, fontSize: 14, fontWeight: FontWeight.w400),
-      bodySmall: TextStyle(color: AppColor.textColor, fontSize: 12),
-      labelLarge: TextStyle(
-          color: AppColor.textColor, fontSize: 14, fontWeight: FontWeight.w600),
-      labelMedium: TextStyle(
-          color: AppColor.textColor, fontSize: 12, fontWeight: FontWeight.w500),
-      labelSmall: TextStyle(
-          color: AppColor.textColor, fontSize: 10, fontWeight: FontWeight.w400),
+    primaryTextTheme: TextTheme(
+      displayLarge: UiTypography.display.copyWith(color: AppColor.textColor),
+      displayMedium: UiTypography.h1.copyWith(color: AppColor.textColor),
+      displaySmall: UiTypography.h2.copyWith(color: AppColor.textColor),
+      headlineLarge: UiTypography.h2.copyWith(color: AppColor.textColor),
+      headlineMedium: UiTypography.title.copyWith(color: AppColor.textColor),
+      headlineSmall: UiTypography.title.copyWith(color: AppColor.textColor),
+      titleLarge: UiTypography.label.copyWith(color: AppColor.textColor),
+      titleMedium: UiTypography.body.copyWith(color: AppColor.textColor),
+      titleSmall: UiTypography.caption.copyWith(color: AppColor.textColor),
+      bodyLarge: UiTypography.body.copyWith(color: AppColor.textColor),
+      bodyMedium: UiTypography.bodySmall.copyWith(color: AppColor.textColor),
+      bodySmall: UiTypography.caption.copyWith(color: AppColor.textColor),
+      labelLarge: UiTypography.button.copyWith(color: AppColor.textColor),
+      labelMedium: UiTypography.caption.copyWith(color: AppColor.textColor),
+      labelSmall: UiTypography.caption.copyWith(color: AppColor.textColor),
     ),
-    textTheme: const TextTheme(
-      displayLarge: TextStyle(
-          color: Colors.white, fontSize: 32, fontWeight: FontWeight.w600),
-      displayMedium: TextStyle(
-          color: Colors.white, fontSize: 28, fontWeight: FontWeight.w500),
-      displaySmall: TextStyle(
-          color: Colors.white, fontSize: 24, fontWeight: FontWeight.w600),
-      headlineLarge: TextStyle(
-          color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
-      headlineMedium: TextStyle(
-          color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
-      headlineSmall: TextStyle(
-          color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-      titleLarge: TextStyle(
-          color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
-      titleMedium: TextStyle(
-          color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
-      titleSmall: TextStyle(
-          color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400),
-      bodyLarge: TextStyle(
-          color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
-      bodyMedium: TextStyle(
-          color: Colors.white, fontSize: 14, fontWeight: FontWeight.w400),
-      bodySmall: TextStyle(
-          color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400),
-      labelLarge: TextStyle(
-          color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-      labelMedium: TextStyle(
-          color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-      labelSmall: TextStyle(
-          color: Colors.white, fontSize: 10, fontWeight: FontWeight.w400),
+    textTheme: TextTheme(
+      displayLarge: UiTypography.display.copyWith(color: Colors.white),
+      displayMedium: UiTypography.h1.copyWith(color: Colors.white),
+      displaySmall: UiTypography.h2.copyWith(color: Colors.white),
+      headlineLarge: UiTypography.h2.copyWith(color: Colors.white),
+      headlineMedium: UiTypography.title.copyWith(color: Colors.white),
+      headlineSmall: UiTypography.title.copyWith(color: Colors.white),
+      titleLarge: UiTypography.label.copyWith(color: Colors.white),
+      titleMedium: UiTypography.body.copyWith(color: Colors.white),
+      titleSmall: UiTypography.caption.copyWith(color: Colors.white),
+      bodyLarge: UiTypography.body.copyWith(color: Colors.white),
+      bodyMedium: UiTypography.bodySmall.copyWith(color: Colors.white),
+      bodySmall: UiTypography.caption.copyWith(color: Colors.white),
+      labelLarge: UiTypography.button.copyWith(color: Colors.white),
+      labelMedium: UiTypography.caption.copyWith(color: Colors.white),
+      labelSmall: UiTypography.caption.copyWith(color: Colors.white),
     ),
   );
 }

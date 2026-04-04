@@ -1,10 +1,13 @@
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/main/controllers/auth/authentication_provider.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_auth_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_text_field.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -51,38 +54,79 @@ class ForgotPasswordPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Reset Password',
-        centertitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Masukkan alamat email Anda untuk melakukan reset password.',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: AppColor.textGrayColor,
+      backgroundColor: UiPalette.blue50,
+      body: SafeArea(
+        child: AconsiaPageBackground(
+          colors: const [UiPalette.blue50, UiPalette.white],
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: UiSpacing.pageHorizontal,
+                    vertical: UiSpacing.pageVertical,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                        children: [
+                          AconsiaAuthBackButton(
+                            onPressed: () => Navigator.of(context).maybePop(),
+                          ),
+                          const Gap(UiSpacing.xl),
+                          AconsiaAuthCard(
+                            child: Column(
+                              children: [
+                                const Icon(
+                                  Icons.lock_reset_rounded,
+                                  size: 40,
+                                  color: UiPalette.blue600,
+                                ),
+                                const Gap(UiSpacing.sm),
+                                const Text(
+                                  'Reset Password',
+                                  style: UiTypography.h2,
+                                ),
+                                const Gap(UiSpacing.xs),
+                                const Text(
+                                  'Masukkan alamat email Anda untuk menerima link reset password.',
+                                  textAlign: TextAlign.center,
+                                  style: UiTypography.body,
+                                ),
+                                const Gap(UiSpacing.lg),
+                                CustomTextField(
+                                  controller: emailController,
+                                  labelText: 'Email',
+                                  hintText: 'Masukkan email Anda',
+                                  prefixIcon: const Icon(Icons.email_outlined),
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                                const Gap(UiSpacing.xl),
+                                Button.filled(
+                                  disabled: emailController.text.isEmpty ||
+                                      auth.isLoading,
+                                  onPressed: handleSubmit,
+                                  label: auth.isLoading
+                                      ? 'Memproses...'
+                                      : 'Kirim Link Reset',
+                                  color: const Color(0xFF2563EB),
+                                  borderColor: const Color(0xFF2563EB),
+                                  height: 52,
+                                  borderRadius: 12,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            Gap(24),
-            CustomTextField(
-              controller: emailController,
-              hintText: 'Masukkan email Anda',
-              prefixIcon: Icon(Icons.email_outlined),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            Gap(36),
-            Button.filled(
-              disabled: emailController.text.isEmpty || auth.isLoading,
-              onPressed: handleSubmit,
-              label: auth.isLoading ? 'Memproses...' : 'Reset Password',
-            ),
-          ],
+              const AconsiaAuthFooter(),
+            ],
+          ),
         ),
       ),
     );

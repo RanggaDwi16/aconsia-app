@@ -1,7 +1,9 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_search_field.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/presentation/dokter/home/controllers/get_pasien_list_by_dokter_id/fetch_pasien_list_by_dokter_id_provider.dart';
 import 'package:aconsia_app/presentation/dokter/home/widgets/list_pasien_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,61 +26,35 @@ class ListActivePasienPage extends HookConsumerWidget {
         ref.watch(fetchPasienListByDokterIdProvider(dokterId: uid ?? ''));
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Kembali',
-        centertitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEFFAF3),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
+      body: AconsiaPageBackground(
+        colors: const [Color(0xFFF8FAFC), UiPalette.white],
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(fetchPasienListByDokterIdProvider);
             await Future.delayed(const Duration(milliseconds: 500));
           },
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Daftar Pasien',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                AconsiaTopActionRow(
+                  title: 'Review Pasien',
+                  subtitle:
+                      'Pantau pasien aktif, lakukan review data medis, dan lanjutkan edukasi.',
+                  onBack: () => Navigator.of(context).pop(),
                 ),
-                const Gap(8),
-                Text(
-                  'Pantau pasien aktif dan lanjutkan review data medis dengan cepat.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColor.textGrayColor,
-                  ),
-                ),
-                const Gap(16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFDCEAFF)),
-                  ),
+                const Gap(UiSpacing.sm),
+                const Gap(UiSpacing.md),
+                AconsiaCardSurface(
+                  borderColor: const Color(0xFFDCEAFF),
+                  padding: const EdgeInsets.all(UiSpacing.md),
                   child: pasienList.when(
                     data: (data) => Row(
                       children: [
                         const Icon(
                           Icons.groups_2_outlined,
-                          color: AppColor.primaryColor,
+                          color: UiPalette.blue600,
                         ),
                         const Gap(10),
                         Expanded(
@@ -87,6 +63,7 @@ class ListActivePasienPage extends HookConsumerWidget {
                             style: const TextStyle(
                               fontSize: 13,
                               color: Color(0xFF23415F),
+                              height: 1.4,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -113,7 +90,7 @@ class ListActivePasienPage extends HookConsumerWidget {
                     ),
                     error: (_, __) => const Row(
                       children: [
-                        Icon(Icons.error_outline, color: AppColor.primaryRed),
+                        Icon(Icons.error_outline, color: UiPalette.red600),
                         Gap(10),
                         Text(
                           'Gagal memuat jumlah pasien.',
@@ -127,21 +104,22 @@ class ListActivePasienPage extends HookConsumerWidget {
                     ),
                   ),
                 ),
-                const Gap(16),
-                Row(
+                const Gap(UiSpacing.md),
+                Wrap(
+                  spacing: UiSpacing.sm,
+                  runSpacing: UiSpacing.xs,
                   children: [
                     _buildFilterChip(
                       label: 'Semua',
                       selected: filterMode.value == _ReviewFilter.all,
                       onSelected: () => filterMode.value = _ReviewFilter.all,
                     ),
-                    const Gap(8),
                     _buildFilterChip(
                       label: 'Menunggu Review',
                       selected: filterMode.value == _ReviewFilter.pending,
-                      onSelected: () => filterMode.value = _ReviewFilter.pending,
+                      onSelected: () =>
+                          filterMode.value = _ReviewFilter.pending,
                     ),
-                    const Gap(8),
                     _buildFilterChip(
                       label: 'Siap Edukasi',
                       selected: filterMode.value == _ReviewFilter.ready,
@@ -149,7 +127,7 @@ class ListActivePasienPage extends HookConsumerWidget {
                     ),
                   ],
                 ),
-                const Gap(14),
+                const Gap(UiSpacing.sm),
                 CustomSearchField(
                   hintText: 'Cari nama pasien / no rekam medis...',
                   controller: searchController,
@@ -157,7 +135,7 @@ class ListActivePasienPage extends HookConsumerWidget {
                     searchQuery.value = value.trim().toLowerCase();
                   },
                 ),
-                const Gap(24),
+                const Gap(UiSpacing.xl),
                 pasienList.when(
                   data: (data) {
                     final allData = data ?? [];
@@ -183,7 +161,8 @@ class ListActivePasienPage extends HookConsumerWidget {
                     if (filteredByMode.isEmpty) {
                       return Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 36),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: UiSpacing.xxxl),
                           child: Column(
                             children: [
                               Icon(
@@ -193,13 +172,13 @@ class ListActivePasienPage extends HookConsumerWidget {
                                 size: 54,
                                 color: Colors.grey.shade500,
                               ),
-                              const Gap(10),
+                              const Gap(UiSpacing.sm),
                               Text(
                                 searchQuery.value.isEmpty
                                     ? 'Belum ada pasien aktif.'
                                     : 'Tidak ada pasien yang cocok.',
                                 style: TextStyle(
-                                  color: AppColor.textGrayColor,
+                                  color: UiPalette.slate500,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -213,7 +192,7 @@ class ListActivePasienPage extends HookConsumerWidget {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: filteredByMode.length,
-                      separatorBuilder: (_, __) => const Gap(12),
+                      separatorBuilder: (_, __) => const Gap(UiSpacing.md),
                       itemBuilder: (context, index) {
                         return ListPasienWidget(
                           pasien: filteredByMode[index],
@@ -241,26 +220,22 @@ class ListActivePasienPage extends HookConsumerWidget {
     required bool selected,
     required VoidCallback onSelected,
   }) {
-    return InkWell(
-      onTap: onSelected,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0EA5E9) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? const Color(0xFF0EA5E9) : const Color(0xFFDCE7F5),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : const Color(0xFF41556F),
-          ),
-        ),
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      selectedColor: UiPalette.blue100,
+      checkmarkColor: UiPalette.blue600,
+      backgroundColor: UiPalette.white,
+      side: BorderSide(
+        color: selected ? UiPalette.blue500 : UiPalette.slate300,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      labelStyle: TextStyle(
+        fontSize: 12.5,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        color: selected ? UiPalette.blue600 : const Color(0xFF41556F),
       ),
     );
   }

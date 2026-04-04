@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 
 class SuccessAction extends StatelessWidget {
   final String? iconPath;
@@ -49,7 +49,7 @@ class SuccessAction extends StatelessWidget {
                   style: textTheme.headlineSmall?.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColor.primaryBlack,
+                    color: UiPalette.slate900,
                   ),
                   textAlign: TextAlign.center,
                 ),

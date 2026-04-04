@@ -1,9 +1,10 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/main/data/models/konten_assignment_model.dart';
 import 'package:aconsia_app/core/main/data/models/konten_model.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_sections_by_konten_id/fetch_sections_by_konten_id_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/tag_widgets.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
@@ -33,7 +34,7 @@ class AssignmentDetailPage extends ConsumerWidget {
       fetchSectionsByKontenIdProvider(kontenId: konten.id!),
     );
 
-    // Check if quiz completed
+    // Check if sesi pembelajaran sudah punya ringkasan hasil
     final quizResultAsync = ref.watch(
       fetchQuizResultByKontenProvider(
         pasienId: uid,
@@ -48,14 +49,22 @@ class AssignmentDetailPage extends ConsumerWidget {
     final progressPercentage = (currentSection / totalSections).clamp(0.0, 1.0);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Detail Tugas',
-        centertitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: SafeArea(
+        child: AconsiaPageBackground(
+        colors: const [UiPalette.blue50, UiPalette.white],
+        child: SingleChildScrollView(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: AconsiaTopActionRow(
+                title: 'Detail Tugas',
+                subtitle: 'Pantau progres pembelajaran Anda',
+                onBack: () => context.pop(),
+              ),
+            ),
+            const Gap(12),
             // Konten image preview
             if (konten.gambarUrl != null && konten.gambarUrl!.isNotEmpty)
               Image.network(
@@ -85,8 +94,8 @@ class AssignmentDetailPage extends ConsumerWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColor.primaryColor.withOpacity(0.7),
-                      AppColor.primaryColor,
+                      UiPalette.blue600.withOpacity(0.7),
+                      UiPalette.blue600,
                     ],
                   ),
                 ),
@@ -104,6 +113,16 @@ class AssignmentDetailPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const AconsiaInfoBanner(
+                    icon: Icons.menu_book_outlined,
+                    message:
+                        'Selesaikan bacaan sampai akhir, lalu lanjutkan sesi AI untuk menuntaskan tugas.',
+                    backgroundColor: UiPalette.blue50,
+                    borderColor: UiPalette.blue100,
+                    iconColor: UiPalette.blue600,
+                    textColor: UiPalette.slate700,
+                  ),
+                  const Gap(12),
                   // Status badge
                   _buildStatusBadge(),
                   const Gap(16),
@@ -114,7 +133,7 @@ class AssignmentDetailPage extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColor.textColor,
+                      color: UiPalette.slate900,
                     ),
                   ),
                   const Gap(8),
@@ -175,6 +194,8 @@ class AssignmentDetailPage extends ConsumerWidget {
             ),
           ],
         ),
+        ),
+        ),
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
@@ -189,17 +210,34 @@ class AssignmentDetailPage extends ConsumerWidget {
           ],
         ),
         child: SafeArea(
-          child: Button.filled(
-            onPressed: () {
-              context.pushNamed(
-                RouteName.detailKonten,
-                extra: {
-                  'konten': konten,
-                  'initialSection': assignment.currentBagian,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Button.filled(
+                onPressed: () {
+                  context.pushNamed(
+                    RouteName.detailKonten,
+                    extra: konten.id,
+                  );
                 },
-              );
-            },
-            label: assignment.isCompleted ? 'Tugas Selesai ✓' : 'Mulai Belajar',
+                label: assignment.isCompleted
+                    ? 'Tugas Selesai ✓'
+                    : 'Lanjutkan Baca Materi',
+              ),
+              const Gap(10),
+              Button.outlined(
+                onPressed: () {
+                  context.pushNamed(
+                    RouteName.chatAi,
+                    extra: {
+                      'kontenId': konten.id,
+                      'source': 'assignment_detail',
+                    },
+                  );
+                },
+                label: 'Diskusi dengan AI',
+              ),
+            ],
           ),
         ),
       ),
@@ -212,12 +250,12 @@ class AssignmentDetailPage extends ConsumerWidget {
       decoration: BoxDecoration(
         color: assignment.isCompleted
             ? Colors.green.shade50
-            : AppColor.primaryColor.withOpacity(0.1),
+            : UiPalette.blue600.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: assignment.isCompleted
               ? Colors.green.shade300
-              : AppColor.primaryColor.withOpacity(0.3),
+              : UiPalette.blue600.withOpacity(0.3),
           width: 1.5,
         ),
       ),
@@ -228,7 +266,7 @@ class AssignmentDetailPage extends ConsumerWidget {
             assignment.isCompleted ? Icons.check_circle : Icons.pending_actions,
             size: 16,
             color:
-                assignment.isCompleted ? Colors.green : AppColor.primaryColor,
+                assignment.isCompleted ? Colors.green : UiPalette.blue600,
           ),
           const Gap(6),
           Text(
@@ -238,7 +276,7 @@ class AssignmentDetailPage extends ConsumerWidget {
               fontWeight: FontWeight.w600,
               color: assignment.isCompleted
                   ? Colors.green.shade700
-                  : AppColor.primaryColor,
+                  : UiPalette.blue600,
             ),
           ),
         ],
@@ -250,10 +288,10 @@ class AssignmentDetailPage extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColor.primaryColor.withOpacity(0.05),
+        color: UiPalette.blue600.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColor.primaryColor.withOpacity(0.2),
+          color: UiPalette.blue600.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -287,7 +325,7 @@ class AssignmentDetailPage extends ConsumerWidget {
         Icon(
           icon,
           size: 18,
-          color: AppColor.primaryColor,
+          color: UiPalette.blue600,
         ),
         const Gap(10),
         Text(
@@ -303,7 +341,7 @@ class AssignmentDetailPage extends ConsumerWidget {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColor.textColor,
+            color: UiPalette.slate900,
           ),
         ),
       ],
@@ -325,17 +363,17 @@ class AssignmentDetailPage extends ConsumerWidget {
           colors: [
             assignment.isCompleted
                 ? Colors.green.shade50
-                : AppColor.primaryColor.withOpacity(0.1),
+                : UiPalette.blue600.withOpacity(0.1),
             assignment.isCompleted
                 ? Colors.green.shade100
-                : AppColor.primaryColor.withOpacity(0.05),
+                : UiPalette.blue600.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: assignment.isCompleted
               ? Colors.green.shade200
-              : AppColor.primaryColor.withOpacity(0.3),
+              : UiPalette.blue600.withOpacity(0.3),
           width: 1.5,
         ),
       ),
@@ -346,7 +384,7 @@ class AssignmentDetailPage extends ConsumerWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColor.textColor,
+              color: UiPalette.slate900,
             ),
           ),
           const Gap(20),
@@ -368,7 +406,7 @@ class AssignmentDetailPage extends ConsumerWidget {
                     valueColor: AlwaysStoppedAnimation<Color>(
                       assignment.isCompleted
                           ? Colors.green
-                          : AppColor.primaryColor,
+                          : UiPalette.blue600,
                     ),
                   ),
                 ),
@@ -378,11 +416,11 @@ class AssignmentDetailPage extends ConsumerWidget {
                     Text(
                       '${(progressPercentage * 100).toInt()}%',
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: assignment.isCompleted
                             ? Colors.green
-                            : AppColor.primaryColor,
+                            : UiPalette.blue600,
                       ),
                     ),
                     Text(
@@ -407,7 +445,7 @@ class AssignmentDetailPage extends ConsumerWidget {
                 icon: Icons.book_outlined,
                 label: 'Bagian Dibaca',
                 value: '$currentSection/$totalSections',
-                color: AppColor.primaryColor,
+                color: UiPalette.blue600,
               ),
               Container(
                 height: 40,
@@ -415,8 +453,8 @@ class AssignmentDetailPage extends ConsumerWidget {
                 color: Colors.grey.shade300,
               ),
               _buildProgressIndicator(
-                icon: Icons.quiz_outlined,
-                label: 'Quiz',
+                icon: Icons.smart_toy_outlined,
+                label: 'Sesi AI',
                 value: hasCompletedQuiz ? 'Selesai' : 'Belum',
                 color: hasCompletedQuiz ? Colors.green : Colors.orange,
               ),
@@ -466,7 +504,7 @@ class AssignmentDetailPage extends ConsumerWidget {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppColor.textColor,
+            color: UiPalette.slate900,
           ),
         ),
         const Gap(12),
@@ -524,7 +562,7 @@ class AssignmentDetailPage extends ConsumerWidget {
                           fontWeight: FontWeight.w600,
                           color: isRead
                               ? Colors.green.shade700
-                              : AppColor.textColor,
+                              : UiPalette.slate900,
                         ),
                       ),
                       if (section.deskripsi != null) ...[

@@ -22,14 +22,18 @@ DokterProfileModel _$DokterProfileModelFromJson(Map<String, dynamic> json) {
 mixin _$DokterProfileModel {
   @JsonKey(name: "uid")
   String? get uid => throw _privateConstructorUsedError;
-  @JsonKey(name: "namaLengkap")
+  @JsonKey(name: "fullName")
   String? get namaLengkap => throw _privateConstructorUsedError;
-  @JsonKey(name: "nomorSTR")
+  @JsonKey(name: "strNumber")
   String? get nomorStr => throw _privateConstructorUsedError;
-  @JsonKey(name: "nomorSIP")
+  @JsonKey(name: "sipNumber")
   String? get nomorSip => throw _privateConstructorUsedError;
-  @JsonKey(name: "spesialisasi")
+  @JsonKey(name: "specialization")
   String? get spesialisasi => throw _privateConstructorUsedError;
+  @JsonKey(name: "hospitalName")
+  String? get hospitalName => throw _privateConstructorUsedError;
+  @JsonKey(name: "status")
+  String? get status => throw _privateConstructorUsedError;
   @JsonKey(name: "tanggalGabung")
   String? get tanggalGabung => throw _privateConstructorUsedError;
   @JsonKey(name: "tempatLahir")
@@ -67,10 +71,12 @@ abstract class $DokterProfileModelCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(name: "uid") String? uid,
-      @JsonKey(name: "namaLengkap") String? namaLengkap,
-      @JsonKey(name: "nomorSTR") String? nomorStr,
-      @JsonKey(name: "nomorSIP") String? nomorSip,
-      @JsonKey(name: "spesialisasi") String? spesialisasi,
+      @JsonKey(name: "fullName") String? namaLengkap,
+      @JsonKey(name: "strNumber") String? nomorStr,
+      @JsonKey(name: "sipNumber") String? nomorSip,
+      @JsonKey(name: "specialization") String? spesialisasi,
+      @JsonKey(name: "hospitalName") String? hospitalName,
+      @JsonKey(name: "status") String? status,
       @JsonKey(name: "tanggalGabung") String? tanggalGabung,
       @JsonKey(name: "tempatLahir") String? tempatLahir,
       @JsonKey(name: "tanggalLahir") String? tanggalLahir,
@@ -102,6 +108,8 @@ class _$DokterProfileModelCopyWithImpl<$Res, $Val extends DokterProfileModel>
     Object? nomorStr = freezed,
     Object? nomorSip = freezed,
     Object? spesialisasi = freezed,
+    Object? hospitalName = freezed,
+    Object? status = freezed,
     Object? tanggalGabung = freezed,
     Object? tempatLahir = freezed,
     Object? tanggalLahir = freezed,
@@ -132,6 +140,14 @@ class _$DokterProfileModelCopyWithImpl<$Res, $Val extends DokterProfileModel>
       spesialisasi: freezed == spesialisasi
           ? _value.spesialisasi
           : spesialisasi // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hospitalName: freezed == hospitalName
+          ? _value.hospitalName
+          : hospitalName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
               as String?,
       tanggalGabung: freezed == tanggalGabung
           ? _value.tanggalGabung
@@ -183,10 +199,12 @@ abstract class _$$DokterProfileModelImplCopyWith<$Res>
   @useResult
   $Res call(
       {@JsonKey(name: "uid") String? uid,
-      @JsonKey(name: "namaLengkap") String? namaLengkap,
-      @JsonKey(name: "nomorSTR") String? nomorStr,
-      @JsonKey(name: "nomorSIP") String? nomorSip,
-      @JsonKey(name: "spesialisasi") String? spesialisasi,
+      @JsonKey(name: "fullName") String? namaLengkap,
+      @JsonKey(name: "strNumber") String? nomorStr,
+      @JsonKey(name: "sipNumber") String? nomorSip,
+      @JsonKey(name: "specialization") String? spesialisasi,
+      @JsonKey(name: "hospitalName") String? hospitalName,
+      @JsonKey(name: "status") String? status,
       @JsonKey(name: "tanggalGabung") String? tanggalGabung,
       @JsonKey(name: "tempatLahir") String? tempatLahir,
       @JsonKey(name: "tanggalLahir") String? tanggalLahir,
@@ -216,6 +234,8 @@ class __$$DokterProfileModelImplCopyWithImpl<$Res>
     Object? nomorStr = freezed,
     Object? nomorSip = freezed,
     Object? spesialisasi = freezed,
+    Object? hospitalName = freezed,
+    Object? status = freezed,
     Object? tanggalGabung = freezed,
     Object? tempatLahir = freezed,
     Object? tanggalLahir = freezed,
@@ -246,6 +266,14 @@ class __$$DokterProfileModelImplCopyWithImpl<$Res>
       spesialisasi: freezed == spesialisasi
           ? _value.spesialisasi
           : spesialisasi // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hospitalName: freezed == hospitalName
+          ? _value.hospitalName
+          : hospitalName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
               as String?,
       tanggalGabung: freezed == tanggalGabung
           ? _value.tanggalGabung
@@ -292,10 +320,12 @@ class __$$DokterProfileModelImplCopyWithImpl<$Res>
 class _$DokterProfileModelImpl implements _DokterProfileModel {
   const _$DokterProfileModelImpl(
       {@JsonKey(name: "uid") this.uid,
-      @JsonKey(name: "namaLengkap") this.namaLengkap,
-      @JsonKey(name: "nomorSTR") this.nomorStr,
-      @JsonKey(name: "nomorSIP") this.nomorSip,
-      @JsonKey(name: "spesialisasi") this.spesialisasi,
+      @JsonKey(name: "fullName") this.namaLengkap,
+      @JsonKey(name: "strNumber") this.nomorStr,
+      @JsonKey(name: "sipNumber") this.nomorSip,
+      @JsonKey(name: "specialization") this.spesialisasi,
+      @JsonKey(name: "hospitalName") this.hospitalName,
+      @JsonKey(name: "status") this.status,
       @JsonKey(name: "tanggalGabung") this.tanggalGabung,
       @JsonKey(name: "tempatLahir") this.tempatLahir,
       @JsonKey(name: "tanggalLahir") this.tanggalLahir,
@@ -313,17 +343,23 @@ class _$DokterProfileModelImpl implements _DokterProfileModel {
   @JsonKey(name: "uid")
   final String? uid;
   @override
-  @JsonKey(name: "namaLengkap")
+  @JsonKey(name: "fullName")
   final String? namaLengkap;
   @override
-  @JsonKey(name: "nomorSTR")
+  @JsonKey(name: "strNumber")
   final String? nomorStr;
   @override
-  @JsonKey(name: "nomorSIP")
+  @JsonKey(name: "sipNumber")
   final String? nomorSip;
   @override
-  @JsonKey(name: "spesialisasi")
+  @JsonKey(name: "specialization")
   final String? spesialisasi;
+  @override
+  @JsonKey(name: "hospitalName")
+  final String? hospitalName;
+  @override
+  @JsonKey(name: "status")
+  final String? status;
   @override
   @JsonKey(name: "tanggalGabung")
   final String? tanggalGabung;
@@ -354,7 +390,7 @@ class _$DokterProfileModelImpl implements _DokterProfileModel {
 
   @override
   String toString() {
-    return 'DokterProfileModel(uid: $uid, namaLengkap: $namaLengkap, nomorStr: $nomorStr, nomorSip: $nomorSip, spesialisasi: $spesialisasi, tanggalGabung: $tanggalGabung, tempatLahir: $tempatLahir, tanggalLahir: $tanggalLahir, jenisKelamin: $jenisKelamin, email: $email, nomorTelepon: $nomorTelepon, fotoProfilUrl: $fotoProfilUrl, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'DokterProfileModel(uid: $uid, namaLengkap: $namaLengkap, nomorStr: $nomorStr, nomorSip: $nomorSip, spesialisasi: $spesialisasi, hospitalName: $hospitalName, status: $status, tanggalGabung: $tanggalGabung, tempatLahir: $tempatLahir, tanggalLahir: $tanggalLahir, jenisKelamin: $jenisKelamin, email: $email, nomorTelepon: $nomorTelepon, fotoProfilUrl: $fotoProfilUrl, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -371,6 +407,9 @@ class _$DokterProfileModelImpl implements _DokterProfileModel {
                 other.nomorSip == nomorSip) &&
             (identical(other.spesialisasi, spesialisasi) ||
                 other.spesialisasi == spesialisasi) &&
+            (identical(other.hospitalName, hospitalName) ||
+                other.hospitalName == hospitalName) &&
+            (identical(other.status, status) || other.status == status) &&
             (identical(other.tanggalGabung, tanggalGabung) ||
                 other.tanggalGabung == tanggalGabung) &&
             (identical(other.tempatLahir, tempatLahir) ||
@@ -399,6 +438,8 @@ class _$DokterProfileModelImpl implements _DokterProfileModel {
       nomorStr,
       nomorSip,
       spesialisasi,
+      hospitalName,
+      status,
       tanggalGabung,
       tempatLahir,
       tanggalLahir,
@@ -429,10 +470,12 @@ class _$DokterProfileModelImpl implements _DokterProfileModel {
 abstract class _DokterProfileModel implements DokterProfileModel {
   const factory _DokterProfileModel(
           {@JsonKey(name: "uid") final String? uid,
-          @JsonKey(name: "namaLengkap") final String? namaLengkap,
-          @JsonKey(name: "nomorSTR") final String? nomorStr,
-          @JsonKey(name: "nomorSIP") final String? nomorSip,
-          @JsonKey(name: "spesialisasi") final String? spesialisasi,
+          @JsonKey(name: "fullName") final String? namaLengkap,
+          @JsonKey(name: "strNumber") final String? nomorStr,
+          @JsonKey(name: "sipNumber") final String? nomorSip,
+          @JsonKey(name: "specialization") final String? spesialisasi,
+          @JsonKey(name: "hospitalName") final String? hospitalName,
+          @JsonKey(name: "status") final String? status,
           @JsonKey(name: "tanggalGabung") final String? tanggalGabung,
           @JsonKey(name: "tempatLahir") final String? tempatLahir,
           @JsonKey(name: "tanggalLahir") final String? tanggalLahir,
@@ -451,17 +494,23 @@ abstract class _DokterProfileModel implements DokterProfileModel {
   @JsonKey(name: "uid")
   String? get uid;
   @override
-  @JsonKey(name: "namaLengkap")
+  @JsonKey(name: "fullName")
   String? get namaLengkap;
   @override
-  @JsonKey(name: "nomorSTR")
+  @JsonKey(name: "strNumber")
   String? get nomorStr;
   @override
-  @JsonKey(name: "nomorSIP")
+  @JsonKey(name: "sipNumber")
   String? get nomorSip;
   @override
-  @JsonKey(name: "spesialisasi")
+  @JsonKey(name: "specialization")
   String? get spesialisasi;
+  @override
+  @JsonKey(name: "hospitalName")
+  String? get hospitalName;
+  @override
+  @JsonKey(name: "status")
+  String? get status;
   @override
   @JsonKey(name: "tanggalGabung")
   String? get tanggalGabung;

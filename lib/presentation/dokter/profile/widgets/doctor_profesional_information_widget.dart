@@ -1,9 +1,9 @@
 import 'package:aconsia_app/core/helpers/widgets/custom_text_field.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
@@ -14,12 +14,14 @@ class DoctorProfesionalInformationWidget extends HookConsumerWidget {
   final TextEditingController spesialisasiController;
   final TextEditingController nomorstrController;
   final TextEditingController nomorsipController;
+  final TextEditingController hospitalNameController;
   final TextEditingController tanggalGabungController;
   const DoctorProfesionalInformationWidget({
     super.key,
     required this.spesialisasiController,
     required this.nomorstrController,
     required this.nomorsipController,
+    required this.hospitalNameController,
     required this.tanggalGabungController,
     this.isEditable = false,
   });
@@ -28,88 +30,136 @@ class DoctorProfesionalInformationWidget extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.symmetric(
+        horizontal: UiSpacing.md,
+        vertical: UiSpacing.xl,
+      ),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColor.borderColor),
-        borderRadius: BorderRadius.circular(8),
+        color: UiPalette.white,
+        border: Border.all(color: UiPalette.slate200),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              SvgPicture.asset(Assets.icons.icDoctor.path),
-              Gap(12),
-              Text(
-                'Informasi Profesional',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: UiPalette.blue50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    Assets.icons.icDoctor.path,
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      UiPalette.blue600,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ),
-              Spacer(),
-              SvgPicture.asset(
-                Assets.icons.icEdit.path,
-                width: 20,
-                height: 20,
-              )
+              const Gap(UiSpacing.sm),
+              const Text(
+                'Informasi Profesional',
+                style: UiTypography.title,
+              ),
             ],
           ),
-          Gap(4),
-          Text(
+          const Gap(UiSpacing.xxs),
+          const Text(
             'Kredensial dan spesialisasi',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColor.textGrayColor,
-            ),
+            style: UiTypography.caption,
           ),
-          Gap(24),
+          const Gap(UiSpacing.lg),
           CustomTextField(
             controller: spesialisasiController,
             hintText: 'Spesialisasi',
             labelText: 'Spesialisasi',
-            isDisabled: true,
+            isDisabled: isEditable == true ? false : true,
           ),
-          Gap(16),
-          Row(
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  controller: nomorstrController,
-                  hintText: 'Nomor STR',
-                  labelText: 'Nomor STR',
-                  isDisabled: isEditable == true ? false : true,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(14),
-                  ],
-                ),
-              ),
-              Gap(12),
-              Expanded(
-                child: CustomTextField(
-                  controller: nomorsipController,
-                  hintText: 'Nomor SIP',
-                  labelText: 'Nomor SIP',
-                  isDisabled: isEditable == true ? false : true,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(14),
-                  ],
-                ),
-              ),
-            ],
+          const Gap(UiSpacing.md),
+          CustomTextField(
+            controller: hospitalNameController,
+            hintText: 'Rumah Sakit',
+            labelText: 'Rumah Sakit',
+            isDisabled: isEditable == true ? false : true,
           ),
-          Gap(16),
+          const Gap(UiSpacing.md),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 360;
+              if (isNarrow) {
+                return Column(
+                  children: [
+                    CustomTextField(
+                      controller: nomorstrController,
+                      hintText: 'Nomor STR',
+                      labelText: 'Nomor STR',
+                      isDisabled: isEditable == true ? false : true,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(14),
+                      ],
+                    ),
+                    const Gap(UiSpacing.md),
+                    CustomTextField(
+                      controller: nomorsipController,
+                      hintText: 'Nomor SIP',
+                      labelText: 'Nomor SIP',
+                      isDisabled: isEditable == true ? false : true,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(14),
+                      ],
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: CustomTextField(
+                      controller: nomorstrController,
+                      hintText: 'Nomor STR',
+                      labelText: 'Nomor STR',
+                      isDisabled: isEditable == true ? false : true,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(14),
+                      ],
+                    ),
+                  ),
+                  const Gap(UiSpacing.md),
+                  Expanded(
+                    child: CustomTextField(
+                      controller: nomorsipController,
+                      hintText: 'Nomor SIP',
+                      labelText: 'Nomor SIP',
+                      isDisabled: isEditable == true ? false : true,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(14),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const Gap(UiSpacing.md),
           CustomTextField(
             controller: tanggalGabungController,
             hintText: 'Tanggal Bergabung',
             labelText: 'Tanggal Bergabung',
             isCalendar: true,
-            suffixIcon: Icon(
+            suffixIcon: const Icon(
               Icons.calendar_month,
-              color: AppColor.primaryColor,
+              color: UiPalette.blue600,
+              size: 20,
             ),
-            isDisabled: isEditable == true ? false : true,
+            isDisabled: true,
           ),
         ],
       ),

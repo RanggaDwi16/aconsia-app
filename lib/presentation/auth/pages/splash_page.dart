@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_brand_logo.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -35,22 +37,19 @@ class _SplashPageState extends State<SplashPage> {
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
+                      const AconsiaBrandLogo(size: 92, imageSize: 58),
+                      const SizedBox(height: 16),
                       Text(
                         'ACONSIA',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.secondTextColor,
+                        style: UiTypography.display.copyWith(
+                          color: UiPalette.blue600,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
+                      const SizedBox(height: 8),
+                      const Text(
                         'Menjelaskan dengan Hati, Menjalankan dengan Ilmu.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColor.textGrayColor,
-                        ),
+                        style: UiTypography.body,
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -79,7 +78,7 @@ class _SplashPageState extends State<SplashPage> {
                             height: 10,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: AppColor.primaryColor,
+                                color: UiPalette.blue600,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -90,16 +89,13 @@ class _SplashPageState extends State<SplashPage> {
                   );
                 },
               ),
-              Gap(16),
+              const Gap(16),
               SafeArea(
                 bottom: true,
                 top: false,
-                child: Text(
+                child: const Text(
                   'Platform Edukasi Anestesi Digital',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColor.textGrayColor,
-                  ),
+                  style: UiTypography.caption,
                   textAlign: TextAlign.center,
                 ),
               )

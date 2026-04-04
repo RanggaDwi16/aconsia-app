@@ -1,8 +1,10 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/dokter/home/controllers/add_pasien_medic_information/post_add_pasien_medic_information_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
@@ -36,7 +38,8 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
         jenisOperasiController.text = profilePasien.jenisOperasi ?? '';
         jenisAnestesiController.text = profilePasien.jenisAnestesi ?? '';
         klasifikasiasaController.text = profilePasien.klasifikasiAsa ?? '';
-        tinggiBadanController.text = profilePasien.tinggiBadan?.toString() ?? '';
+        tinggiBadanController.text =
+            profilePasien.tinggiBadan?.toString() ?? '';
         beratBadanController.text = profilePasien.beratBadan?.toString() ?? '';
       }
       return null;
@@ -49,36 +52,25 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
     final postAdd = ref.watch(postAddPasienMedicInformationProvider);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Input Informasi Medis',
-        centertitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF4FAFF),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
+      body: AconsiaPageBackground(
+        colors: const [Color(0xFFF8FAFC), UiPalette.white],
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(UiSpacing.md),
           child: pasienProfileAsync.when(
             data: (_) => Center(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFDCEAFF)),
-                    ),
+                  AconsiaTopActionRow(
+                    title: 'Review Informasi Medis',
+                    subtitle: 'Lengkapi data medis inti pasien',
+                    onBack: () => context.pop(),
+                  ),
+                  const Gap(UiSpacing.md),
+                  AconsiaCardSurface(
+                    radius: 14,
+                    borderColor: const Color(0xFFDCEAFF),
+                    padding: const EdgeInsets.all(UiSpacing.md),
                     child: Column(
                       children: [
                         CircleAvatar(
@@ -93,11 +85,11 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: AppColor.primaryColor,
+                              color: UiPalette.blue600,
                             ),
                           ),
                         ),
-                        const Gap(10),
+                        const Gap(UiSpacing.sm),
                         Text(
                           namaController.text.isEmpty
                               ? 'Pasien'
@@ -108,7 +100,7 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const Gap(8),
+                        const Gap(UiSpacing.sm),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 4),
@@ -128,7 +120,7 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
                       ],
                     ),
                   ),
-                  const Gap(16),
+                  const Gap(UiSpacing.md),
                   PasienMedicInformationWidget(
                     jenisOperasiController: jenisOperasiController,
                     jenisAnestesiController: jenisAnestesiController,
@@ -143,13 +135,13 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
             ),
             loading: () => const Center(
               child: Padding(
-                padding: EdgeInsets.only(top: 48),
+                padding: EdgeInsets.only(top: UiSpacing.xxxl),
                 child: CircularProgressIndicator(),
               ),
             ),
             error: (error, _) => Center(
               child: Padding(
-                padding: const EdgeInsets.only(top: 40),
+                padding: const EdgeInsets.only(top: UiSpacing.xxxl),
                 child: Text('Gagal memuat data pasien: $error'),
               ),
             ),
@@ -157,7 +149,7 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(UiSpacing.md),
         child: Button.filled(
           disabled: jenisOperasiController.text.isEmpty ||
               jenisAnestesiController.text.isEmpty ||
@@ -181,6 +173,8 @@ class AddPasienMedicInformationPage extends HookConsumerWidget {
                 },
               ),
           label: postAdd.isLoading ? 'Menyimpan...' : 'Simpan Informasi Medis',
+          height: 52,
+          borderRadius: 12,
         ),
       ),
     );

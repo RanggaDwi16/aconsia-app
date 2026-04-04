@@ -1,6 +1,9 @@
 import 'package:aconsia_app/core/helpers/timestamp/timestamp_convert.dart';
 import 'package:aconsia_app/core/main/controllers/auth/authentication_provider.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
@@ -8,9 +11,7 @@ import 'package:aconsia_app/presentation/pasien/profile/controllers/update_pasie
 import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/pasien/profile/widgets/pasien_choose_dokter_widget.dart';
 import 'package:aconsia_app/presentation/pasien/profile/widgets/pasien_contact_widget.dart';
@@ -132,27 +133,30 @@ class EditProfilePasienPage extends HookConsumerWidget {
         alamatController.text.isEmpty;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Edit Profile',
-        centertitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF2F8FF),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
+      body: AconsiaPageBackground(
+        colors: const [UiPalette.blue50, UiPalette.white],
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Center(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                AconsiaTopActionRow(
+                  title: 'Edit Profil Pasien',
+                  subtitle: 'Perbarui data profil pasien',
+                  onBack: () => context.pop(),
+                ),
+                const Gap(12),
+                const AconsiaInfoBanner(
+                  icon: Icons.person_outline,
+                  message:
+                      'Pastikan data profil sesuai agar rekomendasi dan pendampingan dokter lebih akurat.',
+                  backgroundColor: UiPalette.blue50,
+                  borderColor: UiPalette.blue100,
+                  iconColor: UiPalette.blue600,
+                  textColor: UiPalette.slate700,
+                ),
+                const Gap(12),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -176,14 +180,14 @@ class EditProfilePasienPage extends HookConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColor.primaryColor,
+                          color: UiPalette.blue600,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
                           'Perbarui data profil pasien',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColor.primaryWhite,
+                            color: UiPalette.white,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -235,7 +239,7 @@ class EditProfilePasienPage extends HookConsumerWidget {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: Button.filled(
           disabled: allFieldsEmpty || patchPasienProfileState.isLoading,
           onPressed: () {
@@ -286,6 +290,8 @@ class EditProfilePasienPage extends HookConsumerWidget {
           label: patchPasienProfileState.isLoading
               ? 'Menyimpan...'
               : 'Simpan Perubahan',
+          height: 48,
+          borderRadius: 12,
         ),
       ),
     );

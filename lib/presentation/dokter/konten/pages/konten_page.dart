@@ -1,15 +1,13 @@
 import 'package:aconsia_app/core/helpers/widgets/empty_list_data.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
-import 'package:aconsia_app/presentation/dokter/profile/controllers/get_dokter_profile/fetch_dokter_profile_provider.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_search_field.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
-import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/dokter/konten/widgets/item_konten_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -24,212 +22,175 @@ class KontenPage extends HookConsumerWidget {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final allKonten =
         ref.watch(fetchKontenByDokterIdProvider(dokterId: uid ?? ''));
-    final profileDokter = ref.watch(fetchDokterProfileProvider(uid: uid ?? ''));
 
     final searchController = useTextEditingController();
     final searchQuery = useState(''); // 🔍 untuk menampung kata kunci
 
     return Scaffold(
-      appBar: CustomAppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: CircleAvatar(
-            backgroundImage: profileDokter.value?.fotoProfilUrl != null &&
-                    profileDokter.value!.fotoProfilUrl!.isNotEmpty
-                ? NetworkImage(profileDokter.value!.fotoProfilUrl!)
-                : AssetImage(Assets.images.placeholderImg.path)
-                    as ImageProvider,
-          ),
-        ),
-        customTitleWidget: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              profileDokter.value?.namaLengkap ?? 'Dokter',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              profileDokter.value?.spesialisasi ?? 'Spesialisasi',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
-              ),
-            ),
+      body: SafeArea(
+        child: AconsiaPageBackground(
+          colors: const [
+            Color(0xFFF8FAFC),
+            UiPalette.white,
           ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                context.showLogoutDialog(ref);
-              },
-            ),
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF4FAFF),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(fetchKontenByDokterIdProvider);
-            ref.invalidate(fetchDokterProfileProvider);
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Manajemen Konten',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(fetchKontenByDokterIdProvider);
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(UiSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                const AconsiaSectionTitle(
+                  title: 'Manajemen Konten',
+                  subtitle: 'Kelola materi edukasi anestesi Anda',
                 ),
-                const Gap(8),
-                Text(
-                  'Kelola materi edukasi anestesi Anda',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColor.textGrayColor,
+                const Gap(UiSpacing.md),
+                AconsiaInfoBanner(
+                  icon: Icons.auto_awesome,
+                  message: allKonten.when(
+                    data: (items) =>
+                        '${items?.length ?? 0} konten aktif siap dibagikan ke pasien.',
+                    loading: () => 'Memuat jumlah konten...',
+                    error: (_, __) => 'Data konten belum tersedia.',
                   ),
+                  backgroundColor: const Color(0xFFEFF6FF),
+                  borderColor: const Color(0xFFDCEAFF),
+                  iconColor: UiPalette.blue600,
+                  textColor: const Color(0xFF23415F),
                 ),
-                const Gap(14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFDCEAFF)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.auto_awesome, color: AppColor.primaryColor),
-                      const Gap(10),
-                      Expanded(
-                        child: Text(
-                          allKonten.when(
-                            data: (items) =>
-                                '${items?.length ?? 0} konten aktif siap dibagikan ke pasien.',
-                            loading: () => 'Memuat jumlah konten...',
-                            error: (_, __) => 'Data konten belum tersedia.',
-                          ),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF23415F),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: CustomSearchField(
-                        hintText: 'Cari konten...',
-                        controller: searchController,
-                        onChanged: (value) {
-                          searchQuery.value = value.trim().toLowerCase();
-                        },
-                      ),
-                    ),
-                    const Gap(12),
-                    Button.filled(
-                      onPressed: () => context.pushNamed(RouteName.addKonten),
-                      height: 52,
-                      width: context.deviceWidth * 0.4,
-                      label: 'Konten Baru',
-                      icon: const Icon(Icons.add, color: Colors.white),
-                    ),
-                  ],
-                ),
-                const Gap(24),
-                allKonten.when(
-                data: (kontens) {
-                  if (kontens == null || kontens.isEmpty) {
-                    return emptyListData(context);
-                  }
+                const Gap(UiSpacing.md),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 390;
 
-                  // 🔍 Filter berdasarkan semua isi konten
-                  final filteredKonten = kontens.where((konten) {
-                    final query = searchQuery.value;
-
-                    if (query.isEmpty) return true;
-
-                    return (konten.judul ?? '').toLowerCase().contains(query) ||
-                        (konten.jenisAnestesi ?? '')
-                            .toLowerCase()
-                            .contains(query) ||
-                        (konten.resikoTindakan ?? '')
-                            .toLowerCase()
-                            .contains(query) ||
-                        // Search juga di tanggal (prioritas updatedAt)
-                        (konten.updatedAt != null &&
-                            '${konten.updatedAt!.day}-${konten.updatedAt!.month}-${konten.updatedAt!.year}'
-                                .contains(query)) ||
-                        (konten.createdAt != null &&
-                            '${konten.createdAt!.day}-${konten.createdAt!.month}-${konten.createdAt!.year}'
-                                .contains(query));
-                  }).toList();
-
-                  if (filteredKonten.isEmpty) {
-                    return Center(
-                      child: Column(
+                    if (isNarrow) {
+                      return Column(
                         children: [
-                          const Icon(Icons.search_off,
-                              size: 64, color: Colors.grey),
-                          const Gap(8),
-                          Text(
-                            'Tidak ada konten sesuai pencarian',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColor.textGrayColor,
-                            ),
+                          CustomSearchField(
+                            hintText: 'Cari konten...',
+                            controller: searchController,
+                            onChanged: (value) {
+                              searchQuery.value = value.trim().toLowerCase();
+                            },
+                          ),
+                          const Gap(UiSpacing.sm),
+                          Button.filled(
+                            onPressed: () =>
+                                context.pushNamed(RouteName.addKonten),
+                            height: 52,
+                            label: 'Konten Baru',
+                            icon: const Icon(Icons.add, color: Colors.white),
+                            color: UiPalette.blue600,
+                            borderColor: UiPalette.blue600,
+                            borderRadius: 12,
                           ),
                         ],
-                      ),
-                    );
-                  }
-
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredKonten.length,
-                    separatorBuilder: (_, __) => const Gap(16),
-                    itemBuilder: (context, index) {
-                      return ItemKontenWidget(
-                        konten: filteredKonten[index],
-                        isHome: false,
                       );
-                    },
-                  );
-                },
-                loading: () =>
-                    const Center(child: CircularProgressIndicator.adaptive()),
-                error: (err, _) =>
-                    Center(child: Text('Gagal memuat konten: $err')),
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: CustomSearchField(
+                            hintText: 'Cari konten...',
+                            controller: searchController,
+                            onChanged: (value) {
+                              searchQuery.value = value.trim().toLowerCase();
+                            },
+                          ),
+                        ),
+                        const Gap(UiSpacing.sm),
+                        SizedBox(
+                          width: constraints.maxWidth * 0.4,
+                          child: Button.filled(
+                            onPressed: () =>
+                                context.pushNamed(RouteName.addKonten),
+                            height: 52,
+                            label: 'Konten Baru',
+                            icon: const Icon(Icons.add, color: Colors.white),
+                            color: UiPalette.blue600,
+                            borderColor: UiPalette.blue600,
+                            borderRadius: 12,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              ],
+                const Gap(UiSpacing.xl),
+                allKonten.when(
+                  data: (kontens) {
+                    if (kontens == null || kontens.isEmpty) {
+                      return emptyListData(context);
+                    }
+
+                    // 🔍 Filter berdasarkan semua isi konten
+                    final filteredKonten = kontens.where((konten) {
+                      final query = searchQuery.value;
+
+                      if (query.isEmpty) return true;
+
+                      return (konten.judul ?? '')
+                              .toLowerCase()
+                              .contains(query) ||
+                          (konten.jenisAnestesi ?? '')
+                              .toLowerCase()
+                              .contains(query) ||
+                          (konten.resikoTindakan ?? '')
+                              .toLowerCase()
+                              .contains(query) ||
+                          // Search juga di tanggal (prioritas updatedAt)
+                          (konten.updatedAt != null &&
+                              '${konten.updatedAt!.day}-${konten.updatedAt!.month}-${konten.updatedAt!.year}'
+                                  .contains(query)) ||
+                          (konten.createdAt != null &&
+                              '${konten.createdAt!.day}-${konten.createdAt!.month}-${konten.createdAt!.year}'
+                                  .contains(query));
+                    }).toList();
+
+                    if (filteredKonten.isEmpty) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            const Icon(Icons.search_off,
+                                size: 64, color: Colors.grey),
+                            const Gap(UiSpacing.sm),
+                            Text(
+                              'Tidak ada konten sesuai pencarian',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: UiPalette.slate500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredKonten.length,
+                      separatorBuilder: (_, __) => const Gap(UiSpacing.md),
+                      itemBuilder: (context, index) {
+                        return ItemKontenWidget(
+                          konten: filteredKonten[index],
+                          isHome: false,
+                        );
+                      },
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator.adaptive()),
+                  error: (err, _) =>
+                      Center(child: Text('Gagal memuat konten: $err')),
+                ),
+                ],
+              ),
             ),
           ),
         ),

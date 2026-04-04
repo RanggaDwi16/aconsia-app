@@ -20,8 +20,6 @@ class RouteName {
   static const String editProfilePasien = '/edit-profile-pasien';
   static const String detailKonten = '/detail-konten';
   static const String chatAi = '/chat-ai';
-  static const String hasilChatAi = '/hasil-chat-ai';
-  static const String quizChatAi = '/quiz-chat-ai';
   static const String quizResult = '/quiz-result';
   static const String assignmentList = '/assignment-list';
   static const String assignmentDetail = '/assignment-detail';

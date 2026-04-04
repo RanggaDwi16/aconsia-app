@@ -7,15 +7,18 @@ import 'package:aconsia_app/presentation/dokter/home/controllers/get_pasien_coun
 import 'package:aconsia_app/presentation/dokter/home/controllers/reading_session_provider.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_count_by_dokter_id/fetch_konten_count_by_dokter_id_provider.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/dokter/profile/controllers/get_dokter_profile/fetch_dokter_profile_provider.dart';
 import 'package:aconsia_app/presentation/dokter/profile/controllers/update_dokter_profile/patch_dokter_profile_provider.dart';
 import 'package:aconsia_app/presentation/dokter/profile/providers/upload_photo_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/dokter/profile/widgets/doctor_contact_widget.dart';
 import 'package:aconsia_app/presentation/dokter/profile/widgets/doctor_personal_information_widget.dart';
@@ -56,11 +59,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         useTextEditingController(text: 'Dokter Spesialis Anestesiologi');
     final nomorstrController = useTextEditingController();
     final nomorsipController = useTextEditingController();
+    final hospitalNameController = useTextEditingController();
     final tanggalGabungController = useTextEditingController();
     final namaController = useTextEditingController();
-    final tempatLahirController = useTextEditingController();
-    final tanggalLahirController = useTextEditingController();
-    final jenisKelaminController = useTextEditingController();
     final emailController = useTextEditingController();
     final nomorHpController = useTextEditingController();
 
@@ -86,11 +87,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         if (dokterProfile != null) {
           nomorstrController.text = dokterProfile.nomorStr ?? '';
           nomorsipController.text = dokterProfile.nomorSip ?? '';
+          hospitalNameController.text = dokterProfile.hospitalName ?? '';
           tanggalGabungController.text = dokterProfile.tanggalGabung ?? '';
           namaController.text = dokterProfile.namaLengkap ?? '';
-          tempatLahirController.text = dokterProfile.tempatLahir ?? '';
-          tanggalLahirController.text = dokterProfile.tanggalLahir ?? '';
-          jenisKelaminController.text = dokterProfile.jenisKelamin ?? '';
           nomorHpController.text = dokterProfile.nomorTelepon ?? '';
         } else {}
       });
@@ -101,153 +100,154 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     useListenable(spesialisasiController);
     useListenable(nomorstrController);
     useListenable(nomorsipController);
+    useListenable(hospitalNameController);
     useListenable(tanggalGabungController);
     useListenable(namaController);
-    useListenable(tempatLahirController);
-    useListenable(tanggalLahirController);
-    useListenable(jenisKelaminController);
     useListenable(emailController);
     useListenable(nomorHpController);
 
     final allFieldsEmpty = nomorstrController.text.isEmpty ||
         nomorsipController.text.isEmpty ||
-        tanggalGabungController.text.isEmpty ||
+        hospitalNameController.text.isEmpty ||
         namaController.text.isEmpty ||
-        tempatLahirController.text.isEmpty ||
-        tanggalLahirController.text.isEmpty ||
-        jenisKelaminController.text.isEmpty ||
         emailController.text.isEmpty ||
         nomorHpController.text.isEmpty;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Edit Profile',
-        centertitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Photo with loading overlay
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundImage: selectedImage != null
-                            ? FileImage(selectedImage!)
-                            : (profileDokter.value?.fotoProfilUrl != null &&
-                                    profileDokter
-                                        .value!.fotoProfilUrl!.isNotEmpty)
-                                ? NetworkImage(
-                                    profileDokter.value!.fotoProfilUrl!)
-                                : AssetImage(Assets.images.placeholderImg.path)
-                                    as ImageProvider,
-                      ),
-                      // Loading overlay
-                      if (uploadPhotoState.isUploading)
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black.withOpacity(0.5),
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+      body: AconsiaPageBackground(
+        colors: const [Color(0xFFF8FAFC), UiPalette.white],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(UiSpacing.md),
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AconsiaTopActionRow(
+                  title: 'Edit Profil',
+                  subtitle: 'Perbarui data personal dan profesional dokter',
+                  onBack: () => Navigator.of(context).pop(),
+                ),
+                const Gap(UiSpacing.md),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Photo with loading overlay
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundImage: selectedImage != null
+                              ? FileImage(selectedImage!)
+                              : (profileDokter.value?.fotoProfilUrl != null &&
+                                      profileDokter
+                                          .value!.fotoProfilUrl!.isNotEmpty)
+                                  ? NetworkImage(
+                                      profileDokter.value!.fotoProfilUrl!)
+                                  : AssetImage(
+                                          Assets.images.placeholderImg.path)
+                                      as ImageProvider,
+                        ),
+                        // Loading overlay
+                        if (uploadPhotoState.isUploading)
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                  // Edit button
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: uploadPhotoState.isUploading ? null : _pickImage,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: uploadPhotoState.isUploading
-                              ? Colors.grey
-                              : Theme.of(context).primaryColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: Icon(
-                          uploadPhotoState.isUploading
-                              ? Icons.hourglass_empty
-                              : Icons.edit,
-                          color: Colors.white,
-                          size: 18,
+                      ],
+                    ),
+                    // Edit button
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: uploadPhotoState.isUploading ? null : _pickImage,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: uploadPhotoState.isUploading
+                                ? Colors.grey
+                                : Theme.of(context).primaryColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Icon(
+                            uploadPhotoState.isUploading
+                                ? Icons.hourglass_empty
+                                : Icons.edit,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const Gap(8),
-              Text(
-                namaController.text.isNotEmpty
-                    ? namaController.text
-                    : 'Nama Dokter',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  ],
                 ),
-              ),
-              const Gap(8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColor.backgroundStatusAktifColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Aktif',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColor.primaryWhite,
+                const Gap(UiSpacing.sm),
+                Text(
+                  namaController.text.isNotEmpty
+                      ? namaController.text
+                      : 'Nama Dokter',
+                  style: UiTypography.title.copyWith(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              const Gap(24),
-              DoctorProfesionalInformationWidget(
-                isEditable: true,
-                spesialisasiController: spesialisasiController,
-                nomorstrController: nomorstrController,
-                nomorsipController: nomorsipController,
-                tanggalGabungController: tanggalGabungController,
-              ),
-              const Gap(16),
-              DoctorPersonalInformationWidget(
-                isEditable: true,
-                namaController: namaController,
-                tempatLahirController: tempatLahirController,
-                tanggalLahirController: tanggalLahirController,
-                jenisKelaminController: jenisKelaminController,
-              ),
-              const Gap(16),
-              DoctorContactWidget(
-                isEditable: true,
-                emailController: emailController,
-                nomorHpController: nomorHpController,
-              ),
-            ],
+                const Gap(UiSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: UiSpacing.sm,
+                    vertical: UiSpacing.xxs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: UiPalette.emerald600,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Aktif',
+                    style: UiTypography.caption.copyWith(
+                      color: UiPalette.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Gap(UiSpacing.xl),
+                DoctorProfesionalInformationWidget(
+                  isEditable: true,
+                  spesialisasiController: spesialisasiController,
+                  nomorstrController: nomorstrController,
+                  nomorsipController: nomorsipController,
+                  hospitalNameController: hospitalNameController,
+                  tanggalGabungController: tanggalGabungController,
+                ),
+                const Gap(UiSpacing.md),
+                DoctorPersonalInformationWidget(
+                  isEditable: true,
+                  namaController: namaController,
+                ),
+                const Gap(UiSpacing.md),
+                DoctorContactWidget(
+                  isEditable: true,
+                  emailController: emailController,
+                  nomorHpController: nomorHpController,
+                ),
+              ],
+            ),
           ),
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(UiSpacing.md),
         child: Button.filled(
           disabled: updateProfile.isLoading ||
               uploadPhotoState.isUploading ||
@@ -278,14 +278,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   model: DokterProfileModel(
                     uid: uid ?? '',
                     namaLengkap: namaController.text,
-                    tempatLahir: tempatLahirController.text,
-                    tanggalLahir: tanggalLahirController.text,
-                    jenisKelamin: jenisKelaminController.text,
                     email: emailController.text,
                     nomorTelepon: nomorHpController.text,
                     spesialisasi: spesialisasiController.text,
                     nomorStr: nomorstrController.text,
                     nomorSip: nomorsipController.text,
+                    hospitalName: hospitalNameController.text,
+                    status: profileDokter.value?.status ?? 'active',
                     tanggalGabung: tanggalGabungController.text,
                     fotoProfilUrl: finalPhotoUrl,
                   ),

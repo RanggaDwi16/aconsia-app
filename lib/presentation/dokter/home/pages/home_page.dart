@@ -1,27 +1,19 @@
-import 'package:aconsia_app/core/helpers/widgets/empty_list_data.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
-import 'package:aconsia_app/core/main/data/models/reading_session_model.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/dokter/home/controllers/get_pasien_count_by_dokter_id/fetch_pasien_count_by_dokter_id_provider.dart';
 import 'package:aconsia_app/presentation/dokter/home/controllers/get_pasien_list_by_dokter_id/fetch_pasien_list_by_dokter_id_provider.dart';
-import 'package:aconsia_app/presentation/dokter/home/controllers/dokter_performance_provider.dart';
 import 'package:aconsia_app/presentation/dokter/home/controllers/reading_session_provider.dart';
-import 'package:aconsia_app/presentation/dokter/home/widgets/alert_pasien_read_widget.dart';
-import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
-import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_count_by_dokter_id/fetch_konten_count_by_dokter_id_provider.dart';
-import 'package:aconsia_app/presentation/dokter/konten/widgets/item_konten_widget.dart';
-import 'package:aconsia_app/presentation/dokter/main/controllers/selected_index_provider.dart';
 import 'package:aconsia_app/presentation/dokter/profile/controllers/get_dokter_profile/fetch_dokter_profile_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
-import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
-import 'package:aconsia_app/presentation/dokter/home/widgets/dashboard_summary_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -30,577 +22,547 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    // Real-time active readers count
     final activeReaderCount = ref.watch(activeReadersCountProvider(uid ?? ''));
-
     final profileDokter = ref.watch(fetchDokterProfileProvider(uid: uid ?? ''));
-    final allKonten =
-        ref.watch(fetchKontenByDokterIdProvider(dokterId: uid ?? ''));
-
-    final totalKonten =
-        ref.watch(fetchKontenCountByDokterIdProvider(dokterId: uid ?? ''));
-
     final totalPasien =
         ref.watch(fetchPasienCountByDokterIdProvider(dokterId: uid ?? ''));
     final pasienList =
         ref.watch(fetchPasienListByDokterIdProvider(dokterId: uid ?? ''));
-    final dokterPerformance = ref.watch(dokterPerformanceProvider(uid ?? ''));
-    final activeSessions =
-        ref.watch(activeReadingSessionsStreamProvider(uid ?? ''));
+
+    final dokterName = (profileDokter.value?.namaLengkap ?? 'Dokter').trim();
+    final pasienItems = pasienList.valueOrNull ?? <PasienProfileModel>[];
+    final totalPasienCount = totalPasien.valueOrNull ?? pasienItems.length;
+    final pendingPatients = pasienItems.where((p) => !_isMedicalReady(p)).toList();
+    final approvedPatients = pasienItems.where(_isMedicalReady).toList();
+    final needsAnesthesia = pasienItems
+        .where((p) => (p.jenisAnestesi ?? '').trim().isEmpty)
+        .toList();
+    final comprehensionRate = 0;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: CircleAvatar(
-            backgroundImage: profileDokter.value?.fotoProfilUrl != null &&
-                    profileDokter.value!.fotoProfilUrl!.isNotEmpty
-                ? NetworkImage(profileDokter.value!.fotoProfilUrl!)
-                : AssetImage(Assets.images.placeholderImg.path)
-                    as ImageProvider,
-          ),
-        ),
-        customTitleWidget: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              profileDokter.value?.namaLengkap ?? 'Dokter',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              profileDokter.value?.spesialisasi ?? 'Spesialisasi',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              icon: Icon(Icons.logout),
-              onPressed: () {
-                context.showLogoutDialog(ref);
-              },
-            ),
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEFFAF3),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
+      body: SafeArea(
+        child: AconsiaPageBackground(
+        colors: const [Color(0xFFF8FAFC), UiPalette.white],
         child: RefreshIndicator(
           onRefresh: () async {
-            // Invalidate all providers to refresh data
             ref.invalidate(fetchDokterProfileProvider);
-            ref.invalidate(fetchKontenByDokterIdProvider);
-            ref.invalidate(fetchKontenCountByDokterIdProvider);
             ref.invalidate(fetchPasienCountByDokterIdProvider);
             ref.invalidate(fetchPasienListByDokterIdProvider);
-            ref.invalidate(dokterPerformanceProvider(uid ?? ''));
-            ref.invalidate(activeReadingSessionsStreamProvider(uid ?? ''));
-
-            // Wait for providers to rebuild
+            ref.invalidate(activeReadersCountProvider(uid ?? ''));
             await Future.delayed(const Duration(milliseconds: 500));
           },
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              Text(
-                'Dashboard Dokter',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                const Text(
+                  'Dashboard Dokter Anestesi',
+                  style: UiTypography.h1,
                 ),
-              ),
-              Gap(8),
-              Text(
-                'Kelola konten edukasi dan pantau pasien Anda',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColor.textGrayColor,
+                const Gap(UiSpacing.xs),
+                Text(
+                  'Selamat datang, $dokterName',
+                  style: UiTypography.bodySmall,
                 ),
-              ),
-              Gap(20),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFD4E7FF)),
+                const Gap(UiSpacing.lg),
+                AconsiaInfoBanner(
+                  icon: Icons.bolt_rounded,
+                  message: activeReaderCount > 0
+                      ? '$activeReaderCount pasien sedang membaca materi saat ini'
+                      : 'Belum ada pasien yang sedang membaca materi',
+                  backgroundColor: UiPalette.blue50,
+                  borderColor: UiPalette.blue100,
+                  iconColor: UiPalette.blue600,
+                  textColor: const Color(0xFF23415F),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.bolt_rounded, color: AppColor.primaryColor),
-                    const Gap(10),
-                    Expanded(
-                      child: Text(
-                        activeReaderCount > 0
-                            ? '$activeReaderCount pasien sedang membaca materi saat ini'
-                            : 'Belum ada pasien yang sedang membaca materi',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF23415F),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
+                const Gap(UiSpacing.md),
+                _quickActionCard(
+                  icon: Icons.monitor_outlined,
+                  title: 'Real-Time Monitoring',
+                  subtitle: 'Pantau progress edukasi pasien secara real-time',
+                  gradientColors: const [
+                    Color(0xFFEFF6FF),
+                    Color(0xFFE0F2FE),
                   ],
-                ),
-              ),
-              Gap(16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _quickActionCard(
-                    icon: Icons.group_outlined,
-                    label: 'Review Pasien Baru',
-                    onTap: () => context.pushNamed(RouteName.listActivePasien),
-                  ),
-                  _quickActionCard(
-                    icon: Icons.article_outlined,
-                    label: 'Kelola Konten',
-                    onTap: () => ref.read(selectedIndexProvider.notifier).state = 1,
-                  ),
-                ],
-              ),
-              Gap(16),
-              pasienList.when(
-                data: (list) {
-                  final items = list ?? [];
-                  final readyCount = items.where(_isMedicalReady).length;
-                  final pendingCount = items.length - readyCount;
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2EAF4)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _smallMetric(
-                            title: 'Menunggu Review',
-                            value: '$pendingCount',
-                            color: const Color(0xFFF59E0B),
-                          ),
-                        ),
-                        const Gap(10),
-                        Expanded(
-                          child: _smallMetric(
-                            title: 'Siap Edukasi',
-                            value: '$readyCount',
-                            color: const Color(0xFF22C35D),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-              Gap(20),
-              // Show alert only if there are active readers
-              if (activeReaderCount > 0) ...[
-                AlertPasienReadWidget(
-                  activeReaderCount: activeReaderCount,
+                  borderColor: const Color(0xFF93C5FD),
+                  iconBackgroundColor: const Color(0xFF2563EB),
                   onTap: () => context.pushNamed(RouteName.listActivePasien),
                 ),
-                Gap(16),
+                const Gap(UiSpacing.sm),
+                _quickActionCard(
+                  icon: Icons.fact_check_outlined,
+                  title: 'Review Pasien Baru',
+                  subtitle: 'Approve dan tentukan jenis anestesi pasien',
+                  trailingBadge:
+                      pendingPatients.isNotEmpty ? '${pendingPatients.length}' : null,
+                  gradientColors: const [
+                    Color(0xFFF5F3FF),
+                    Color(0xFFFCE7F3),
+                  ],
+                  borderColor: const Color(0xFFD8B4FE),
+                  iconBackgroundColor: const Color(0xFF7C3AED),
+                  onTap: () => context.pushNamed(RouteName.listActivePasien),
+                ),
+                const Gap(UiSpacing.md),
+                _buildStatsGrid(
+                  totalPasienCount: totalPasienCount,
+                  pendingCount: pendingPatients.length,
+                  approvedCount: approvedPatients.length,
+                  comprehensionRate: comprehensionRate,
+                ),
+                const Gap(UiSpacing.lg),
+                if (pendingPatients.isNotEmpty)
+                  _patientSectionCard(
+                    title:
+                        'Pasien Menunggu Review (${pendingPatients.length})',
+                    icon: Icons.schedule,
+                    titleColor: const Color(0xFF9A3412),
+                    cardBg: const Color(0xFFFFF7ED),
+                    cardBorder: const Color(0xFFFED7AA),
+                    patients: pendingPatients,
+                    type: _PatientSectionType.pending,
+                  ),
+                if (pendingPatients.isNotEmpty) const Gap(UiSpacing.md),
+                _patientSectionCard(
+                  title:
+                      'Pasien yang Sudah Disetujui (${approvedPatients.length})',
+                  icon: Icons.verified_outlined,
+                  titleColor: const Color(0xFF166534),
+                  cardBg: UiPalette.white,
+                  cardBorder: const Color(0xFFE2E8F0),
+                  patients: approvedPatients,
+                  type: _PatientSectionType.approved,
+                ),
+                if (needsAnesthesia.isNotEmpty) const Gap(UiSpacing.md),
+                if (needsAnesthesia.isNotEmpty)
+                  _patientSectionCard(
+                    title:
+                        'Pasien yang Membutuhkan Anestesi (${needsAnesthesia.length})',
+                    icon: Icons.warning_amber_rounded,
+                    titleColor: const Color(0xFF1D4ED8),
+                    cardBg: const Color(0xFFEFF6FF),
+                    cardBorder: const Color(0xFFBFDBFE),
+                    patients: needsAnesthesia,
+                    type: _PatientSectionType.needAnesthesia,
+                  ),
               ],
-              DashboardSummaryWidget(
-                title: 'Total Konten',
-                count: totalKonten.when(
-                  data: (data) => data.toString(),
-                  loading: () => '...',
-                  error: (err, stack) => 'Error',
-                ),
-                iconPath: Assets.icons.icKonten.path,
-                onPressed: () =>
-                    ref.read(selectedIndexProvider.notifier).state = 1,
-              ),
-              Gap(16),
-              DashboardSummaryWidget(
-                title: 'Total Pasien',
-                count: totalPasien.when(
-                  data: (data) => data.toString(),
-                  loading: () => '...',
-                  error: (err, stack) => 'Error',
-                ),
-                iconPath: Assets.icons.icPeoples.path,
-                onPressed: () => context.pushNamed(RouteName.listActivePasien),
-              ),
-              Gap(16),
-              _buildDokterPerformanceSection(dokterPerformance),
-              Gap(16),
-              _buildRealtimePatientStatus(
-                sessionsAsync: activeSessions,
-                pasienListAsync: pasienList,
-              ),
-              Gap(32),
-              Text(
-                'Konten Terbaru',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Gap(8),
-              Text(
-                'Konten edukasi yang telah Anda buat',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColor.textGrayColor,
-                ),
-              ),
-              Gap(16),
-              allKonten.when(
-                data: (kontens) {
-                  if (kontens == null || kontens.isEmpty) {
-                    return emptyListData(context);
-                  }
-
-                  if (kontens.isEmpty) {
-                    return Center(
-                      child: Column(
-                        children: [
-                          const Icon(Icons.search_off,
-                              size: 64, color: Colors.grey),
-                          const Gap(8),
-                          Text(
-                            'Tidak ada konten sesuai pencarian',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColor.textGrayColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: kontens.length,
-                    separatorBuilder: (_, __) => const Gap(16),
-                    itemBuilder: (context, index) {
-                      return ItemKontenWidget(
-                        konten: kontens[index],
-                        isHome: true,
-                      );
-                    },
-                  );
-                },
-                loading: () =>
-                    const Center(child: CircularProgressIndicator.adaptive()),
-                error: (err, _) =>
-                    Center(child: Text('Gagal memuat konten: $err')),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+        ),
       ),
     );
   }
 
   Widget _quickActionCard({
     required IconData icon,
-    required String label,
+    required String title,
+    required String subtitle,
+    required List<Color> gradientColors,
+    required Color borderColor,
+    required Color iconBackgroundColor,
     required VoidCallback onTap,
+    String? trailingBadge,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Ink(
-        width: 160,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        width: double.infinity,
+        padding: const EdgeInsets.all(UiSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
+          ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFDDE7F3)),
+          border: Border.all(color: borderColor),
         ),
         child: Row(
           children: [
-            Icon(icon, color: AppColor.primaryColor, size: 20),
-            const Gap(8),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: iconBackgroundColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: UiPalette.white, size: 24),
+            ),
+            const Gap(UiSpacing.md),
             Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDokterPerformanceSection(
-    AsyncValue<DokterPerformanceSummary> performanceAsync,
-  ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2EAF4)),
-      ),
-      child: performanceAsync.when(
-        data: (summary) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Performa Dokter',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF132A45),
-              ),
-            ),
-            const Gap(8),
-            Text(
-              'Berdasarkan hasil quiz pasien dari konten Anda.',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColor.textGrayColor,
-              ),
-            ),
-            const Gap(12),
-            Row(
-              children: [
-                Expanded(
-                  child: _smallMetric(
-                    title: 'Rata-rata Nilai',
-                    value: '${summary.avgScore.toStringAsFixed(0)}%',
-                    color: const Color(0xFF0EA5E9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: UiTypography.label.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: UiPalette.slate900,
+                    ),
                   ),
-                ),
-                const Gap(10),
-                Expanded(
-                  child: _smallMetric(
-                    title: 'Butuh Follow-up',
-                    value: '${summary.needsAttentionCount}',
-                    color: const Color(0xFFF59E0B),
+                  const Gap(UiSpacing.xxs),
+                  Text(
+                    subtitle,
+                    style: UiTypography.bodySmall.copyWith(
+                      color: UiPalette.slate600,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const Gap(8),
-            Text(
-              'Total quiz: ${summary.totalQuizResults} • Nilai baik: ${summary.excellentCount}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF5D728A),
+                ],
               ),
             ),
-          ],
-        ),
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        error: (error, _) => Text(
-          'Performa belum tersedia: $error',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColor.primaryRed,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRealtimePatientStatus({
-    required AsyncValue<List<ReadingSessionModel>> sessionsAsync,
-    required AsyncValue<List<PasienProfileModel>?> pasienListAsync,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2EAF4)),
-      ),
-      child: sessionsAsync.when(
-        data: (sessions) {
-          final pasienMap = {
-            for (final pasien in (pasienListAsync.value ?? <PasienProfileModel>[]))
-              (pasien.uid ?? ''): pasien
-          };
-
-          if (sessions.isEmpty) {
-            return const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Status Pasien Real-Time',
-                  style: TextStyle(
-                    fontSize: 17,
+            if (trailingBadge != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: UiSpacing.sm,
+                  vertical: UiSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEA580C),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  trailingBadge,
+                  style: UiTypography.caption.copyWith(
+                    color: UiPalette.white,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF132A45),
                   ),
-                ),
-                Gap(8),
-                Text(
-                  'Belum ada pasien yang sedang membaca saat ini.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF5D728A),
-                  ),
-                ),
-              ],
-            );
-          }
-
-          final previewSessions = sessions.take(5).toList();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Status Pasien Real-Time',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF132A45),
                 ),
               ),
-              const Gap(8),
-              Text(
-                '${sessions.length} pasien sedang membaca materi sekarang.',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF5D728A),
-                ),
-              ),
-              const Gap(12),
-              ...previewSessions.map((session) {
-                final pasien = pasienMap[session.pasienId];
-                final name = (pasien?.namaLengkap ?? 'Pasien').trim();
-                final time = _formatTime(session.startedAt);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Color(0xFFEAF4FF),
-                        child: Icon(
-                          Icons.circle,
-                          size: 10,
-                          color: Color(0xFF22C35D),
-                        ),
-                      ),
-                      const Gap(8),
-                      Expanded(
-                        child: Text(
-                          name.isEmpty ? 'Pasien' : name,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1F3A58),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        'Mulai $time',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6F8094),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          );
-        },
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        error: (error, _) => Text(
-          'Status real-time belum tersedia: $error',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColor.primaryRed,
-          ),
+            const Gap(UiSpacing.xs),
+            const Icon(Icons.chevron_right_rounded, color: UiPalette.slate400),
+          ],
         ),
       ),
     );
   }
 
-  String _formatTime(DateTime dt) {
-    final hh = dt.hour.toString().padLeft(2, '0');
-    final mm = dt.minute.toString().padLeft(2, '0');
-    return '$hh:$mm';
+  Widget _buildStatsGrid({
+    required int totalPasienCount,
+    required int pendingCount,
+    required int approvedCount,
+    required int comprehensionRate,
+  }) {
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: UiSpacing.md,
+      mainAxisSpacing: UiSpacing.md,
+      childAspectRatio: 1.25,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        _dashboardStatCard(
+          title: 'Total Pasien',
+          value: '$totalPasienCount',
+          valueColor: UiPalette.slate900,
+          icon: Icons.group_outlined,
+          iconBg: UiPalette.blue50,
+          iconColor: UiPalette.blue600,
+        ),
+        _dashboardStatCard(
+          title: 'Menunggu Review',
+          value: '$pendingCount',
+          valueColor: const Color(0xFFEA580C),
+          icon: Icons.pending_actions_outlined,
+          iconBg: const Color(0xFFFFEDD5),
+          iconColor: const Color(0xFFEA580C),
+        ),
+        _dashboardStatCard(
+          title: 'Sudah Disetujui',
+          value: '$approvedCount',
+          valueColor: const Color(0xFF16A34A),
+          icon: Icons.verified_outlined,
+          iconBg: const Color(0xFFDCFCE7),
+          iconColor: const Color(0xFF16A34A),
+        ),
+        _dashboardStatCard(
+          title: 'Tingkat Pemahaman',
+          value: '$comprehensionRate%',
+          valueColor: const Color(0xFF0891B2),
+          icon: Icons.trending_up_rounded,
+          iconBg: const Color(0xFFCFFAFE),
+          iconColor: const Color(0xFF0891B2),
+        ),
+      ],
+    );
   }
 
-  Widget _smallMetric({
+  Widget _dashboardStatCard({
     required String title,
     required String value,
-    required Color color,
+    required Color valueColor,
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
+    return AconsiaCardSurface(
+      borderColor: const Color(0xFFE2E8F0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF42566F),
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: UiTypography.caption,
+                ),
+              ),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+            ],
           ),
-          const Gap(6),
+          const Gap(UiSpacing.sm),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
+            style: UiTypography.h1.copyWith(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _patientSectionCard({
+    required String title,
+    required IconData icon,
+    required Color titleColor,
+    required Color cardBg,
+    required Color cardBorder,
+    required List<PasienProfileModel> patients,
+    required _PatientSectionType type,
+  }) {
+    return AconsiaCardSurface(
+      borderColor: cardBorder,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        padding: const EdgeInsets.all(UiSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: titleColor),
+                const Gap(UiSpacing.xs),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: UiTypography.label.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Gap(UiSpacing.sm),
+            if (patients.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: UiSpacing.sm),
+                child: Text(
+                  'Belum ada data pasien untuk kategori ini.',
+                  style: UiTypography.bodySmall,
+                ),
+              ),
+            ...patients.take(8).map((p) => _patientRow(p, type)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _patientRow(PasienProfileModel pasien, _PatientSectionType type) {
+    return Builder(
+      builder: (context) {
+        final nama = (pasien.namaLengkap ?? 'Pasien').trim();
+        final noRm = (pasien.noRekamMedis ?? '-').trim();
+        final nik = (pasien.nik ?? '-').trim();
+        final phone = (pasien.nomorTelepon ?? '-').trim();
+        final operasi = (pasien.jenisOperasi ?? '-').trim();
+        final tgl = _formatTanggalLahir(pasien);
+        final isPending = type == _PatientSectionType.pending;
+        final isNeedAnes = type == _PatientSectionType.needAnesthesia;
+        final comprehension = _estimatedComprehension(pasien);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: UiSpacing.sm),
+          padding: const EdgeInsets.all(UiSpacing.sm),
+          decoration: BoxDecoration(
+            color: UiPalette.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isPending
+                  ? const Color(0xFFFED7AA)
+                  : isNeedAnes
+                      ? const Color(0xFFBFDBFE)
+                      : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isPending
+                          ? const Color(0xFFFFEDD5)
+                          : isNeedAnes
+                              ? const Color(0xFFE0F2FE)
+                              : const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      color: isPending
+                          ? const Color(0xFFEA580C)
+                          : isNeedAnes
+                              ? const Color(0xFF2563EB)
+                              : const Color(0xFF16A34A),
+                    ),
+                  ),
+                  const Gap(UiSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nama.isEmpty ? 'Pasien' : nama,
+                          style: UiTypography.label.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: UiPalette.slate900,
+                          ),
+                        ),
+                        const Gap(UiSpacing.xxs),
+                        Text(
+                          isPending
+                              ? 'No. RM: $noRm • NIK: $nik • $phone'
+                              : 'No. RM: $noRm • $operasi • $tgl',
+                          style: UiTypography.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isPending && !isNeedAnes)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '$comprehension%',
+                          style: UiTypography.title.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: UiPalette.blue600,
+                          ),
+                        ),
+                        const Gap(UiSpacing.xxs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: UiSpacing.xs,
+                            vertical: UiSpacing.xxs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: comprehension >= 80
+                                ? const Color(0xFFDCFCE7)
+                                : const Color(0xFFDBEAFE),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            comprehension >= 80 ? 'Siap TTD' : 'Belajar',
+                            style: UiTypography.caption.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: comprehension >= 80
+                                  ? const Color(0xFF166534)
+                                  : const Color(0xFF1D4ED8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              if (isPending || isNeedAnes) ...[
+                const Gap(UiSpacing.sm),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: UiSpacing.xs,
+                        vertical: UiSpacing.xxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isPending
+                            ? const Color(0xFFFFEDD5)
+                            : const Color(0xFFDBEAFE),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        isPending
+                            ? 'Menunggu Review'
+                            : 'Membutuhkan Anestesi',
+                        style: UiTypography.caption.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isPending
+                              ? const Color(0xFF9A3412)
+                              : const Color(0xFF1D4ED8),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => context.pushNamed(
+                        RouteName.detailPasien,
+                        extra: pasien.uid,
+                      ),
+                      child: Text(
+                        isPending ? 'Review Sekarang' : 'Assign Anestesi',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatTanggalLahir(PasienProfileModel pasien) {
+    final ts = pasien.tanggalLahir;
+    if (ts == null) return '-';
+    return DateFormat('dd MMM yyyy', 'id_ID').format(ts.toDate());
+  }
+
+  int _estimatedComprehension(PasienProfileModel pasien) {
+    final hasCore = _isMedicalReady(pasien);
+    final hasPhone = (pasien.nomorTelepon ?? '').trim().isNotEmpty;
+    if (hasCore && hasPhone) return 85;
+    if (hasCore) return 70;
+    return 0;
   }
 
   bool _isMedicalReady(PasienProfileModel pasien) {
@@ -609,4 +571,10 @@ class HomePage extends ConsumerWidget {
     final asa = (pasien.klasifikasiAsa ?? '').trim();
     return operasi.isNotEmpty && anestesi.isNotEmpty && asa.isNotEmpty;
   }
+}
+
+enum _PatientSectionType {
+  pending,
+  approved,
+  needAnesthesia,
 }

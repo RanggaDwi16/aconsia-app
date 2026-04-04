@@ -167,7 +167,6 @@ class DokterKontenRemoteDataSourceImpl implements DokterKontenRemoteDataSource {
           .map((doc) => KontenSectionModel.fromJson(doc.data()))
           .toList();
 
-      print('SECTION DATASOURCE: Ditemukan ${sections.length} sections.');
       return Right(sections);
     } catch (e) {
       return Left('Gagal mengambil sections: $e');

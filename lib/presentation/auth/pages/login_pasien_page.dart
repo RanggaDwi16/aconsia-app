@@ -1,9 +1,13 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_text_field.dart';
 import 'package:aconsia_app/core/main/controllers/auth/authentication_provider.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_auth_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_brand_logo.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
@@ -73,137 +77,149 @@ class LoginPasienPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Kembali',
-        centertitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF2F8FF),
-              Color(0xFFF8FCFF),
-            ],
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+      backgroundColor: UiPalette.blue50,
+      body: SafeArea(
+        child: AconsiaPageBackground(
+          colors: const [UiPalette.blue50, UiPalette.white],
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Gap(8),
-              const Text(
-                'Login Pasien',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Gap(6),
-              const Text(
-                'Sistem Informasi Informed Consent Anestesi',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColor.textGrayColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const Gap(24),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFDCE9FF)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x14000000),
-                      blurRadius: 12,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 62,
-                      height: 62,
-                      decoration: const BoxDecoration(
-                        color: AppColor.primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person_outline,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                    const Gap(14),
-                    CustomTextField(
-                      controller: emailController,
-                      hintText: 'Masukkan email Anda',
-                      labelText: 'Email',
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const Gap(16),
-                    CustomTextField(
-                      labelText: 'Password',
-                      controller: passwordController,
-                      hintText: 'Masukkan password',
-                      obscureText: !showPassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          showPassword ? Icons.visibility : Icons.visibility_off,
-                        ),
-                        onPressed: () => ref
-                            .read(showPasswordProvider.notifier)
-                            .update((v) => !v),
-                      ),
-                    ),
-                    const Gap(8),
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: InkWell(
-                        onTap: () => context.pushNamed(RouteName.forgotPassword),
-                        child: const Text(
-                          'Lupa Password?',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColor.primaryColor,
-                            fontWeight: FontWeight.bold,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: UiSpacing.pageHorizontal,
+                    vertical: UiSpacing.pageVertical,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                        children: [
+                          AconsiaAuthBackButton(onPressed: () => context.pop()),
+                          const Gap(UiSpacing.xl),
+                          AconsiaAuthCard(
+                            padding: EdgeInsets.zero,
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF2563EB),
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(16),
+                                      topRight: Radius.circular(16),
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: UiSpacing.xxl,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      const AconsiaBrandLogo(size: 78, imageSize: 48),
+                                      const Gap(UiSpacing.sm),
+                                      Text(
+                                        'Login Pasien',
+                                        style: UiTypography.h2.copyWith(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const Gap(UiSpacing.xs),
+                                      Text(
+                                        'Sistem Informasi Informed Consent Anestesi',
+                                        textAlign: TextAlign.center,
+                                        style: UiTypography.bodySmall.copyWith(
+                                          color: const Color(0xFFBFDBFE),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(UiSpacing.xl),
+                                  child: Column(
+                                    children: [
+                                      CustomTextField(
+                                        controller: emailController,
+                                        hintText: 'Masukkan email Anda',
+                                        labelText: 'Email',
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                      ),
+                                      const Gap(UiSpacing.lg),
+                                      CustomTextField(
+                                        labelText: 'Password',
+                                        controller: passwordController,
+                                        hintText: 'Masukkan password',
+                                        obscureText: !showPassword,
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            showPassword
+                                                ? Icons.visibility
+                                                : Icons.visibility_off,
+                                          ),
+                                          onPressed: () => ref
+                                              .read(
+                                                  showPasswordProvider.notifier)
+                                              .update((v) => !v),
+                                        ),
+                                      ),
+                                      const Gap(UiSpacing.sm),
+                                      Align(
+                                        alignment: Alignment.topLeft,
+                                        child: InkWell(
+                                          onTap: () => context.pushNamed(
+                                              RouteName.forgotPassword),
+                                          child: const Text(
+                                            'Lupa Password?',
+                                            style: UiTypography.body,
+                                          ),
+                                        ),
+                                      ),
+                                      const Gap(UiSpacing.xl),
+                                      Button.filled(
+                                        disabled: emailController
+                                                .text.isEmpty ||
+                                            passwordController.text.isEmpty ||
+                                            auth.isLoading,
+                                        onPressed: handleLogin,
+                                        label: auth.isLoading
+                                            ? 'Memuat...'
+                                            : 'Masuk',
+                                        color: const Color(0xFF2563EB),
+                                        borderColor: const Color(0xFF2563EB),
+                                        height: 52,
+                                        borderRadius: 12,
+                                      ),
+                                      const Gap(UiSpacing.sm),
+                                      Button.outlined(
+                                        onPressed: () => context.pushNamed(
+                                            RouteName.registerPasien),
+                                        label:
+                                            'Belum Punya Akun? Daftar Pasien',
+                                        borderColor: const Color(0xFF93C5FD),
+                                        textColor: const Color(0xFF1D4ED8),
+                                        height: 52,
+                                        borderRadius: 12,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                          const Gap(UiSpacing.lg),
+                          const Text(
+                            'Gunakan akun pasien yang terdaftar untuk mengakses materi edukasi.',
+                            textAlign: TextAlign.center,
+                            style: UiTypography.caption,
+                          ),
+                        ],
                       ),
                     ),
-                    const Gap(20),
-                    Button.filled(
-                      disabled: emailController.text.isEmpty ||
-                          passwordController.text.isEmpty ||
-                          auth.isLoading,
-                      onPressed: handleLogin,
-                      label: auth.isLoading ? 'Memuat...' : 'Masuk',
-                    ),
-                    const Gap(12),
-                    Button.outlined(
-                      onPressed: () => context.pushNamed(RouteName.registerPasien),
-                      label: 'Belum Punya Akun? Daftar Pasien',
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const Gap(20),
-              const Text(
-                'Gunakan akun pasien yang terdaftar untuk mengakses materi edukasi.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColor.textGrayColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const Gap(12),
+              const AconsiaAuthFooter(),
             ],
           ),
         ),
