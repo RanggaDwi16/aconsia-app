@@ -1,5 +1,11 @@
 include: package:flutter_lints/flutter.yaml
 analyzer:
+  exclude:
+    - "**/node_modules/**"
+    - "functions/node_modules/**"
+    - "build/**"
+    - ".dart_tool/**"
+    - "web-aconsia/**"
   errors:
     deprecated_member_use_from_same_package: ignore
     deprecated_member_use: ignore

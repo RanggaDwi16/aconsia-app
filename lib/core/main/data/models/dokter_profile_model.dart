@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'dokter_profile_model.freezed.dart';
@@ -8,10 +7,12 @@ part 'dokter_profile_model.g.dart';
 class DokterProfileModel with _$DokterProfileModel {
   const factory DokterProfileModel({
     @JsonKey(name: "uid") String? uid,
-    @JsonKey(name: "namaLengkap") String? namaLengkap,
-    @JsonKey(name: "nomorSTR") String? nomorStr,
-    @JsonKey(name: "nomorSIP") String? nomorSip,
-    @JsonKey(name: "spesialisasi") String? spesialisasi,
+    @JsonKey(name: "fullName") String? namaLengkap,
+    @JsonKey(name: "strNumber") String? nomorStr,
+    @JsonKey(name: "sipNumber") String? nomorSip,
+    @JsonKey(name: "specialization") String? spesialisasi,
+    @JsonKey(name: "hospitalName") String? hospitalName,
+    @JsonKey(name: "status") String? status,
     @JsonKey(name: "tanggalGabung") String? tanggalGabung,
     @JsonKey(name: "tempatLahir") String? tempatLahir,
     @JsonKey(name: "tanggalLahir") String? tanggalLahir,

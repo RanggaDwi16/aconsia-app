@@ -1,7 +1,10 @@
 import 'package:aconsia_app/assignment/controllers/get_assignments_by_pasien/fetch_assignments_by_pasien_provider.dart';
 import 'package:aconsia_app/assignment/controllers/get_incomplete_assignments/fetch_incomplete_assignments_provider.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/pasien/assignment/widgets/assignment_card_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -36,39 +39,33 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Tugas Pembelajaran',
-        centertitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColor.primaryColor,
-              unselectedLabelColor: AppColor.textGrayColor,
-              indicatorColor: AppColor.primaryColor,
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+      body: SafeArea(
+        child: AconsiaPageBackground(
+        colors: const [UiPalette.blue50, UiPalette.white],
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(UiSpacing.md, UiSpacing.sm,
+                  UiSpacing.md, UiSpacing.xs),
+              child: AconsiaTopActionRow(
+                title: 'Tugas Pembelajaran',
+                subtitle: 'Pantau tugas dari dokter Anda',
+                onBack: () => Navigator.of(context).pop(),
               ),
-              tabs: const [
-                Tab(text: 'Semua'),
-                Tab(text: 'Belum Selesai'),
-                Tab(text: 'Selesai'),
-              ],
             ),
-          ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildAllAssignments(uid),
+                  _buildIncompleteAssignments(uid),
+                  _buildCompletedAssignments(uid),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildAllAssignments(uid),
-          _buildIncompleteAssignments(uid),
-          _buildCompletedAssignments(uid),
-        ],
       ),
     );
   }
@@ -84,7 +81,7 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
           return _buildEmptyState(
             icon: Icons.assignment_outlined,
             title: 'Belum Ada Tugas',
-            message: 'Dokter Anda belum memberikan tugas pembelajaran',
+            message: 'Dokter Anda belum memberikan tugas pembelajaran.',
           );
         }
 
@@ -93,13 +90,11 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
             ref.invalidate(fetchAssignmentsByPasienProvider(pasienId: uid));
           },
           child: ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             itemCount: assignments.length,
-            separatorBuilder: (_, __) => const Gap(12),
+            separatorBuilder: (_, __) => const Gap(UiSpacing.md),
             itemBuilder: (context, index) {
-              return AssignmentCardWidget(
-                assignment: assignments[index],
-              );
+              return AssignmentCardWidget(assignment: assignments[index]);
             },
           ),
         );
@@ -118,9 +113,9 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
       data: (assignments) {
         if (assignments == null || assignments.isEmpty) {
           return _buildEmptyState(
-            icon: Icons.check_circle_outline,
-            title: 'Semua Tugas Selesai!',
-            message: 'Mantap! Semua tugas pembelajaran sudah diselesaikan 🎉',
+            icon: Icons.task_alt,
+            title: 'Semua Tugas Selesai',
+            message: 'Mantap, seluruh tugas pembelajaran sudah selesai.',
           );
         }
 
@@ -129,13 +124,11 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
             ref.invalidate(fetchIncompleteAssignmentsProvider(pasienId: uid));
           },
           child: ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             itemCount: assignments.length,
-            separatorBuilder: (_, __) => const Gap(12),
+            separatorBuilder: (_, __) => const Gap(UiSpacing.md),
             itemBuilder: (context, index) {
-              return AssignmentCardWidget(
-                assignment: assignments[index],
-              );
+              return AssignmentCardWidget(assignment: assignments[index]);
             },
           ),
         );
@@ -156,11 +149,10 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
           return _buildEmptyState(
             icon: Icons.assignment_outlined,
             title: 'Belum Ada Tugas',
-            message: 'Dokter Anda belum memberikan tugas pembelajaran',
+            message: 'Dokter Anda belum memberikan tugas pembelajaran.',
           );
         }
 
-        // Filter only completed assignments
         final completedAssignments =
             assignments.where((assignment) => assignment.isCompleted).toList();
 
@@ -168,7 +160,7 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
           return _buildEmptyState(
             icon: Icons.pending_actions,
             title: 'Belum Ada yang Selesai',
-            message: 'Ayo semangat menyelesaikan tugas pembelajaran!',
+            message: 'Ayo lanjutkan belajar sampai semua tugas selesai.',
           );
         }
 
@@ -177,13 +169,12 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
             ref.invalidate(fetchAssignmentsByPasienProvider(pasienId: uid));
           },
           child: ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             itemCount: completedAssignments.length,
-            separatorBuilder: (_, __) => const Gap(12),
+            separatorBuilder: (_, __) => const Gap(UiSpacing.md),
             itemBuilder: (context, index) {
               return AssignmentCardWidget(
-                assignment: completedAssignments[index],
-              );
+                  assignment: completedAssignments[index]);
             },
           ),
         );
@@ -200,35 +191,26 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
   }) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 80,
-              color: Colors.grey.shade300,
-            ),
-            const Gap(24),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textColor,
+        padding: const EdgeInsets.all(UiSpacing.xl),
+        child: AconsiaCardSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 64, color: UiPalette.slate300),
+              const Gap(UiSpacing.md),
+              Text(
+                title,
+                style: UiTypography.title,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(8),
-            Text(
-              message,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
+              const Gap(UiSpacing.sm),
+              Text(
+                message,
+                style: UiTypography.body,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -237,35 +219,27 @@ class _AssignmentListPageState extends ConsumerState<AssignmentListPage>
   Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red.shade300,
-            ),
-            const Gap(24),
-            const Text(
-              'Terjadi Kesalahan',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textColor,
+        padding: const EdgeInsets.all(UiSpacing.xl),
+        child: AconsiaCardSurface(
+          borderColor: UiPalette.red600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 64, color: UiPalette.red600),
+              const Gap(UiSpacing.md),
+              const Text(
+                'Terjadi Kesalahan',
+                style: UiTypography.title,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(8),
-            Text(
-              error,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.red,
+              const Gap(UiSpacing.sm),
+              Text(
+                error,
+                style: UiTypography.body.copyWith(color: UiPalette.red600),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:aconsia_app/core/main/data/models/konten_assignment_model.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_id/fetch_konten_by_id_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +19,6 @@ class AssignmentCardWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Fetch konten details
     final kontenAsync = ref.watch(
       fetchKontenByIdProvider(kontenId: assignment.kontenId),
     );
@@ -29,7 +29,6 @@ class AssignmentCardWidget extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        // Calculate progress percentage
         final totalSections = konten.jumlahBagian ?? 1;
         final currentSection = assignment.currentBagian;
         final progressPercentage =
@@ -37,7 +36,6 @@ class AssignmentCardWidget extends ConsumerWidget {
 
         return InkWell(
           onTap: () {
-            // Navigate to assignment detail
             context.pushNamed(
               RouteName.assignmentDetail,
               extra: {
@@ -49,44 +47,35 @@ class AssignmentCardWidget extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: UiPalette.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: assignment.isCompleted
-                    ? Colors.green.shade200
-                    : AppColor.primaryColor.withOpacity(0.3),
-                width: 1.5,
+                    ? UiPalette.emerald100
+                    : UiPalette.blue100,
+                width: 1.25,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image preview
                 if (konten.gambarUrl != null && konten.gambarUrl!.isNotEmpty)
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(12)),
                     child: Image.network(
                       konten.gambarUrl!,
                       width: double.infinity,
-                      height: 140,
+                      height: 132,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          height: 140,
-                          color: Colors.grey.shade200,
-                          child: Icon(
+                          height: 132,
+                          color: UiPalette.slate100,
+                          child: const Icon(
                             Icons.image_not_supported,
-                            size: 48,
-                            color: Colors.grey.shade400,
+                            size: 42,
+                            color: UiPalette.slate400,
                           ),
                         );
                       },
@@ -94,117 +83,103 @@ class AssignmentCardWidget extends ConsumerWidget {
                   )
                 else
                   Container(
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: AppColor.primaryColor.withOpacity(0.1),
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
+                    height: 132,
+                    decoration: const BoxDecoration(
+                      color: UiPalette.blue50,
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(12)),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Icon(
-                        Icons.article,
-                        size: 64,
-                        color: AppColor.primaryColor.withOpacity(0.5),
+                        Icons.article_outlined,
+                        size: 52,
+                        color: UiPalette.blue500,
                       ),
                     ),
                   ),
-
-                // Content section
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(UiSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Status badge + Date
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _buildStatusBadge(),
+                          const Spacer(),
                           Text(
                             _formatDate(assignment.assignedAt),
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: UiPalette.slate500,
                             ),
                           ),
                         ],
                       ),
-                      const Gap(12),
-
-                      // Title
+                      const Gap(UiSpacing.sm),
                       Text(
                         konten.judul ?? 'Judul tidak tersedia',
                         style: const TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.textColor,
+                          fontWeight: FontWeight.w700,
+                          color: UiPalette.slate900,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const Gap(8),
-
-                      // Description
+                      const Gap(UiSpacing.xs),
                       Text(
                         konten.jenisAnestesi ?? 'Konten pembelajaran',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade700,
+                          color: UiPalette.slate600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const Gap(16),
-
-                      // Progress section
+                      const Gap(UiSpacing.md),
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.book_outlined,
-                            size: 16,
-                            color: Colors.grey.shade600,
+                            size: 15,
+                            color: UiPalette.slate500,
                           ),
-                          const Gap(6),
+                          const Gap(UiSpacing.xs),
                           Text(
                             'Bagian $currentSection dari $totalSections',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w500,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: UiPalette.slate600,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                      const Gap(8),
-
-                      // Progress bar
+                      const Gap(UiSpacing.sm),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(99),
                         child: LinearProgressIndicator(
                           value: progressPercentage,
-                          minHeight: 8,
-                          backgroundColor: Colors.grey.shade200,
+                          minHeight: 7,
+                          backgroundColor: UiPalette.slate200,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             assignment.isCompleted
-                                ? Colors.green
-                                : AppColor.primaryColor,
+                                ? UiPalette.emerald600
+                                : UiPalette.blue600,
                           ),
                         ),
                       ),
-                      const Gap(6),
-
-                      // Percentage text
+                      const Gap(UiSpacing.xs),
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(
                           '${(progressPercentage * 100).toInt()}%',
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                             color: assignment.isCompleted
-                                ? Colors.green
-                                : AppColor.primaryColor,
+                                ? UiPalette.emerald700
+                                : UiPalette.blue600,
                           ),
                         ),
                       ),
@@ -222,38 +197,30 @@ class AssignmentCardWidget extends ConsumerWidget {
   }
 
   Widget _buildStatusBadge() {
+    final isDone = assignment.isCompleted;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: assignment.isCompleted
-            ? Colors.green.shade50
-            : AppColor.primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: isDone ? UiPalette.emerald50 : UiPalette.blue50,
+        borderRadius: BorderRadius.circular(99),
         border: Border.all(
-          color: assignment.isCompleted
-              ? Colors.green.shade300
-              : AppColor.primaryColor.withOpacity(0.3),
-          width: 1,
-        ),
+            color: isDone ? UiPalette.emerald100 : UiPalette.blue100),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            assignment.isCompleted ? Icons.check_circle : Icons.pending_actions,
-            size: 14,
-            color:
-                assignment.isCompleted ? Colors.green : AppColor.primaryColor,
+            isDone ? Icons.check_circle : Icons.pending_actions,
+            size: 13,
+            color: isDone ? UiPalette.emerald700 : UiPalette.blue600,
           ),
-          const Gap(4),
+          const Gap(UiSpacing.xs),
           Text(
-            assignment.isCompleted ? 'Selesai' : 'Dalam Progress',
+            isDone ? 'Selesai' : 'Dalam Progress',
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: assignment.isCompleted
-                  ? Colors.green.shade700
-                  : AppColor.primaryColor,
+              fontWeight: FontWeight.w700,
+              color: isDone ? UiPalette.emerald700 : UiPalette.blue600,
             ),
           ),
         ],
@@ -263,15 +230,13 @@ class AssignmentCardWidget extends ConsumerWidget {
 
   Widget _buildLoadingCard() {
     return Container(
-      height: 280,
+      height: 260,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: UiPalette.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: UiPalette.slate200),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -285,8 +250,7 @@ class AssignmentCardWidget extends ConsumerWidget {
       return 'Kemarin';
     } else if (difference.inDays < 7) {
       return '${difference.inDays} hari lalu';
-    } else {
-      return DateFormat('dd MMM yyyy').format(date);
     }
+    return DateFormat('dd MMM yyyy').format(date);
   }
 }

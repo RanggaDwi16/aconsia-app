@@ -1,5 +1,5 @@
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/presentation/dokter/home/pages/home_page.dart';
 import 'package:aconsia_app/presentation/dokter/konten/pages/konten_page.dart';
 import 'package:aconsia_app/presentation/dokter/main/controllers/selected_index_provider.dart';
@@ -45,9 +45,17 @@ class MainDokterPage extends ConsumerWidget {
           backgroundColor: Colors.white,
           type: BottomNavigationBarType.fixed,
           currentIndex: selectedIndex,
-          selectedItemColor: AppColor.primaryColor,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          elevation: 6,
+          selectedItemColor: UiPalette.blue600,
+          unselectedItemColor: UiPalette.slate400,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
           onTap: (index) {
             ref.read(selectedIndexProvider.notifier).state = index;
           },
@@ -59,8 +67,8 @@ class MainDokterPage extends ConsumerWidget {
                 width: 24,
                 height: 24,
                 color: isSelected
-                    ? AppColor.primaryColor
-                    : Colors.grey, // warna ikon saat aktif
+                    ? UiPalette.blue600
+                    : UiPalette.slate400,
               ),
               label: labels[index],
             );

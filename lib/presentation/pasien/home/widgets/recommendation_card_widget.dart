@@ -1,5 +1,6 @@
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/ai_recommendation_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/tag_widgets.dart';
 import 'package:flutter/material.dart';
@@ -21,41 +22,28 @@ class RecommendationCardWidget extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        context.pushNamed(
-          RouteName.detailKonten,
-          extra: konten.id,
-        );
+        context.pushNamed(RouteName.detailKonten, extra: konten.id);
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiSpacing.md),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppColor.primaryColor.withOpacity(0.05),
-              Colors.white,
-            ],
+            colors: [UiPalette.blue50, UiPalette.white],
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColor.primaryColor.withOpacity(0.2),
-            width: 1.5,
-          ),
+          border: Border.all(color: UiPalette.blue100, width: 1.25),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with relevance score
             Row(
               children: [
-                // Relevance badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: _getRelevanceColor(relevanceScore),
                     borderRadius: BorderRadius.circular(8),
@@ -63,17 +51,14 @@ class RecommendationCardWidget extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        size: 14,
-                        color: Colors.white,
-                      ),
+                      const Icon(Icons.auto_awesome,
+                          size: 14, color: Colors.white),
                       const Gap(4),
                       Text(
                         '${relevanceScore.toInt()}% Match',
                         style: const TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
@@ -81,47 +66,37 @@ class RecommendationCardWidget extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // New badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: UiPalette.amber50,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.orange.shade200,
-                      width: 1,
-                    ),
+                    border: Border.all(color: UiPalette.amber100),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Belum Dibaca',
                     style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange.shade700,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: UiPalette.amber600,
                     ),
                   ),
                 ),
               ],
             ),
-            const Gap(12),
-
-            // Title
+            const Gap(UiSpacing.md),
             Text(
               konten.judul ?? 'Judul tidak tersedia',
               style: const TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textColor,
+                fontWeight: FontWeight.w700,
+                color: UiPalette.slate900,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const Gap(8),
-
-            // Tags
+            const Gap(UiSpacing.sm),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -132,30 +107,29 @@ class RecommendationCardWidget extends StatelessWidget {
                   TataCaraTag(text: konten.tataCara!),
               ],
             ),
-            const Gap(12),
-
-            // Reason
+            const Gap(UiSpacing.md),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(UiSpacing.sm),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: UiPalette.white,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: UiPalette.slate200),
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.lightbulb_outline,
                     size: 16,
-                    color: Colors.blue.shade700,
+                    color: UiPalette.blue600,
                   ),
-                  const Gap(8),
+                  const Gap(UiSpacing.sm),
                   Expanded(
                     child: Text(
                       recommendation.reason,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: Colors.blue.shade700,
-                        fontWeight: FontWeight.w500,
+                        color: UiPalette.slate700,
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -172,11 +146,10 @@ class RecommendationCardWidget extends StatelessWidget {
 
   Color _getRelevanceColor(double score) {
     if (score >= 80) {
-      return Colors.green;
+      return UiPalette.emerald600;
     } else if (score >= 60) {
-      return Colors.blue;
-    } else {
-      return Colors.orange;
+      return UiPalette.blue600;
     }
+    return UiPalette.amber600;
   }
 }

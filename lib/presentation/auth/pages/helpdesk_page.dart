@@ -1,5 +1,6 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -9,13 +10,16 @@ class HelpdeskPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Tutorial',
-        centertitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        child: ListView(
+        padding: const EdgeInsets.all(UiSpacing.lg),
         children: [
+          AconsiaTopActionRow(
+            title: 'Tutorial',
+            subtitle: 'Panduan cepat penggunaan aplikasi ACONSIA',
+            onBack: () => Navigator.of(context).pop(),
+          ),
+          const Gap(UiSpacing.md),
           _buildExpansionTile(
             title: 'Cara mendaftar dan mengakses akun Aconsia',
             content: '1. Buka aplikasi dan pilih "Daftar".\n'
@@ -23,19 +27,20 @@ class HelpdeskPage extends StatelessWidget {
                 '3. Verifikasi email melalui link yang dikirim.\n'
                 '4. Setelah terverifikasi, masuk menggunakan email dan password.',
           ),
-          Gap(12),
+          Gap(UiSpacing.md),
           _buildExpansionTile(
             title: 'Reset Password',
             content: '1. Pilih "Lupa Password" pada layar login.\n'
                 '2. Masukkan email yang terdaftar dan ikuti instruksi yang dikirim ke email.',
           ),
-          Gap(12),
+          Gap(UiSpacing.md),
           _buildExpansionTile(
             title: 'Kontak Bantuan',
             content:
                 'Jika masih ada masalah, hubungi tim support di support@example.com atau 0800-123-456.',
           ),
         ],
+        ),
       ),
     );
   }
@@ -47,7 +52,7 @@ class HelpdeskPage extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: AppColor.borderColor,
+          color: UiPalette.slate300,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
@@ -65,18 +70,18 @@ class HelpdeskPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColor.textColor,
+              color: UiPalette.slate900,
             ),
           ),
-          tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           childrenPadding: EdgeInsets.only(
             left: 16,
             right: 16,
             bottom: 16,
             top: 0,
           ),
-          iconColor: AppColor.textGrayColor,
-          collapsedIconColor: AppColor.textGrayColor,
+          iconColor: UiPalette.slate500,
+          collapsedIconColor: UiPalette.slate500,
           children: [
             Align(
               alignment: Alignment.centerLeft,
@@ -84,7 +89,7 @@ class HelpdeskPage extends StatelessWidget {
                 content,
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppColor.textGrayColor,
+                  color: UiPalette.slate500,
                   height: 1.5,
                 ),
               ),

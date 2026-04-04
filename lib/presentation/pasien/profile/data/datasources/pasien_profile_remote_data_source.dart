@@ -226,7 +226,7 @@ class PasienProfileRemoteDataSourceImpl
       {required String uid, required String photoUrl}) async {
     try {
       await firestore.collection('pasien_profiles').doc(uid).update({
-        'photoUrl': photoUrl,
+        'fotoProfilUrl': photoUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return Right('Photo URL updated successfully.');
@@ -256,23 +256,16 @@ class PasienProfileRemoteDataSourceImpl
         firestore.collection('pasien_profiles').doc(uid).set({
           'uid': uid,
           'dokterId': assignedDokterId,
-          'assignedDokterId': assignedDokterId,
           'namaLengkap': fullName,
-          'fullName': fullName,
           'nomorTelepon': phone,
-          'phoneNumber': phone,
           'email': email,
           'fotoProfilUrl': model.fotoProfilUrl,
-          'photoUrl': model.fotoProfilUrl,
           'noRekamMedis': mrn,
-          'mrn': mrn,
           'nik': model.nik,
           'tanggalLahir': model.tanggalLahir,
           'jenisKelamin': model.jenisKelamin,
           'jenisOperasi': diagnosis,
-          'surgeryType': diagnosis,
           'jenisAnestesi': anesthesia,
-          'anesthesiaType': anesthesia,
           'klasifikasiASA': model.klasifikasiAsa,
           'tinggiBadan': model.tinggiBadan,
           'beratBadan': model.beratBadan,

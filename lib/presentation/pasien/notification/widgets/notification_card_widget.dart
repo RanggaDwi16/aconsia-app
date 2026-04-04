@@ -1,9 +1,9 @@
 import 'package:aconsia_app/core/main/data/models/notification_model.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/notification/controllers/mark_as_read/post_mark_as_read_provider.dart';
 import 'package:aconsia_app/notification/domain/usecases/mark_as_read.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -24,33 +24,19 @@ class NotificationCardWidget extends ConsumerWidget {
       onTap: () => _handleNotificationTap(context, ref),
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiSpacing.md),
         decoration: BoxDecoration(
-          color: notification.isRead
-              ? Colors.white
-              : AppColor.primaryColor.withOpacity(0.05),
+          color: notification.isRead ? UiPalette.white : UiPalette.blue50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: notification.isRead
-                ? Colors.grey.shade200
-                : AppColor.primaryColor.withOpacity(0.3),
-            width: 1.5,
+            color: notification.isRead ? UiPalette.slate200 : UiPalette.blue100,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon based on notification type
             _buildNotificationIcon(),
-            const Gap(12),
-            // Content
+            const Gap(UiSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,43 +50,43 @@ class NotificationCardWidget extends ConsumerWidget {
                             fontSize: 14,
                             fontWeight: notification.isRead
                                 ? FontWeight.w600
-                                : FontWeight.bold,
-                            color: AppColor.textColor,
+                                : FontWeight.w700,
+                            color: UiPalette.slate900,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (!notification.isRead) ...[
-                        const Gap(8),
+                        const Gap(UiSpacing.xs),
                         Container(
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: AppColor.primaryColor,
+                            color: UiPalette.blue600,
                             shape: BoxShape.circle,
                           ),
                         ),
                       ],
                     ],
                   ),
-                  const Gap(6),
+                  const Gap(UiSpacing.xs),
                   Text(
                     notification.body,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade700,
+                      color: UiPalette.slate700,
                       height: 1.4,
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const Gap(8),
+                  const Gap(UiSpacing.sm),
                   Text(
                     _formatTimestamp(notification.createdAt),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade500,
+                      color: UiPalette.slate500,
                     ),
                   ),
                 ],
@@ -119,43 +105,39 @@ class NotificationCardWidget extends ConsumerWidget {
 
     switch (notification.type) {
       case 'assignment':
-        iconData = Icons.assignment;
-        iconColor = Colors.blue;
-        backgroundColor = Colors.blue.shade50;
+        iconData = Icons.assignment_outlined;
+        iconColor = UiPalette.blue600;
+        backgroundColor = UiPalette.blue50;
         break;
       case 'chat':
-        iconData = Icons.chat_bubble;
-        iconColor = Colors.green;
-        backgroundColor = Colors.green.shade50;
+        iconData = Icons.chat_bubble_outline;
+        iconColor = UiPalette.emerald600;
+        backgroundColor = UiPalette.emerald50;
         break;
       case 'quiz_result':
-        iconData = Icons.quiz;
-        iconColor = Colors.purple;
-        backgroundColor = Colors.purple.shade50;
+        iconData = Icons.smart_toy_outlined;
+        iconColor = UiPalette.amber600;
+        backgroundColor = UiPalette.amber50;
         break;
       case 'recommendation':
-        iconData = Icons.lightbulb;
-        iconColor = Colors.orange;
-        backgroundColor = Colors.orange.shade50;
+        iconData = Icons.lightbulb_outline;
+        iconColor = UiPalette.blue600;
+        backgroundColor = UiPalette.blue50;
         break;
       default:
-        iconData = Icons.notifications;
-        iconColor = AppColor.primaryColor;
-        backgroundColor = AppColor.primaryColor.withOpacity(0.1);
+        iconData = Icons.notifications_none;
+        iconColor = UiPalette.slate600;
+        backgroundColor = UiPalette.slate100;
     }
 
     return Container(
-      width: 48,
-      height: 48,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(
-        iconData,
-        color: iconColor,
-        size: 24,
-      ),
+      child: Icon(iconData, color: iconColor, size: 20),
     );
   }
 
@@ -171,80 +153,40 @@ class NotificationCardWidget extends ConsumerWidget {
       return '${difference.inHours} jam lalu';
     } else if (difference.inDays < 7) {
       return '${difference.inDays} hari lalu';
-    } else {
-      return DateFormat('dd MMM yyyy, HH:mm').format(timestamp);
     }
+    return DateFormat('dd MMM yyyy, HH:mm').format(timestamp);
   }
 
   Future<void> _handleNotificationTap(
-      BuildContext context, WidgetRef ref) async {
-    // Mark as read if not already
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     if (!notification.isRead) {
-      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
       await ref.read(postMarkAsReadProvider.notifier).postMarkAsRead(
-            params: MarkAsReadParams(
-              notificationId: notification.id,
-            ),
-            onSuccess: (message) {
-              // Notification marked as read
-            },
-            onError: (error) {
-              // Handle error silently
-            },
+            params: MarkAsReadParams(notificationId: notification.id),
+            onSuccess: (message) {},
+            onError: (error) {},
           );
     }
 
-    // Navigate based on notification type
     switch (notification.type) {
       case 'assignment':
-        if (notification.relatedId != null) {
-          // Navigate to assignment detail or konten detail
-          context.pushNamed(
-            RouteName.detailKonten,
-            extra: notification.relatedId,
-          );
-        }
-        break;
-
-      case 'chat':
-        if (notification.relatedId != null) {
-          // Navigate to chat room
-          // context.pushNamed(
-          //   RouteName.chatRoom,
-          //   extra: notification.relatedId,
-          // );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fitur Chat akan segera hadir!'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-        break;
-
       case 'quiz_result':
-        if (notification.relatedId != null) {
-          // Navigate to quiz result page
-          // Need konten and quiz data
-          context.pushNamed(
-            RouteName.detailKonten,
-            extra: notification.relatedId,
-          );
-        }
-        break;
-
       case 'recommendation':
         if (notification.relatedId != null) {
-          // Navigate to konten detail
-          context.pushNamed(
-            RouteName.detailKonten,
-            extra: notification.relatedId,
-          );
+          context.pushNamed(RouteName.detailKonten,
+              extra: notification.relatedId);
         }
         break;
-
+      case 'chat':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fitur Chat akan segera hadir!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        break;
       default:
-        // Default action
         break;
     }
   }

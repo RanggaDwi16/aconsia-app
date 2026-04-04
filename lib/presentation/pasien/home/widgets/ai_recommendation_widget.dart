@@ -1,7 +1,8 @@
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/ai_recommendation_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/recommendation_card_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -38,7 +39,7 @@ class AiRecommendationWidget extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColor.primaryColor,
+                color: UiPalette.slate900,
               ),
             ),
           ],
@@ -48,7 +49,7 @@ class AiRecommendationWidget extends ConsumerWidget {
           'Berdasarkan progress Anda, kami merekomendasikan materi:',
           style: TextStyle(
             fontSize: 14,
-            color: AppColor.textGrayColor,
+            color: UiPalette.slate500,
           ),
         ),
         const Gap(16),
@@ -95,19 +96,15 @@ class AiRecommendationWidget extends ConsumerWidget {
   }
 
   Widget _buildEmptyState() {
-    return Container(
+    return AconsiaCardSurface(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+      borderColor: UiPalette.slate200,
       child: Column(
         children: [
-          Icon(
+          const Icon(
             Icons.star_border,
             size: 48,
-            color: Colors.grey.shade400,
+            color: UiPalette.slate400,
           ),
           const Gap(12),
           Text(
@@ -115,15 +112,15 @@ class AiRecommendationWidget extends ConsumerWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: UiPalette.slate700,
             ),
           ),
           const Gap(6),
           Text(
-            'Selesaikan kuis pembelajaran untuk mendapatkan rekomendasi konten yang sesuai',
+            'Selesaikan sesi AI pembelajaran untuk mendapatkan rekomendasi konten yang sesuai',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey.shade600,
+              color: UiPalette.slate600,
             ),
             textAlign: TextAlign.center,
           ),

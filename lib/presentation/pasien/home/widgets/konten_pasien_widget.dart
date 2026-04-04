@@ -1,6 +1,6 @@
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/detail_konten_widget.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +29,7 @@ class KontenPasienWidget extends StatelessWidget {
       width: context.deviceWidth,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColor.borderColor, width: 1),
+        border: Border.all(color: UiPalette.slate300, width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -49,7 +49,7 @@ class KontenPasienWidget extends StatelessWidget {
             'Pelajari cara-cara efektif untuk mengelola stres di lingkungan kerja Anda dan meningkatkan kesejahteraan mental Anda.',
             style: TextStyle(
               fontSize: 14,
-              color: AppColor.textGrayColor,
+              color: UiPalette.slate500,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

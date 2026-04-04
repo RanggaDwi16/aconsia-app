@@ -1,6 +1,8 @@
 // A custom search field widget with an icon and hint text.
 
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:flutter/material.dart';
 
 class CustomSearchField extends StatelessWidget {
@@ -12,7 +14,7 @@ class CustomSearchField extends StatelessWidget {
   const CustomSearchField({
     super.key,
     this.controller,
-    this.color = AppColor.primaryWhite,
+    this.color = UiPalette.white,
     this.hintText = 'Cari',
     this.onChanged,
   });
@@ -23,26 +25,24 @@ class CustomSearchField extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          width: 2,
-          color: AppColor.borderColor,
+          width: 1,
+          color: UiPalette.slate300,
         ),
       ),
       child: Row(
         children: [
           const Icon(
             Icons.search,
+            color: UiPalette.slate500,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: UiSpacing.xs),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 14,
-              ),
+              style: UiTypography.body.copyWith(color: UiPalette.slate900),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 errorBorder: InputBorder.none,
@@ -54,7 +54,8 @@ class CustomSearchField extends StatelessWidget {
                   horizontal: 0,
                 ),
                 hintText: hintText,
-                hintStyle: const TextStyle(color: AppColor.textGrayColor),
+                hintStyle:
+                    UiTypography.body.copyWith(color: UiPalette.slate400),
               ),
             ),
           ),

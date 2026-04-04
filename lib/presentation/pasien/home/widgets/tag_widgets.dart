@@ -1,5 +1,5 @@
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
@@ -13,7 +13,7 @@ class RekomendasiTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColor.primaryColor,
+        color: UiPalette.blue600,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -56,7 +56,7 @@ class JenisAnestesiTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         border: Border.all(
-          color: AppColor.borderColor,
+          color: UiPalette.slate300,
           width: 1,
         ),
         borderRadius: BorderRadius.circular(20),
@@ -86,7 +86,7 @@ class JenisOperasiTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColor.primaryColor.withOpacity(0.1),
+        color: UiPalette.blue50,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -94,7 +94,7 @@ class JenisOperasiTag extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppColor.primaryColor,
+          color: UiPalette.blue600,
         ),
       ),
     );
@@ -245,7 +245,7 @@ class SkorPemahamanAITag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColor.primaryColor.withOpacity(0.1),
+        color: UiPalette.blue50,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -254,7 +254,7 @@ class SkorPemahamanAITag extends StatelessWidget {
           Icon(
             Icons.psychology,
             size: 14,
-            color: AppColor.primaryColor,
+            color: UiPalette.blue600,
           ),
           const Gap(4),
           Text(
@@ -262,7 +262,7 @@ class SkorPemahamanAITag extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColor.primaryColor,
+              color: UiPalette.blue600,
             ),
           ),
         ],
@@ -280,7 +280,7 @@ class StatusSelesaiTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColor.primaryGreen.withOpacity(0.1),
+        color: UiPalette.emerald50,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -288,7 +288,7 @@ class StatusSelesaiTag extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
-          color: AppColor.primaryGreen,
+          color: UiPalette.emerald600,
         ),
       ),
     );

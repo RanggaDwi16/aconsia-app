@@ -1,7 +1,10 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/widgets/pasien_choose_dokter_widget.dart';
 import 'package:aconsia_app/presentation/pasien/profile/widgets/pasien_contact_widget.dart';
@@ -50,7 +53,8 @@ class DetailPasienPage extends HookConsumerWidget {
         noRekamMedisController.text = profilePasien.noRekamMedis ?? '';
         nikController.text = profilePasien.nik ?? '';
         tanggalLahirController.text = profilePasien.tanggalLahir != null
-            ? DateFormat('d/M/yyyy').format(profilePasien.tanggalLahir!.toDate())
+            ? DateFormat('d/M/yyyy')
+                .format(profilePasien.tanggalLahir!.toDate())
             : '';
         jenisKelaminController.text = profilePasien.jenisKelamin ?? '';
         emailController.text = profilePasien.email ?? '';
@@ -58,7 +62,8 @@ class DetailPasienPage extends HookConsumerWidget {
         jenisOperasiController.text = profilePasien.jenisOperasi ?? '';
         jenisAnestesiController.text = profilePasien.jenisAnestesi ?? '';
         klasifikasiasaController.text = profilePasien.klasifikasiAsa ?? '';
-        tinggiBadanController.text = profilePasien.tinggiBadan?.toString() ?? '';
+        tinggiBadanController.text =
+            profilePasien.tinggiBadan?.toString() ?? '';
         beratBadanController.text = profilePasien.beratBadan?.toString() ?? '';
         namaWaliController.text = profilePasien.namaWali ?? '';
         hubunganController.text = profilePasien.hubunganWali ?? '';
@@ -69,45 +74,34 @@ class DetailPasienPage extends HookConsumerWidget {
     }, [pasienProfileAsync.value]);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Detail Pasien',
-        centertitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF4FAFF),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
+      body: AconsiaPageBackground(
+        colors: const [Color(0xFFF8FAFC), UiPalette.white],
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(fetchPasienProfileProvider);
             await Future.delayed(const Duration(milliseconds: 400));
           },
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             child: pasienProfileAsync.when(
-            data: (profile) => Center(
+              data: (profile) => Center(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    AconsiaTopActionRow(
+                      title: 'Detail & Review Pasien',
+                      subtitle: 'Lihat data lengkap dan status kesiapan pasien',
+                      onBack: () => context.pop(),
+                    ),
+                    const Gap(UiSpacing.md),
                     if (profile != null) ...[
                       _buildReviewStatusBanner(profile),
-                      const Gap(12),
+                      const Gap(UiSpacing.sm),
                     ],
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFDCEAFF)),
-                      ),
+                    AconsiaCardSurface(
+                      radius: 14,
+                      borderColor: const Color(0xFFDCEAFF),
+                      padding: const EdgeInsets.all(UiSpacing.md),
                       child: Column(
                         children: [
                           CircleAvatar(
@@ -119,47 +113,43 @@ class DetailPasienPage extends HookConsumerWidget {
                                       : 'Pasien')
                                   .substring(0, 1)
                                   .toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: AppColor.primaryColor,
+                              style: UiTypography.h2.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: UiPalette.blue600,
                               ),
                             ),
                           ),
-                          const Gap(10),
+                          const Gap(UiSpacing.sm),
                           Text(
                             namaController.text.isEmpty
                                 ? 'Pasien'
                                 : namaController.text,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                            style: UiTypography.title.copyWith(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const Gap(4),
+                          const Gap(UiSpacing.xxs),
                           Text(
                             noRekamMedisController.text.isEmpty
                                 ? 'No. rekam medis belum tersedia'
                                 : 'No RM: ${noRekamMedisController.text}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColor.textGrayColor,
-                            ),
+                            style: UiTypography.caption,
                           ),
-                          const Gap(8),
+                          const Gap(UiSpacing.sm),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColor.primaryColor,
+                              color: UiPalette.blue600,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Role: Pasien',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColor.primaryWhite,
+                              style: UiTypography.caption.copyWith(
+                                color: UiPalette.white,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -167,9 +157,10 @@ class DetailPasienPage extends HookConsumerWidget {
                         ],
                       ),
                     ),
-                    const Gap(20),
-                    PasienChooseDokterWidget(dokterController: dokterController),
-                    const Gap(16),
+                    const Gap(UiSpacing.lg),
+                    PasienChooseDokterWidget(
+                        dokterController: dokterController),
+                    const Gap(UiSpacing.md),
                     PasienPersonalInformationWidget(
                       namaController: namaController,
                       noRekamMedisController: noRekamMedisController,
@@ -177,12 +168,12 @@ class DetailPasienPage extends HookConsumerWidget {
                       tanggalLahirController: tanggalLahirController,
                       jenisKelaminController: jenisKelaminController,
                     ),
-                    const Gap(16),
+                    const Gap(UiSpacing.md),
                     PasienContactWidget(
                       emailController: emailController,
                       phoneController: phoneController,
                     ),
-                    const Gap(16),
+                    const Gap(UiSpacing.md),
                     PasienMedicInformationWidget(
                       jenisOperasiController: jenisOperasiController,
                       jenisAnestesiController: jenisAnestesiController,
@@ -191,31 +182,31 @@ class DetailPasienPage extends HookConsumerWidget {
                       beratBadanController: beratBadanController,
                       isDokterInput: true,
                     ),
-                    const Gap(16),
+                    const Gap(UiSpacing.md),
                     PasienWaliInformationWidget(
                       namaController: namaWaliController,
                       hubunganController: hubunganController,
                       nomorHpController: nomorHpController,
                       alamatController: alamatController,
                     ),
-                    const Gap(8),
+                    const Gap(UiSpacing.sm),
                     if (profile == null)
                       const Text(
                         'Profil pasien belum ditemukan.',
-                        style: TextStyle(color: AppColor.primaryRed),
+                        style: TextStyle(color: UiPalette.red600),
                       ),
                   ],
                 ),
               ),
               loading: () => const Center(
                 child: Padding(
-                  padding: EdgeInsets.only(top: 48),
+                  padding: EdgeInsets.only(top: UiSpacing.xxxl),
                   child: CircularProgressIndicator(),
                 ),
               ),
               error: (error, _) => Center(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 40),
+                  padding: const EdgeInsets.only(top: UiSpacing.xxxl),
                   child: Text('Gagal memuat detail pasien: $error'),
                 ),
               ),
@@ -224,7 +215,7 @@ class DetailPasienPage extends HookConsumerWidget {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(UiSpacing.md),
         child: Builder(
           builder: (_) {
             final profile = pasienProfileAsync.value;
@@ -235,8 +226,10 @@ class DetailPasienPage extends HookConsumerWidget {
                 extra: pasienId,
               ),
               label: isReady
-                  ? 'Perbarui Informasi Medis'
-                  : 'Lengkapi Informasi Medis Pasien',
+                  ? 'Perbarui Data Medis'
+                  : 'Review Informasi Medis Pasien',
+              height: 52,
+              borderRadius: 12,
             );
           },
         ),
@@ -252,10 +245,11 @@ class DetailPasienPage extends HookConsumerWidget {
     final bgColor = isReady ? const Color(0xFFEAF9EF) : const Color(0xFFFFF6E8);
     final borderColor =
         isReady ? const Color(0xFFCDEFD8) : const Color(0xFFFFE3B3);
-    final iconColor = isReady ? const Color(0xFF22C35D) : const Color(0xFFF59E0B);
+    final iconColor =
+        isReady ? const Color(0xFF22C35D) : const Color(0xFFF59E0B);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(UiSpacing.sm),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
@@ -267,13 +261,12 @@ class DetailPasienPage extends HookConsumerWidget {
             isReady ? Icons.check_circle_outline : Icons.hourglass_top_rounded,
             color: iconColor,
           ),
-          const Gap(8),
+          const Gap(UiSpacing.sm),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF2A415C),
+              style: UiTypography.caption.copyWith(
+                color: const Color(0xFF2A415C),
                 fontWeight: FontWeight.w600,
               ),
             ),

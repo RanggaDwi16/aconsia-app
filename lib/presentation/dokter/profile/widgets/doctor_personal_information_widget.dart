@@ -1,9 +1,8 @@
-import 'package:aconsia_app/core/helpers/widgets/custom_dropdown.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_text_field.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
@@ -12,113 +11,69 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 class DoctorPersonalInformationWidget extends HookConsumerWidget {
   final bool? isEditable;
   final TextEditingController namaController;
-  final TextEditingController tempatLahirController;
-  final TextEditingController tanggalLahirController;
-  final TextEditingController jenisKelaminController;
 
   const DoctorPersonalInformationWidget({
     super.key,
     this.isEditable = false,
     required this.namaController,
-    required this.tempatLahirController,
-    required this.tanggalLahirController,
-    required this.jenisKelaminController,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.symmetric(
+        horizontal: UiSpacing.md,
+        vertical: UiSpacing.xl,
+      ),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColor.borderColor),
-        borderRadius: BorderRadius.circular(8),
+        color: UiPalette.white,
+        border: Border.all(color: UiPalette.slate200),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              SvgPicture.asset(
-                Assets.icons.icPerson.path,
-                width: 24,
-                height: 24,
-                colorFilter: const ColorFilter.mode(
-                  AppColor.primaryColor,
-                  BlendMode.srcIn,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: UiPalette.blue50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    Assets.icons.icPerson.path,
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      UiPalette.blue600,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ),
-              Gap(12),
-              Text(
+              const Gap(UiSpacing.sm),
+              const Text(
                 'Informasi Pribadi',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: UiTypography.title,
               ),
-              Spacer(),
-              SvgPicture.asset(
-                Assets.icons.icEdit.path,
-                width: 20,
-                height: 20,
-              )
             ],
           ),
-          Gap(4),
-          Text(
+          const Gap(UiSpacing.xxs),
+          const Text(
             'Data identitas dokter',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColor.textGrayColor,
-            ),
+            style: UiTypography.caption,
           ),
-          Gap(24),
+          const Gap(UiSpacing.lg),
           CustomTextField(
             controller: namaController,
             hintText: 'Nama Lengkap',
             labelText: 'Nama Lengkap',
             isDisabled: isEditable == true ? false : true,
           ),
-          Gap(16),
-          Row(
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  controller: tempatLahirController,
-                  hintText: 'Tempat Lahir',
-                  labelText: 'Tempat Lahir',
-                  isDisabled: isEditable == true ? false : true,
-                ),
-              ),
-              Gap(12),
-              Expanded(
-                child: CustomTextField(
-                  controller: tanggalLahirController,
-                  hintText: 'Tanggal Lahir',
-                  isCalendar: true,
-                  suffixIcon: Icon(
-                    Icons.calendar_month,
-                    color: AppColor.primaryColor,
-                  ),
-                  labelText: 'Tanggal Lahir',
-                  isDisabled: isEditable == true ? false : true,
-                ),
-              ),
-            ],
-          ),
-          Gap(16),
-          CustomDropdown(
-            items: ['Laki-laki', 'Perempuan'],
-            title: 'Jenis Kelamin',
-            selectedValue: jenisKelaminController.text.isEmpty
-                ? null
-                : jenisKelaminController.text,
-            onChanged: (value) {
-              jenisKelaminController.text = value;
-            },
-            disabled: isEditable == true ? false : true,
-          )
         ],
       ),
     );

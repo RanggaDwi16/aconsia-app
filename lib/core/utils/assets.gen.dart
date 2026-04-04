@@ -92,12 +92,38 @@ class $AssetsImagesGen {
   List<AssetGenImage> get values => [imgKonten, placeholderImg];
 }
 
+class $AssetsLogoGen {
+  const $AssetsLogoGen();
+
+  /// File path: assets/logo/.gitkeep
+  String get aGitkeep => 'assets/logo/.gitkeep';
+
+  /// File path: assets/logo/aconsia_logo.png
+  AssetGenImage get aconsiaLogo =>
+      const AssetGenImage('assets/logo/aconsia_logo.png');
+
+  /// List of all assets
+  List<dynamic> get values => [aGitkeep, aconsiaLogo];
+}
+
+class $AssetsNavbarGen {
+  const $AssetsNavbarGen();
+
+  /// File path: assets/navbar/.gitkeep
+  String get aGitkeep => 'assets/navbar/.gitkeep';
+
+  /// List of all assets
+  List<String> get values => [aGitkeep];
+}
+
 class Assets {
   const Assets._();
 
   static const String aEnv = '.env';
   static const $AssetsIconsGen icons = $AssetsIconsGen();
   static const $AssetsImagesGen images = $AssetsImagesGen();
+  static const $AssetsLogoGen logo = $AssetsLogoGen();
+  static const $AssetsNavbarGen navbar = $AssetsNavbarGen();
 
   /// List of all assets
   static List<String> get values => [aEnv];

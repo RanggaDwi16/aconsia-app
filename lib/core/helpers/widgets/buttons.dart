@@ -1,4 +1,5 @@
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:flutter/material.dart';
 
 enum ButtonStyle { filled, outlined }
@@ -11,15 +12,15 @@ class Button extends StatelessWidget {
     this.icon,
     this.isPay = false,
     this.style = ButtonStyle.filled,
-    this.color = AppColor.primaryColor,
-    this.textColor = AppColor.primaryWhite,
+    this.color = UiPalette.blue600,
+    this.textColor = UiPalette.white,
     this.width = double.infinity,
-    this.height = 45,
-    this.borderColor = AppColor.primaryColor,
-    this.borderRadius = 8,
+    this.height = 48,
+    this.borderColor = UiPalette.blue600,
+    this.borderRadius = 12,
     this.disabled = false,
     this.isActive = false,
-    this.fontSize = 14,
+    this.fontSize = 15,
     this.elevation = 0.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 18),
   });
@@ -31,15 +32,15 @@ class Button extends StatelessWidget {
     this.icon,
     this.style = ButtonStyle.outlined,
     this.color = Colors.transparent,
-    this.textColor = AppColor.primaryColor,
+    this.textColor = UiPalette.blue600,
     this.width = double.infinity,
-    this.height = 45,
-    this.borderRadius = 8,
-    this.borderColor = AppColor.primaryColor,
+    this.height = 48,
+    this.borderRadius = 12,
+    this.borderColor = UiPalette.blue600,
     this.disabled = false,
     this.isPay = false,
     this.isActive = false,
-    this.fontSize = 14,
+    this.fontSize = 15,
     this.elevation = 0.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
   });
@@ -86,7 +87,7 @@ class Button extends StatelessWidget {
                 backgroundColor: WidgetStateProperty.resolveWith<Color?>(
                   (Set<WidgetState> states) {
                     if (states.contains(WidgetState.disabled)) {
-                      return Colors.grey;
+                      return UiPalette.slate400;
                     }
                     return color;
                   },
@@ -99,17 +100,16 @@ class Button extends StatelessWidget {
                   if (icon != null) const SizedBox(width: 5.0),
                   Text(
                     label,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: disabled ? AppColor.primaryWhite : textColor,
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    style: UiTypography.button.copyWith(
+                      color: disabled ? UiPalette.white : textColor,
+                      fontSize: fontSize,
+                    ),
                   ),
                 ],
               ),
             )
           : OutlinedButton(
-              onPressed: onPressed,
+              onPressed: disabled ? null : onPressed,
               style: OutlinedButton.styleFrom(
                 padding: padding,
                 elevation: elevation,
@@ -137,11 +137,9 @@ class Button extends StatelessWidget {
                   ],
                   Text(
                     label,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: disabled ? AppColor.primaryBlack : textColor,
+                    style: UiTypography.button.copyWith(
+                      color: disabled ? UiPalette.slate500 : textColor,
                       fontSize: fontSize,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

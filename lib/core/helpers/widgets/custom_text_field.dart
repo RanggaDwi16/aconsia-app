@@ -1,11 +1,13 @@
 import 'package:aconsia_app/core/helpers/validators.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class CustomTextField extends StatefulWidget {
   final TextEditingController controller;
-  String? labelText;
+  final String? labelText;
   final bool obscureText;
   final Widget? suffixIcon;
   final Widget? prefixIcon;
@@ -27,7 +29,7 @@ class CustomTextField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
 
-  CustomTextField({
+  const CustomTextField({
     super.key,
     required this.controller,
     this.labelText,
@@ -116,9 +118,6 @@ class _CustomTextFieldState extends State<CustomTextField>
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    double deviceWidth = MediaQuery.of(context).size.width;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -126,14 +125,11 @@ class _CustomTextFieldState extends State<CustomTextField>
           RichText(
             text: TextSpan(
               text: '${widget.labelText} ',
-              style: textTheme.titleMedium?.copyWith(
-                color: AppColor.primaryBlack,
-                fontSize: deviceWidth > 600 ? 16 : 14,
-              ),
+              style: UiTypography.label,
               children: const [
                 TextSpan(
                   text: '*',
-                  style: TextStyle(color: AppColor.primaryBlack),
+                  style: TextStyle(color: UiPalette.red600),
                 ),
               ],
             ),
@@ -141,11 +137,9 @@ class _CustomTextFieldState extends State<CustomTextField>
         else if (widget.labelText != null)
           Text(
             widget.labelText!,
-            style: textTheme.titleMedium?.copyWith(
-              fontSize: deviceWidth > 600 ? 16 : 14,
-            ),
+            style: UiTypography.label,
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: UiSpacing.xs),
         TextFormField(
           focusNode: inputFocusNode,
           controller: widget.controller,
@@ -170,57 +164,51 @@ class _CustomTextFieldState extends State<CustomTextField>
                           : widget.onTap,
           keyboardType: widget.keyboardType,
           inputFormatters: widget.inputFormatters,
-          style: textTheme.bodyLarge?.copyWith(
+          style: UiTypography.body.copyWith(
             color: widget.labelText == 'Koordinat GPS Lahan'
-                ? AppColor.primaryColor
-                : AppColor.primaryBlack,
+                ? UiPalette.blue600
+                : UiPalette.slate900,
           ),
           maxLines: widget.maxLines,
           decoration: InputDecoration(
-            filled: widget.isDisabled == true,
-            errorMaxLines: 2, // Allow error text to wrap across multiple lines
-            fillColor: Colors.white,
+            filled: true,
+            errorMaxLines: 2,
+            fillColor: widget.isDisabled == true
+                ? UiPalette.slate100
+                : UiPalette.white,
             hintText: widget.hintText,
-            hintStyle: textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            hintStyle: UiTypography.body.copyWith(color: UiPalette.slate400),
             prefixIcon: widget.prefixIcon != null
                 ? Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 8),
+                    padding: const EdgeInsets.only(
+                        left: UiSpacing.md, right: UiSpacing.xs),
                     child: widget.prefixIcon,
                   )
                 : null,
             prefixIconConstraints:
                 const BoxConstraints(minWidth: 0, minHeight: 0),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 13, horizontal: 13),
+            contentPadding: const EdgeInsets.symmetric(
+                vertical: UiSpacing.md, horizontal: UiSpacing.md),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: const Color(0xFFB0B0B0),
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: UiPalette.slate300, width: 1),
+              borderRadius: BorderRadius.circular(12),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: AppColor.primaryColor,
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  const BorderSide(color: UiPalette.blue600, width: 1.6),
+              borderRadius: BorderRadius.circular(12),
             ),
             errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: AppColor.primaryRed,
-              ),
-              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: UiPalette.red600, width: 1),
+              borderRadius: BorderRadius.circular(12),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: UiPalette.red600, width: 1.6),
+              borderRadius: BorderRadius.circular(12),
             ),
             disabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: AppColor.textGrayColor,
-              ),
-              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: UiPalette.slate300, width: 1),
+              borderRadius: BorderRadius.circular(12),
             ),
             suffixIcon: widget.suffixIcon,
           ),
@@ -232,10 +220,10 @@ class _CustomTextFieldState extends State<CustomTextField>
         ),
         if (errorText != null)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: UiSpacing.xs),
             child: Text(
               errorText!,
-              style: textTheme.bodySmall?.copyWith(color: Colors.red),
+              style: UiTypography.caption.copyWith(color: UiPalette.red600),
             ),
           ),
       ],

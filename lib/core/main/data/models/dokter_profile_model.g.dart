@@ -10,10 +10,12 @@ _$DokterProfileModelImpl _$$DokterProfileModelImplFromJson(
         Map<String, dynamic> json) =>
     _$DokterProfileModelImpl(
       uid: json['uid'] as String?,
-      namaLengkap: json['namaLengkap'] as String?,
-      nomorStr: json['nomorSTR'] as String?,
-      nomorSip: json['nomorSIP'] as String?,
-      spesialisasi: json['spesialisasi'] as String?,
+      namaLengkap: json['fullName'] as String?,
+      nomorStr: json['strNumber'] as String?,
+      nomorSip: json['sipNumber'] as String?,
+      spesialisasi: json['specialization'] as String?,
+      hospitalName: json['hospitalName'] as String?,
+      status: json['status'] as String?,
       tanggalGabung: json['tanggalGabung'] as String?,
       tempatLahir: json['tempatLahir'] as String?,
       tanggalLahir: json['tanggalLahir'] as String?,
@@ -29,10 +31,12 @@ Map<String, dynamic> _$$DokterProfileModelImplToJson(
         _$DokterProfileModelImpl instance) =>
     <String, dynamic>{
       'uid': instance.uid,
-      'namaLengkap': instance.namaLengkap,
-      'nomorSTR': instance.nomorStr,
-      'nomorSIP': instance.nomorSip,
-      'spesialisasi': instance.spesialisasi,
+      'fullName': instance.namaLengkap,
+      'strNumber': instance.nomorStr,
+      'sipNumber': instance.nomorSip,
+      'specialization': instance.spesialisasi,
+      'hospitalName': instance.hospitalName,
+      'status': instance.status,
       'tanggalGabung': instance.tanggalGabung,
       'tempatLahir': instance.tempatLahir,
       'tanggalLahir': instance.tanggalLahir,

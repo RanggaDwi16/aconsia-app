@@ -41,9 +41,6 @@ class ReadingSessionRemoteDataSourceImpl
     required String dokterId,
   }) async {
     try {
-      print(
-          '[ReadingSession] 🔍 Creating/updating session for pasien: $pasienId, konten: $kontenId');
-
       // STEP 1: End ALL active sessions for this pasien (regardless of konten)
       // This ensures 1 pasien = max 1 active session
       final allActiveSessions = await firestore
@@ -53,9 +50,6 @@ class ReadingSessionRemoteDataSourceImpl
           .get();
 
       if (allActiveSessions.docs.isNotEmpty) {
-        print(
-            '[ReadingSession] 🧹 Found ${allActiveSessions.docs.length} active sessions for this pasien, ending them...');
-
         // End all old sessions
         final batch = firestore.batch();
         for (var doc in allActiveSessions.docs) {
@@ -65,7 +59,6 @@ class ReadingSessionRemoteDataSourceImpl
           });
         }
         await batch.commit();
-        print('[ReadingSession] ✅ All old sessions ended');
       }
 
       // STEP 2: Create new session
@@ -81,11 +74,8 @@ class ReadingSessionRemoteDataSourceImpl
       );
 
       await docRef.set(ReadingSessionModel.toFirestore(session));
-      print('[ReadingSession] ✅ New session created: ${docRef.id}');
-
       return Right(session);
     } catch (e) {
-      print('[ReadingSession] ❌ Error: $e');
       return Left('Gagal membuat/update session: $e');
     }
   }
@@ -93,17 +83,13 @@ class ReadingSessionRemoteDataSourceImpl
   @override
   Future<Either<String, Unit>> endSession({required String sessionId}) async {
     try {
-      print('[ReadingSession] 📤 Ending session: $sessionId');
-
       await firestore.collection('reading_sessions').doc(sessionId).update({
         'isActive': false,
         'endedAt': FieldValue.serverTimestamp(),
       });
 
-      print('[ReadingSession] ✅ Session $sessionId ended (isActive = false)');
       return const Right(unit);
     } catch (e) {
-      print('[ReadingSession] ❌ Error ending session: $e');
       return Left('Gagal mengakhiri session: $e');
     }
   }
@@ -129,8 +115,6 @@ class ReadingSessionRemoteDataSourceImpl
   Stream<List<ReadingSessionModel>> streamActiveSessions({
     required String dokterId,
   }) {
-    print('[ReadingSession] 📡 Starting stream for dokterId: $dokterId');
-
     return firestore
         .collection('reading_sessions')
         .where('dokterId', isEqualTo: dokterId)
@@ -140,12 +124,6 @@ class ReadingSessionRemoteDataSourceImpl
       final sessions = snapshot.docs
           .map((doc) => ReadingSessionModel.fromFirestore(doc))
           .toList();
-
-      print('[ReadingSession] 📊 Active sessions count: ${sessions.length}');
-      for (var session in sessions) {
-        print(
-            '[ReadingSession]   - Session ${session.id}: pasien=${session.pasienId}, konten=${session.kontenId}, isActive=${session.isActive}');
-      }
 
       return sessions;
     });

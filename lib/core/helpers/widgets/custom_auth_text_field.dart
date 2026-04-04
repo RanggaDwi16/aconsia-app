@@ -1,7 +1,9 @@
 // A custom text field widget for authentication forms with various features.
 
 import 'package:flutter/material.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 
 class CustomAuthTextField extends StatefulWidget {
   final TextEditingController controller;
@@ -75,9 +77,6 @@ class _CustomAuthTextFieldState extends State<CustomAuthTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    double deviceWidth = MediaQuery.of(context).size.width;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -86,14 +85,11 @@ class _CustomAuthTextFieldState extends State<CustomAuthTextField> {
           RichText(
             text: TextSpan(
               text: '${widget.labelText} ',
-              style: textTheme.titleMedium?.copyWith(
-                color: AppColor.primaryBlack,
-                fontSize: deviceWidth > 600 ? 16 : 14, // Responsive font size
-              ),
+              style: UiTypography.label,
               children: const [
                 TextSpan(
                   text: '*',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: UiPalette.red600),
                 ),
               ],
             ),
@@ -101,12 +97,10 @@ class _CustomAuthTextFieldState extends State<CustomAuthTextField> {
         else if (widget.labelText != null)
           Text(
             widget.labelText!,
-            style: textTheme.titleMedium?.copyWith(
-              fontSize: deviceWidth > 600 ? 16 : 14, // Responsive font size
-            ),
+            style: UiTypography.label,
           ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: UiSpacing.xs),
 
         // Input Field
         TextField(
@@ -118,47 +112,46 @@ class _CustomAuthTextFieldState extends State<CustomAuthTextField> {
                   _selectDate(context) // Open date picker if it's a date field
               : widget.onTap,
           keyboardType: widget.keyboardType,
-          style: textTheme.bodyLarge?.copyWith(color: AppColor.primaryBlack),
+          style: UiTypography.body.copyWith(color: UiPalette.slate900),
           maxLines: widget.maxLines, // Allow multiple lines for address field
           decoration: InputDecoration(
-            labelText: widget.labelText, // Menambahkan label untuk TextField
             hintText: widget.hintText,
-            hintStyle: textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            filled: true,
+            fillColor: widget.isDisabled == true
+                ? UiPalette.slate100
+                : UiPalette.white,
+            hintStyle: UiTypography.body.copyWith(color: UiPalette.slate400),
             prefixIcon: widget.prefixIcon != null
                 ? Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 8),
+                    padding: const EdgeInsets.only(
+                        left: UiSpacing.md, right: UiSpacing.xs),
                     child: widget.prefixIcon,
                   )
                 : null,
             prefixIconConstraints:
                 const BoxConstraints(minWidth: 0, minHeight: 0),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 13, horizontal: 13),
+            contentPadding: const EdgeInsets.symmetric(
+                vertical: UiSpacing.md, horizontal: UiSpacing.md),
             enabledBorder: OutlineInputBorder(
-              borderSide: const BorderSide(
-                color: Color(0xFFB0B0B0), // Light grey border
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(5),
+              borderSide: const BorderSide(color: UiPalette.slate300, width: 1),
+              borderRadius: BorderRadius.circular(12),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: AppColor.primaryColor, // Primary color when focused
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(5),
+              borderSide:
+                  const BorderSide(color: UiPalette.blue600, width: 1.6),
+              borderRadius: BorderRadius.circular(12),
             ),
             errorBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Colors.red),
-              borderRadius: BorderRadius.circular(5),
+              borderSide: const BorderSide(color: UiPalette.red600),
+              borderRadius: BorderRadius.circular(12),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-              borderRadius: BorderRadius.circular(5),
+              borderSide: const BorderSide(color: UiPalette.red600, width: 1.6),
+              borderRadius: BorderRadius.circular(12),
             ),
             disabledBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Color(0xFFB0B0B0)),
-              borderRadius: BorderRadius.circular(5),
+              borderSide: const BorderSide(color: UiPalette.slate300),
+              borderRadius: BorderRadius.circular(12),
             ),
             suffixIcon: widget.suffixIcon,
           ),
@@ -167,10 +160,10 @@ class _CustomAuthTextFieldState extends State<CustomAuthTextField> {
         // Display Error Text
         if (errorText != null)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: UiSpacing.xs),
             child: Text(
               errorText!,
-              style: textTheme.bodySmall?.copyWith(color: Colors.red),
+              style: UiTypography.caption.copyWith(color: UiPalette.red600),
             ),
           ),
       ],

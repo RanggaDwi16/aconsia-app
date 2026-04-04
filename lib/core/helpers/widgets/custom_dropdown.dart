@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 
 class CustomDropdown extends StatefulWidget {
   final List<String>? items; // 🔹 Masih bisa pakai List<String> lama
@@ -47,9 +49,6 @@ class _CustomDropdownState extends State<CustomDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    double deviceWidth = MediaQuery.of(context).size.width;
-
     // Tentukan sumber item (pakai itemsWithValue jika ada)
     final useValueLabel = widget.itemsWithValue != null;
 
@@ -60,14 +59,11 @@ class _CustomDropdownState extends State<CustomDropdown> {
           RichText(
             text: TextSpan(
               text: '${widget.title} ',
-              style: textTheme.titleMedium?.copyWith(
-                color: AppColor.primaryBlack,
-                fontSize: deviceWidth > 600 ? 16 : 14,
-              ),
+              style: UiTypography.label,
               children: const [
                 TextSpan(
                   text: '*',
-                  style: TextStyle(color: AppColor.primaryBlack),
+                  style: TextStyle(color: UiPalette.red600),
                 ),
               ],
             ),
@@ -75,21 +71,15 @@ class _CustomDropdownState extends State<CustomDropdown> {
         else if (widget.title != null)
           Text(
             widget.title!,
-            style: textTheme.titleMedium?.copyWith(
-              fontSize: deviceWidth > 600 ? 16 : 14,
-              color: AppColor.primaryBlack,
-            ),
+            style: UiTypography.label,
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: UiSpacing.xs),
         DropdownButtonHideUnderline(
           child: DropdownButton2<String>(
             isExpanded: true,
             hint: Text(
               'Pilih',
-              style: textTheme.bodyMedium?.copyWith(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
+              style: UiTypography.body.copyWith(color: UiPalette.slate400),
             ),
             items: useValueLabel
                 ? widget.itemsWithValue!
@@ -97,9 +87,8 @@ class _CustomDropdownState extends State<CustomDropdown> {
                           value: item['value'],
                           child: Text(
                             item['label'] ?? '',
-                            style: textTheme.bodyLarge?.copyWith(
-                              fontSize: 14,
-                              color: AppColor.primaryBlack,
+                            style: UiTypography.body.copyWith(
+                              color: UiPalette.slate900,
                             ),
                           ),
                         ))
@@ -109,9 +98,8 @@ class _CustomDropdownState extends State<CustomDropdown> {
                           value: item,
                           child: Text(
                             item,
-                            style: textTheme.bodyLarge?.copyWith(
-                              fontSize: 14,
-                              color: AppColor.primaryBlack,
+                            style: UiTypography.body.copyWith(
+                              color: UiPalette.slate900,
                             ),
                           ),
                         ))
@@ -128,27 +116,27 @@ class _CustomDropdownState extends State<CustomDropdown> {
                     }
                   },
             buttonStyleData: ButtonStyleData(
-              height: 48,
-              padding: const EdgeInsets.only(right: 12),
+              height: 52,
+              padding: const EdgeInsets.only(right: UiSpacing.sm),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFFB0B0B0),
+                  color: UiPalette.slate300,
                   width: 1,
                 ),
-                color: AppColor.primaryWhite,
+                color: widget.disabled ? UiPalette.slate100 : UiPalette.white,
               ),
             ),
             iconStyleData: const IconStyleData(
               icon: Icon(Icons.keyboard_arrow_down_rounded),
               iconSize: 24,
-              iconEnabledColor: Color(0xFFB0B0B0),
+              iconEnabledColor: UiPalette.slate400,
             ),
             dropdownStyleData: DropdownStyleData(
               maxHeight: 300,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                color: UiPalette.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -165,7 +153,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
             ),
             menuItemStyleData: const MenuItemStyleData(
               height: 48,
-              padding: EdgeInsets.symmetric(horizontal: 13),
+              padding: EdgeInsets.symmetric(horizontal: UiSpacing.sm),
             ),
           ),
         ),

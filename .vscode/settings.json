@@ -2,21 +2,35 @@
   "files.exclude": {
     "**/node_modules": true,
     "**/dist": true,
-    "**/.dart_tool": true
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/.gradle": true,
+    "**/Pods": true
   },
   "search.exclude": {
     "**/node_modules": true,
     "**/dist": true,
-    "**/.dart_tool": true
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/.gradle": true,
+    "**/Pods": true,
+    "**/firebase-debug.log": true
   },
   "files.watcherExclude": {
     "**/node_modules/**": true,
     "**/dist/**": true,
-    "**/.dart_tool/**": true
+    "**/.dart_tool/**": true,
+    "**/build/**": true,
+    "**/.gradle/**": true,
+    "**/Pods/**": true,
+    "**/web-aconsia/**": true
   },
   "dart.analysisExcludedFolders": [
     "${workspaceFolder}/functions/node_modules",
     "${workspaceFolder}/web-aconsia/node_modules",
-    "${workspaceFolder}/web-aconsia/dist"
+    "${workspaceFolder}/web-aconsia/dist",
+    "${workspaceFolder}/build",
+    "${workspaceFolder}/.dart_tool",
+    "${workspaceFolder}/web-aconsia"
   ]
 }

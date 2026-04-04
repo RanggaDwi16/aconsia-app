@@ -1,4 +1,5 @@
 import 'package:aconsia_app/core/main/data/models/konten_model.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
@@ -6,10 +7,12 @@ import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_learning
 import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/tag_widgets.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/ai_recommendation_widget.dart';
 import 'package:flutter/material.dart';
@@ -37,64 +40,11 @@ class HomePasienPage extends ConsumerWidget {
         : const AsyncValue.data(PasienLearningSummary.empty());
 
     return Scaffold(
-      appBar: CustomAppBar(
-        customTitleWidget: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              profilePasien?.namaLengkap ?? 'Pasien',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              profilePasien?.jenisKelamin ?? 'Jenis Kelamin',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          // Notification icon - Hidden for now (Phase 3)
-          // Padding(
-          //   padding: const EdgeInsets.only(right: 8.0),
-          //   child: Stack(
-          //     children: [
-          //       IconButton(
-          //         icon: const Icon(Icons.notifications_outlined),
-          //         onPressed: () {
-          //           context.pushNamed(RouteName.notificationList);
-          //         },
-          //       ),
-          //       // Unread badge...
-          //     ],
-          //   ),
-          // ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              icon: Icon(Icons.logout),
-              onPressed: () {
-                context.showLogoutDialog(ref);
-              },
-            ),
-          ),
+      body: AconsiaPageBackground(
+        colors: [
+          UiPalette.blue50,
+          UiPalette.white,
         ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF4FAFF),
-              Color(0xFFFFFFFF),
-            ],
-          ),
-        ),
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(fetchPasienProfileProvider);
@@ -113,106 +63,84 @@ class HomePasienPage extends ConsumerWidget {
             await Future.delayed(const Duration(milliseconds: 500));
           },
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(UiSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              Text(
-                'Dashboard Pasien',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                AconsiaTopActionRow(
+                  title: 'Dashboard Pasien',
+                  subtitle: 'Pantau progress pembelajaran Anda',
+                  trailing: IconButton(
+                    onPressed: () => context.showLogoutDialog(ref),
+                    icon: const Icon(Icons.logout_rounded),
+                    color: UiPalette.slate600,
+                  ),
                 ),
-              ),
-              Gap(8),
-              Text(
-                'Pantau progress pembelajaran Anda',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColor.textGrayColor,
+                const Gap(UiSpacing.md),
+                const AconsiaInfoBanner(
+                  icon: Icons.school_outlined,
+                  message:
+                      'Baca materi dari dokter, lalu selesaikan sesi AI untuk menilai pemahaman Anda.',
+                  backgroundColor: Color(0xFFF1F8FF),
+                  borderColor: Color(0xFFDCEBFF),
+                  iconColor: UiPalette.blue600,
+                  textColor: Color(0xFF23415F),
                 ),
-              ),
-              Gap(14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F8FF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFDCEBFF)),
-                ),
-                child: const Row(
+                const Gap(UiSpacing.md),
+                Wrap(
+                  spacing: UiSpacing.sm,
+                  runSpacing: UiSpacing.sm,
                   children: [
-                    Icon(Icons.school_outlined, color: AppColor.primaryColor),
-                    Gap(10),
-                    Expanded(
-                      child: Text(
-                        'Baca materi dari dokter, lalu selesaikan quiz untuk menilai pemahaman Anda.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF23415F),
-                          fontWeight: FontWeight.w500,
-                        ),
+                    _quickActionCard(
+                      icon: Icons.menu_book_outlined,
+                      label: 'Buka Konten',
+                      onTap: () {
+                        ref.read(selectedIndexPasienProvider.notifier).state =
+                            1;
+                      },
+                    ),
+                    _quickActionCard(
+                      icon: Icons.person_outline,
+                      label: 'Profil Saya',
+                      onTap: () => context.pushNamed(RouteName.profilePasien),
+                    ),
+                    _quickActionCard(
+                      icon: Icons.smart_toy_outlined,
+                      label: 'Diskusi AI',
+                      onTap: () => context.pushNamed(
+                        RouteName.chatAi,
+                        extra: const {'source': 'home_pasien'},
                       ),
                     ),
                   ],
                 ),
-              ),
-              Gap(16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        ref.read(selectedIndexPasienProvider.notifier).state = 1;
-                      },
-                      icon: const Icon(Icons.menu_book_outlined, size: 18),
-                      label: const Text('Buka Konten'),
-                    ),
-                  ),
-                  const Gap(10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.pushNamed(RouteName.profilePasien),
-                      icon: const Icon(Icons.person_outline, size: 18),
-                      label: const Text('Profil Saya'),
-                    ),
-                  ),
-                ],
-              ),
-              Gap(16),
-              _buildLearningStatusCard(
-                context: context,
-                ref: ref,
-                summaryAsync: learningSummaryAsync,
-              ),
-              Gap(16),
-              _buildLatestQuizInsight(summaryAsync: learningSummaryAsync),
-              Gap(16),
-              AiRecommendationWidget(),
-              Gap(32),
-              Text(
-                'Materi Pembelajaran',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                const Gap(UiSpacing.md),
+                _buildLearningStatusCard(
+                  context: context,
+                  ref: ref,
+                  summaryAsync: learningSummaryAsync,
                 ),
-              ),
-              Gap(8),
-              Text(
-                'Konten edukasi dari dokter Anda',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColor.textGrayColor,
+                const Gap(UiSpacing.md),
+                _buildLatestQuizInsight(summaryAsync: learningSummaryAsync),
+                const Gap(UiSpacing.md),
+                const AiRecommendationWidget(),
+                const Gap(32),
+                const Text(
+                  'Materi Pembelajaran',
+                  style: UiTypography.h2,
                 ),
-              ),
-              Gap(16),
-              // Fetch real konten data from Firestore
-              _buildKontenList(context, ref, profilePasien?.dokterId),
-            ],
+                const Gap(UiSpacing.sm),
+                const Text(
+                  'Konten edukasi dari dokter Anda',
+                  style: UiTypography.bodySmall,
+                ),
+                const Gap(UiSpacing.md),
+                // Fetch real konten data from Firestore
+                _buildKontenList(context, ref, profilePasien?.dokterId),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -222,14 +150,8 @@ class HomePasienPage extends ConsumerWidget {
     required WidgetRef ref,
     required AsyncValue<PasienLearningSummary> summaryAsync,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2EAF4)),
-      ),
+    return AconsiaCardSurface(
+      borderColor: const Color(0xFFE2EAF4),
       child: summaryAsync.when(
         data: (summary) {
           return Column(
@@ -237,23 +159,19 @@ class HomePasienPage extends ConsumerWidget {
             children: [
               const Text(
                 'Status Belajar Saat Ini',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF132A45),
-                ),
+                style: UiTypography.label,
               ),
-              const Gap(8),
+              const Gap(UiSpacing.sm),
               Text(
                 summary.totalKonten == 0
                     ? 'Belum ada materi dari dokter Anda.'
                     : '${summary.unreadKonten} materi belum selesai dari total ${summary.totalKonten} materi.',
                 style: TextStyle(
-                  fontSize: 13,
-                  color: AppColor.textGrayColor,
+                  fontSize: UiTypography.bodySmall.fontSize,
+                  color: UiTypography.bodySmall.color,
                 ),
               ),
-              const Gap(12),
+              const Gap(UiSpacing.md),
               Row(
                 children: [
                   Expanded(
@@ -263,7 +181,7 @@ class HomePasienPage extends ConsumerWidget {
                       color: const Color(0xFF0EA5E9),
                     ),
                   ),
-                  const Gap(10),
+                  const Gap(UiSpacing.sm),
                   Expanded(
                     child: _metricItem(
                       title: 'Selesai',
@@ -271,7 +189,7 @@ class HomePasienPage extends ConsumerWidget {
                       color: const Color(0xFF22C35D),
                     ),
                   ),
-                  const Gap(10),
+                  const Gap(UiSpacing.sm),
                   Expanded(
                     child: _metricItem(
                       title: 'Belum',
@@ -281,7 +199,7 @@ class HomePasienPage extends ConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(10),
+              const Gap(UiSpacing.sm),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
@@ -297,15 +215,15 @@ class HomePasienPage extends ConsumerWidget {
         },
         loading: () => const Center(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+            padding: EdgeInsets.symmetric(vertical: UiSpacing.sm),
             child: CircularProgressIndicator(),
           ),
         ),
         error: (error, _) => Text(
           'Gagal memuat status belajar: $error',
           style: const TextStyle(
-            color: AppColor.primaryRed,
-            fontSize: 12,
+            color: UiPalette.red600,
+            fontSize: 13,
           ),
         ),
       ),
@@ -315,14 +233,8 @@ class HomePasienPage extends ConsumerWidget {
   Widget _buildLatestQuizInsight({
     required AsyncValue<PasienLearningSummary> summaryAsync,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2EAF4)),
-      ),
+    return AconsiaCardSurface(
+      borderColor: const Color(0xFFE2EAF4),
       child: summaryAsync.when(
         data: (summary) {
           final latest = summary.latestQuiz;
@@ -330,44 +242,40 @@ class HomePasienPage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Insight Quiz',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF132A45),
-                ),
+                'Insight Sesi AI',
+                style: UiTypography.label,
               ),
-              const Gap(8),
+              const Gap(UiSpacing.sm),
               if (latest == null)
                 Text(
-                  'Belum ada hasil quiz. Selesaikan materi dan quiz untuk melihat insight.',
+                  'Belum ada hasil sesi. Selesaikan materi dan sesi AI untuk melihat insight.',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: AppColor.textGrayColor,
+                    fontSize: UiTypography.bodySmall.fontSize,
+                    color: UiTypography.bodySmall.color,
                   ),
                 )
               else ...[
                 Text(
-                  'Rata-rata nilai quiz Anda ${summary.averageQuizScore.toStringAsFixed(0)}%',
+                  'Rata-rata nilai sesi AI Anda ${summary.averageQuizScore.toStringAsFixed(0)}%',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: AppColor.textGrayColor,
+                    fontSize: UiTypography.bodySmall.fontSize,
+                    color: UiTypography.bodySmall.color,
                   ),
                 ),
-                const Gap(10),
+                const Gap(UiSpacing.sm),
                 Row(
                   children: [
                     Expanded(
                       child: _metricItem(
-                        title: 'Quiz Terakhir',
+                        title: 'Sesi Terakhir',
                         value: '${latest.overallScore}%',
                         color: _quizScoreColor(latest.overallScore),
                       ),
                     ),
-                    const Gap(10),
+                    const Gap(UiSpacing.sm),
                     Expanded(
                       child: _metricItem(
-                        title: 'Total Quiz',
+                        title: 'Total Sesi',
                         value: '${summary.totalQuiz}',
                         color: const Color(0xFF7C3AED),
                       ),
@@ -389,14 +297,14 @@ class HomePasienPage extends ConsumerWidget {
     if (dokterId == null || dokterId.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(UiSpacing.xxl),
           child: Column(
             children: [
               Icon(Icons.info_outline, size: 64, color: Colors.grey),
-              Gap(16),
+              Gap(UiSpacing.md),
               Text(
                 'Belum ada dokter yang ditugaskan',
-                style: TextStyle(color: AppColor.textGrayColor),
+                style: TextStyle(color: UiPalette.slate500),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -413,15 +321,15 @@ class HomePasienPage extends ConsumerWidget {
         if (kontenList == null || kontenList.isEmpty) {
           return Center(
             child: Padding(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.all(UiSpacing.xxl),
               child: Column(
                 children: [
                   Icon(Icons.description_outlined,
                       size: 64, color: Colors.grey),
-                  Gap(16),
+                  Gap(UiSpacing.md),
                   Text(
                     'Belum ada konten tersedia',
-                    style: TextStyle(color: AppColor.textGrayColor),
+                    style: TextStyle(color: UiPalette.slate500),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -439,7 +347,7 @@ class HomePasienPage extends ConsumerWidget {
             return Column(
               children: [
                 _buildKontenCard(context, ref, uid!, konten),
-                Gap(16),
+                Gap(UiSpacing.md),
               ],
             );
           }).toList(),
@@ -448,11 +356,11 @@ class HomePasienPage extends ConsumerWidget {
       loading: () => Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(UiSpacing.xxl),
           child: Column(
             children: [
               Icon(Icons.error_outline, size: 64, color: Colors.red),
-              Gap(16),
+              Gap(UiSpacing.md),
               Text(
                 'Gagal memuat konten: $error',
                 style: TextStyle(color: Colors.red),
@@ -536,30 +444,29 @@ class HomePasienPage extends ConsumerWidget {
 
             // ----------------- CONTENT -----------------
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(UiSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Judul
                   Text(
                     konten.judul ?? 'Judul tidak tersedia',
-                    style: TextStyle(
-                      fontSize: 17,
+                    style: UiTypography.label.copyWith(
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColor.textColor,
+                      color: UiPalette.slate900,
                     ),
                   ),
-                  Gap(6),
+                  Gap(UiSpacing.xs),
 
                   // Subjudul / jenis anestesi
                   Text(
                     konten.jenisAnestesi ?? 'Jenis anestesi tidak tersedia',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                    style: UiTypography.bodySmall.copyWith(
+                      color: UiPalette.slate500,
                     ),
                   ),
-                  Gap(12),
+                  Gap(UiSpacing.md),
 
                   // ----------------- TAGS -----------------
                   SizedBox(
@@ -569,19 +476,19 @@ class HomePasienPage extends ConsumerWidget {
                       children: [
                         if (hasCompletedQuiz) ...[
                           StatusSelesaiTag(),
-                          Gap(8),
+                          Gap(UiSpacing.sm),
                         ],
                         if (konten.jenisAnestesi != null) ...[
                           JenisAnestesiTag(text: konten.jenisAnestesi!),
-                          Gap(8),
+                          Gap(UiSpacing.sm),
                         ],
                         if (konten.tataCara != null) ...[
                           TataCaraTag(text: konten.tataCara!),
-                          Gap(8),
+                          Gap(UiSpacing.sm),
                         ],
                         if (konten.resikoTindakan != null) ...[
                           KomplikasiTag(text: konten.resikoTindakan!),
-                          Gap(8),
+                          Gap(UiSpacing.sm),
                         ],
                         if (konten.indikasiTindakan != null)
                           IndikasiTindakanTag(text: konten.indikasiTindakan!),
@@ -602,18 +509,22 @@ class HomePasienPage extends ConsumerWidget {
                               );
                             },
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColor.primaryColor,
+                              foregroundColor: UiPalette.blue600,
                               side: BorderSide(
-                                  color: AppColor.primaryColor, width: 1.5),
-                              padding: EdgeInsets.symmetric(vertical: 12),
+                                  color: UiPalette.blue600, width: 1.5),
+                              padding: EdgeInsets.symmetric(
+                                vertical: UiSpacing.sm,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                             child: Text(
                               'Review',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15),
+                              style: UiTypography.button.copyWith(
+                                color: UiPalette.blue600,
+                                fontSize: 14,
+                              ),
                             ),
                           )
                         : ElevatedButton(
@@ -624,9 +535,11 @@ class HomePasienPage extends ConsumerWidget {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColor.primaryColor,
+                              backgroundColor: UiPalette.blue600,
                               foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 12),
+                              padding: EdgeInsets.symmetric(
+                                vertical: UiSpacing.sm,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -634,8 +547,10 @@ class HomePasienPage extends ConsumerWidget {
                             ),
                             child: Text(
                               'Mulai',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15),
+                              style: UiTypography.button.copyWith(
+                                color: UiPalette.white,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                   ),
@@ -654,7 +569,10 @@ class HomePasienPage extends ConsumerWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: UiSpacing.sm,
+        vertical: UiSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
@@ -665,16 +583,16 @@ class HomePasienPage extends ConsumerWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               color: Color(0xFF5F748B),
               fontWeight: FontWeight.w500,
             ),
           ),
-          const Gap(6),
+          const Gap(UiSpacing.xs),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
+            style: UiTypography.title.copyWith(
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -688,5 +606,45 @@ class HomePasienPage extends ConsumerWidget {
     if (score >= 80) return const Color(0xFF16A34A);
     if (score >= 60) return const Color(0xFF0EA5E9);
     return const Color(0xFFF59E0B);
+  }
+
+  Widget _quickActionCard({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        width: 166,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: UiPalette.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFDDE7F3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: UiPalette.blue600, size: 20),
+            const Gap(UiSpacing.sm),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: UiPalette.slate900,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: UiPalette.slate400,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

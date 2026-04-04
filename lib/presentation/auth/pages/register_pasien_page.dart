@@ -1,8 +1,11 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_text_field.dart';
 import 'package:aconsia_app/core/main/controllers/auth/authentication_provider.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
@@ -93,45 +96,47 @@ class RegisterPasienPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Daftar Akun',
-        centertitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+      body: AconsiaScreenShell(
+        colors: const [UiPalette.blue50, UiPalette.white],
+        top: AconsiaTopActionRow(
+          title: 'Daftar Pasien',
+          subtitle: 'Buat akun pasien untuk akses edukasi anestesi',
+          onBack: () => Navigator.pop(context),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: AconsiaCardSurface(
+              radius: 14,
+              borderColor: UiPalette.slate200,
+              padding: const EdgeInsets.all(UiSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
             Text(
               'Portal Pasien',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: UiTypography.h2,
             ),
-            Gap(8),
+            const Gap(UiSpacing.sm),
             Text(
               'Kelola materi edukasi anestesi untuk pasien Anda',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColor.textGrayColor,
-              ),
+              style: UiTypography.body,
               textAlign: TextAlign.center,
             ),
-            Gap(32),
+            const Gap(UiSpacing.xxl),
             CustomTextField(
               controller: namaController,
               hintText: 'Nama Lengkap',
               labelText: 'Nama Lengkap',
             ),
-            Gap(16),
+            const Gap(UiSpacing.lg),
             CustomTextField(
               controller: emailController,
               hintText: 'Email',
               labelText: 'Email',
               keyboardType: TextInputType.emailAddress,
             ),
-            Gap(16),
+            const Gap(UiSpacing.lg),
             CustomTextField(
               controller: passwordController,
               hintText: 'Password',
@@ -146,7 +151,7 @@ class RegisterPasienPage extends HookConsumerWidget {
                     .update((s) => !s),
               ),
             ),
-            Gap(16),
+            const Gap(UiSpacing.lg),
             CustomTextField(
               controller: confirmPasswordController,
               hintText: 'Konfirmasi Password',
@@ -161,7 +166,7 @@ class RegisterPasienPage extends HookConsumerWidget {
                     .update((s) => !s),
               ),
             ),
-            Gap(36),
+            const Gap(UiSpacing.xxxl),
             Button.filled(
               disabled: namaController.text.isEmpty ||
                   emailController.text.isEmpty ||
@@ -173,7 +178,10 @@ class RegisterPasienPage extends HookConsumerWidget {
               onPressed: handleRegister,
               label: auth.isLoading ? 'Memuat...' : 'Daftar',
             )
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

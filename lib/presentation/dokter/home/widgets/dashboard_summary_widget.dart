@@ -1,5 +1,8 @@
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -26,23 +29,14 @@ class DashboardSummaryWidget extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF5FAFF),
-            Color(0xFFFFFFFF),
-          ],
+          colors: [UiPalette.blue50, UiPalette.white],
         ),
-        border: Border.all(color: const Color(0xFFDDE7F3)),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: AconsiaCardSurface(
+        padding: const EdgeInsets.all(UiSpacing.lg),
+        borderColor: const Color(0xFFDDE7F3),
+        radius: 14,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -50,11 +44,9 @@ class DashboardSummaryWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                  title,
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: AppColor.textGrayColor,
-                      fontWeight: FontWeight.w500,
+                    title,
+                    style: UiTypography.body.copyWith(
+                      color: UiPalette.slate500,
                     ),
                   ),
                 ),
@@ -63,20 +55,21 @@ class DashboardSummaryWidget extends StatelessWidget {
                   iconPath,
                   width: 28,
                   height: 28,
-                  color: AppColor.primaryColor,
+                  colorFilter: const ColorFilter.mode(
+                    UiPalette.blue600,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ],
             ),
-            Gap(8),
+            const Gap(UiSpacing.sm),
             Text(
               count,
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F2742),
+              style: UiTypography.h1.copyWith(
+                color: UiPalette.slate900,
               ),
             ),
-            Gap(10),
+            const Gap(UiSpacing.md),
             Button.outlined(
               onPressed: () => onPressed?.call(),
               label: 'Buka',

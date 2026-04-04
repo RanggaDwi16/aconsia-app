@@ -1,4 +1,7 @@
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/ai_recommendation_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/recommendation_card_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,7 +20,7 @@ class AllRecommendationsPage extends ConsumerStatefulWidget {
 class _AllRecommendationsPageState
     extends ConsumerState<AllRecommendationsPage> {
   String _selectedFilter = 'all';
-  String _selectedSort = 'relevance';
+  final String _selectedSort = 'relevance';
 
   @override
   Widget build(BuildContext context) {
@@ -33,149 +36,97 @@ class _AllRecommendationsPageState
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Rekomendasi AI',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        actions: [
-          // Sort menu
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            onSelected: (value) {
-              setState(() {
-                _selectedSort = value;
-              });
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'relevance',
-                child: Row(
-                  children: [
-                    Icon(Icons.auto_awesome, size: 18),
-                    Gap(8),
-                    Text('Relevansi'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'newest',
-                child: Row(
-                  children: [
-                    Icon(Icons.access_time, size: 18),
-                    Gap(8),
-                    Text('Terbaru'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Filter tabs
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+      body: AconsiaPageBackground(
+        colors: const [UiPalette.blue50, UiPalette.white],
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(UiSpacing.md, UiSpacing.sm,
+                  UiSpacing.md, UiSpacing.xs),
               child: Row(
                 children: [
-                  _buildFilterChip('all', 'Semua'),
-                  const Gap(8),
-                  _buildFilterChip('high', 'Sangat Relevan'),
-                  const Gap(8),
-                  _buildFilterChip('medium', 'Relevan'),
-                  const Gap(8),
-                  _buildFilterChip('low', 'Cukup Relevan'),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    color: UiPalette.slate600,
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Rekomendasi AI',
+                      style: UiTypography.title,
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-
-          // Content
-          Expanded(
-            child: recommendationsAsync.when(
-              data: (recommendations) {
-                if (recommendations.isEmpty) {
-                  return _buildEmptyState();
-                }
-
-                // Apply filters
-                var filteredRecommendations = _filterRecommendations(
-                  recommendations,
-                  _selectedFilter,
-                );
-
-                // Apply sorting
-                filteredRecommendations = _sortRecommendations(
-                  filteredRecommendations,
-                  _selectedSort,
-                );
-
-                if (filteredRecommendations.isEmpty) {
-                  return _buildNoResultsState();
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(fetchAllUnreadKontenProvider);
-                  },
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredRecommendations.length,
-                    separatorBuilder: (context, index) => const Gap(12),
-                    itemBuilder: (context, index) {
-                      final recommendation = filteredRecommendations[index];
-                      return RecommendationCardWidget(
-                        recommendation: recommendation,
-                      );
-                    },
-                  ),
-                );
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                UiSpacing.md,
+                UiSpacing.sm,
+                UiSpacing.md,
+                0,
               ),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const Gap(16),
-                    Text(
-                      'Terjadi kesalahan',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      error.toString(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    _buildFilterChip('all', 'Semua'),
+                    const Gap(UiSpacing.sm),
+                    _buildFilterChip('high', 'Sangat Relevan'),
+                    const Gap(UiSpacing.sm),
+                    _buildFilterChip('medium', 'Relevan'),
+                    const Gap(UiSpacing.sm),
+                    _buildFilterChip('low', 'Cukup Relevan'),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+            const Gap(UiSpacing.sm),
+            Expanded(
+              child: recommendationsAsync.when(
+                data: (recommendations) {
+                  if (recommendations.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  var filteredRecommendations = _filterRecommendations(
+                    recommendations,
+                    _selectedFilter,
+                  );
+
+                  filteredRecommendations = _sortRecommendations(
+                    filteredRecommendations,
+                    _selectedSort,
+                  );
+
+                  if (filteredRecommendations.isEmpty) {
+                    return _buildNoResultsState();
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(fetchAllUnreadKontenProvider);
+                    },
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(UiSpacing.md),
+                      itemCount: filteredRecommendations.length,
+                      separatorBuilder: (context, index) =>
+                          const Gap(UiSpacing.md),
+                      itemBuilder: (context, index) {
+                        final recommendation = filteredRecommendations[index];
+                        return RecommendationCardWidget(
+                          recommendation: recommendation,
+                        );
+                      },
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => _buildErrorState(error.toString()),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -190,15 +141,18 @@ class _AllRecommendationsPageState
           _selectedFilter = value;
         });
       },
-      selectedColor: AppColor.primaryColor.withOpacity(0.2),
-      checkmarkColor: AppColor.primaryColor,
+      selectedColor: UiPalette.blue100,
+      checkmarkColor: UiPalette.blue600,
       labelStyle: TextStyle(
-        color: isSelected ? AppColor.primaryColor : Colors.grey[700],
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        color: isSelected ? UiPalette.blue600 : UiPalette.slate600,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        fontSize: 12,
       ),
       side: BorderSide(
-        color: isSelected ? AppColor.primaryColor : Colors.grey[300]!,
+        color: isSelected ? UiPalette.blue500 : UiPalette.slate300,
       ),
+      backgroundColor: UiPalette.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 
@@ -243,34 +197,25 @@ class _AllRecommendationsPageState
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 80,
-              color: Colors.green[300],
-            ),
-            const Gap(24),
-            Text(
-              'Selamat!',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+        padding: const EdgeInsets.all(UiSpacing.xl),
+        child: AconsiaCardSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.task_alt, size: 64, color: UiPalette.emerald600),
+              const Gap(UiSpacing.md),
+              const Text(
+                'Semua Materi Sudah Dibaca',
+                style: UiTypography.title,
               ),
-            ),
-            const Gap(8),
-            Text(
-              'Kamu sudah menyelesaikan semua konten pembelajaran yang tersedia',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+              const Gap(UiSpacing.sm),
+              const Text(
+                'Belum ada rekomendasi baru untuk saat ini.',
+                style: UiTypography.body,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -279,35 +224,56 @@ class _AllRecommendationsPageState
   Widget _buildNoResultsState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.filter_alt_off,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const Gap(16),
-            Text(
-              'Tidak ada konten dengan filter ini',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+        padding: const EdgeInsets.all(UiSpacing.xl),
+        child: AconsiaCardSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.filter_alt_off,
+                  size: 64, color: UiPalette.slate400),
+              const Gap(UiSpacing.md),
+              const Text(
+                'Filter Tidak Menemukan Hasil',
+                style: UiTypography.title,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(8),
-            Text(
-              'Coba ubah filter untuk melihat konten lainnya',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+              const Gap(UiSpacing.sm),
+              const Text(
+                'Coba ganti filter untuk melihat rekomendasi lainnya.',
+                style: UiTypography.body,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(UiSpacing.xl),
+        child: AconsiaCardSurface(
+          borderColor: UiPalette.red600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 64, color: UiPalette.red600),
+              const Gap(UiSpacing.md),
+              const Text(
+                'Terjadi Kesalahan',
+                style: UiTypography.title,
+              ),
+              const Gap(UiSpacing.sm),
+              Text(
+                error,
+                style: UiTypography.body.copyWith(color: UiPalette.red600),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );

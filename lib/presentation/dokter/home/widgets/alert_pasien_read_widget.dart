@@ -1,4 +1,4 @@
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:flutter/material.dart';
 
 class AlertPasienReadWidget extends StatelessWidget {
@@ -58,7 +58,7 @@ class AlertPasienReadWidget extends StatelessWidget {
                       '$activeReaderCount pasien sedang membaca materi saat ini',
                       style: const TextStyle(
                         fontSize: 13,
-                        color: AppColor.textGrayColor,
+                        color: UiPalette.slate600,
                       ),
                     ),
                   ],

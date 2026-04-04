@@ -1,9 +1,12 @@
 import 'package:aconsia_app/assignment/controllers/mark_as_completed/post_mark_as_completed_provider.dart';
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
 import 'package:aconsia_app/core/services/openai_service.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/main/data/models/konten_model.dart';
 import 'package:aconsia_app/core/main/data/models/quiz_result_model.dart';
 import 'package:aconsia_app/presentation/dokter/home/controllers/reading_session_provider.dart';
@@ -21,6 +24,7 @@ class QuizResultPage extends HookConsumerWidget {
   final String sessionId; // Reading session ID
   final List<Map<String, dynamic>> quizResults;
   final Map<String, dynamic>? preGeneratedSummary; // For free chat mode
+  final String? source;
 
   const QuizResultPage({
     super.key,
@@ -28,6 +32,7 @@ class QuizResultPage extends HookConsumerWidget {
     required this.sessionId,
     required this.quizResults,
     this.preGeneratedSummary, // Optional: null for quiz mode, filled for free chat
+    this.source,
   });
 
   @override
@@ -37,6 +42,16 @@ class QuizResultPage extends HookConsumerWidget {
 
     final isLoading = useState(true);
     final summary = useState<Map<String, dynamic>?>(null);
+    final resolvedKontenId = (konten.id ?? '').trim().isEmpty
+        ? 'standalone_ai'
+        : konten.id!.trim();
+    final sourceTag = (source ?? '').trim().isEmpty
+        ? (resolvedKontenId == 'standalone_ai'
+            ? 'ai_chat_standalone'
+            : 'ai_chat_contextual')
+        : source!.trim();
+    final isStandaloneSession =
+        sessionId.startsWith('standalone_') || resolvedKontenId == 'standalone_ai';
 
     // Generate learning summary on load
     useEffect(() {
@@ -56,7 +71,7 @@ class QuizResultPage extends HookConsumerWidget {
           final quizResultModel = QuizResultModel(
             id: '', // Will be set by provider
             pasienId: uid,
-            kontenId: konten.id!,
+            kontenId: resolvedKontenId,
             sessionId: sessionId,
             overallScore: response['overall_score'] ?? 0,
             status: response['status'] ?? 'fair',
@@ -74,39 +89,43 @@ class QuizResultPage extends HookConsumerWidget {
                     .toList() ??
                 [],
             motivationalMessage: response['motivational_message']?.toString(),
-            questionResults: quizResults,
+            questionResults: [
+              ...quizResults,
+              {
+                '_meta': {
+                  'source': sourceTag,
+                  'sessionType': isStandaloneSession
+                      ? 'standalone_ai'
+                      : 'konten_ai',
+                },
+              }
+            ],
             completedAt: DateTime.now(),
           );
 
           // DEBUG: Print konten ID sebelum save
-          print('🔥 DEBUG: Saving quiz result for kontenId: ${konten.id}');
-          print('🔥 DEBUG: pasienId: $uid');
-
           await ref.read(saveQuizResultProvider.notifier).save(quizResultModel);
-
-          print('🔥 DEBUG: Quiz result saved successfully!');
 
           // Invalidate AI recommendations to refresh recommendations list
           ref.invalidate(fetchAiRecommendationsProvider);
           ref.invalidate(fetchAllUnreadKontenProvider);
 
           // End reading session after summary generated
-          print('🔥 DEBUG: Ending reading session: $sessionId');
-          await ref
-              .read(endReadingSessionProvider.notifier)
-              .endSession(sessionId: sessionId);
-
-          print('🔥 DEBUG: Reading session ended successfully!');
-          print('🔥 DEBUG: Session $sessionId is now inactive');
+          if (!isStandaloneSession) {
+            await ref
+                .read(endReadingSessionProvider.notifier)
+                .endSession(sessionId: sessionId);
+          }
 
           // Check if this is from assignment, mark as completed if score >= 70
           final avgScore = response['overall_score'] ?? 0;
-          if (avgScore >= 70) {
+          if (avgScore >= 70 && resolvedKontenId != 'standalone_ai') {
             // Try to mark assignment as completed (if exists)
             // We'll get assignmentId from the assignment provider
             try {
               // Get assignment for this konten + pasien
-              final assignmentId = await _getAssignmentId(ref, uid, konten.id!);
+              final assignmentId =
+                  await _getAssignmentId(ref, uid, resolvedKontenId);
               if (assignmentId != null) {
                 await ref
                     .read(postMarkAsCompletedProvider.notifier)
@@ -114,7 +133,6 @@ class QuizResultPage extends HookConsumerWidget {
               }
             } catch (e) {
               // Assignment doesn't exist, skip marking complete
-              print('No assignment found: $e');
             }
           }
         } catch (e) {
@@ -129,94 +147,91 @@ class QuizResultPage extends HookConsumerWidget {
     }, []);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Hasil Pembelajaran',
-        centertitle: true,
-        leading: const SizedBox(), // Disable back button
-      ),
       body: isLoading.value
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Score Card
-                  _buildScoreCard(summary.value!),
-                  const Gap(24),
-
-                  // Strengths
-                  if (summary.value!['strengths'] != null &&
-                      (summary.value!['strengths'] as List).isNotEmpty) ...[
-                    _buildSection(
-                      icon: Icons.check_circle,
-                      iconColor: Colors.green,
-                      title: '✨ Yang Sudah Dikuasai',
-                      items: (summary.value!['strengths'] as List)
-                          .map((e) => e.toString())
-                          .toList(),
-                      color: Colors.green,
+          : AconsiaPageBackground(
+              colors: const [UiPalette.blue50, UiPalette.white],
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(UiSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AconsiaTopActionRow(
+                      title: 'Ringkasan Sesi AI',
+                      subtitle: 'Ringkasan pemahaman setelah sesi pembelajaran',
+                      onBack: () => context.pop(),
                     ),
-                    const Gap(16),
-                  ],
-
-                  // Areas to improve
-                  if (summary.value!['areas_to_improve'] != null &&
-                      (summary.value!['areas_to_improve'] as List)
-                          .isNotEmpty) ...[
-                    _buildSection(
-                      icon: Icons.lightbulb,
-                      iconColor: Colors.orange,
-                      title: '📚 Perlu Dipelajari Lebih Lanjut',
-                      items: (summary.value!['areas_to_improve'] as List)
-                          .map((e) => e.toString())
-                          .toList(),
-                      color: Colors.orange,
+                    const Gap(UiSpacing.sm),
+                    _buildScoreCard(summary.value!),
+                    const Gap(UiSpacing.md),
+                    if (summary.value!['strengths'] != null &&
+                        (summary.value!['strengths'] as List).isNotEmpty) ...[
+                      _buildSection(
+                        icon: Icons.check_circle,
+                        iconColor: UiPalette.emerald600,
+                        title: 'Yang Sudah Dikuasai',
+                        items: (summary.value!['strengths'] as List)
+                            .map((e) => e.toString())
+                            .toList(),
+                        backgroundColor: UiPalette.emerald50,
+                        borderColor: UiPalette.emerald100,
+                      ),
+                      const Gap(UiSpacing.sm),
+                    ],
+                    if (summary.value!['areas_to_improve'] != null &&
+                        (summary.value!['areas_to_improve'] as List)
+                            .isNotEmpty) ...[
+                      _buildSection(
+                        icon: Icons.lightbulb_outline,
+                        iconColor: UiPalette.amber600,
+                        title: 'Perlu Dipelajari Lebih Lanjut',
+                        items: (summary.value!['areas_to_improve'] as List)
+                            .map((e) => e.toString())
+                            .toList(),
+                        backgroundColor: UiPalette.amber50,
+                        borderColor: UiPalette.amber100,
+                      ),
+                      const Gap(UiSpacing.sm),
+                    ],
+                    _buildSummaryCard(summary.value!['summary']),
+                    const Gap(UiSpacing.sm),
+                    if (summary.value!['recommendations'] != null &&
+                        (summary.value!['recommendations'] as List)
+                            .isNotEmpty) ...[
+                      _buildRecommendationsCard(
+                        (summary.value!['recommendations'] as List)
+                            .map((e) => e.toString())
+                            .toList(),
+                      ),
+                      const Gap(UiSpacing.sm),
+                    ],
+                    _buildMotivationalCard(summary.value!['motivational_message']),
+                    const Gap(UiSpacing.lg),
+                    Button.filled(
+                      onPressed: () {
+                        context.goNamed(RouteName.mainPasien);
+                      },
+                      label: 'Kembali ke Beranda',
+                      borderRadius: 12,
+                      height: 48,
                     ),
-                    const Gap(16),
-                  ],
-
-                  // Summary
-                  _buildSummaryCard(summary.value!['summary']),
-                  const Gap(16),
-
-                  // Recommendations
-                  if (summary.value!['recommendations'] != null &&
-                      (summary.value!['recommendations'] as List)
-                          .isNotEmpty) ...[
-                    _buildRecommendationsCard(
-                      (summary.value!['recommendations'] as List)
-                          .map((e) => e.toString())
-                          .toList(),
+                    const Gap(UiSpacing.xs),
+                    Button.outlined(
+                      onPressed: resolvedKontenId == 'standalone_ai'
+                          ? () {}
+                          : () {
+                              context.pushNamed(
+                                RouteName.detailKonten,
+                                extra: resolvedKontenId,
+                              );
+                            },
+                      disabled: resolvedKontenId == 'standalone_ai',
+                      label: 'Review Materi Kembali',
+                      borderRadius: 12,
+                      height: 48,
                     ),
-                    const Gap(16),
                   ],
-
-                  // Motivational message
-                  _buildMotivationalCard(
-                      summary.value!['motivational_message']),
-                  const Gap(24),
-
-                  // Actions
-                  Button.filled(
-                    onPressed: () {
-                      // Go back to home
-                      context.goNamed(RouteName.mainPasien);
-                    },
-                    label: 'Kembali ke Beranda',
-                  ),
-                  const Gap(12),
-                  Button.outlined(
-                    onPressed: () {
-                      // Navigate to detail konten to review
-                      context.pushNamed(
-                        RouteName.detailKonten,
-                        extra: konten.id,
-                      );
-                    },
-                    label: 'Review Materi Kembali',
-                  ),
-                ],
+                ),
               ),
             ),
     );
@@ -249,32 +264,27 @@ class QuizResultPage extends HookConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: const EdgeInsets.all(UiSpacing.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [scoreColor.withOpacity(0.8), scoreColor],
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [Color(0xFFEAF5FF), Color(0xFFFFFFFF)],
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: scoreColor.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: UiPalette.blue100),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: Colors.white),
-          const Gap(12),
+          Icon(icon, size: 44, color: scoreColor),
+          const Gap(UiSpacing.xs),
           Text(
             statusText,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+            style: UiTypography.h2.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: scoreColor,
             ),
           ),
           const Gap(8),
@@ -283,14 +293,14 @@ class QuizResultPage extends HookConsumerWidget {
             children: [
               const Text(
                 'Skor Pemahaman: ',
-                style: TextStyle(fontSize: 16, color: Colors.white),
+                style: UiTypography.bodySmall,
               ),
               Text(
                 '$score/100',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                style: UiTypography.h1.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: scoreColor,
                 ),
               ),
             ],
@@ -305,14 +315,15 @@ class QuizResultPage extends HookConsumerWidget {
     required Color iconColor,
     required String title,
     required List<String> items,
-    required Color color,
+    required Color backgroundColor,
+    required Color borderColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(UiSpacing.md),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,15 +335,15 @@ class QuizResultPage extends HookConsumerWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  style: UiTypography.label.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: UiPalette.slate900,
                   ),
                 ),
               ),
             ],
           ),
-          const Gap(12),
+          const Gap(UiSpacing.sm),
           ...items.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
@@ -358,30 +369,25 @@ class QuizResultPage extends HookConsumerWidget {
   }
 
   Widget _buildSummaryCard(String summary) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColor.primaryColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return AconsiaCardSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.description, color: AppColor.primaryColor),
+              Icon(Icons.description_outlined, color: UiPalette.blue600),
               Gap(8),
               Text(
                 'Rangkuman Pembelajaran',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: UiTypography.label,
               ),
             ],
           ),
-          const Gap(12),
-          Text(summary),
+          const Gap(UiSpacing.sm),
+          Text(
+            summary,
+            style: UiTypography.body.copyWith(color: UiPalette.slate700),
+          ),
         ],
       ),
     );
@@ -389,36 +395,38 @@ class QuizResultPage extends HookConsumerWidget {
 
   Widget _buildRecommendationsCard(List<String> recommendations) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(UiSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.purple.shade50,
+        color: UiPalette.blue50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.shade200),
+        border: Border.all(color: UiPalette.blue100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.recommend, color: Colors.purple),
+              Icon(Icons.recommend_outlined, color: UiPalette.blue600),
               Gap(8),
               Text(
                 'Rekomendasi Selanjutnya',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: UiTypography.label,
               ),
             ],
           ),
-          const Gap(12),
+          const Gap(UiSpacing.sm),
           ...recommendations.map((rec) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('• ', style: TextStyle(fontSize: 18)),
-                    Expanded(child: Text(rec)),
+                    const Text('• ', style: UiTypography.label),
+                    Expanded(
+                      child: Text(
+                        rec,
+                        style: UiTypography.body.copyWith(color: UiPalette.slate700),
+                      ),
+                    ),
                   ],
                 ),
               )),
@@ -429,26 +437,24 @@ class QuizResultPage extends HookConsumerWidget {
 
   Widget _buildMotivationalCard(String message) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(UiSpacing.md),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.blue.shade100,
-            Colors.purple.shade100,
-          ],
+        gradient: const LinearGradient(
+          colors: [UiPalette.emerald50, UiPalette.blue50],
         ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: UiPalette.emerald100),
       ),
       child: Row(
         children: [
-          const Icon(Icons.favorite, color: Colors.red, size: 32),
+          const Icon(Icons.favorite, color: UiPalette.red600, size: 30),
           const Gap(12),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                fontSize: 14,
+              style: UiTypography.body.copyWith(
                 fontStyle: FontStyle.italic,
+                color: UiPalette.slate700,
               ),
             ),
           ),

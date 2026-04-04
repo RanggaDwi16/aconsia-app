@@ -1,6 +1,9 @@
-import 'package:aconsia_app/core/helpers/custom_app_bar.dart';
 import 'package:aconsia_app/core/main/data/models/notification_model.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/notification/controllers/get_user_notifications/fetch_user_notifications_provider.dart';
 import 'package:aconsia_app/notification/domain/usecases/get_user_notifications.dart';
 import 'package:aconsia_app/presentation/pasien/notification/widgets/notification_card_widget.dart';
@@ -17,72 +20,95 @@ class NotificationListPage extends ConsumerWidget {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     final notificationsAsync = ref.watch(
-      fetchUserNotificationsProvider(params: GetUserNotificationsParams(userId: uid))
+      fetchUserNotificationsProvider(
+        params: GetUserNotificationsParams(userId: uid),
+      ),
     );
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Notifikasi',
-        centertitle: true,
-      ),
-      body: notificationsAsync.when(
-        data: (notifications) {
-          if (notifications == null || notifications.isEmpty) {
-            return _buildEmptyState();
-          }
+      body: SafeArea(
+        child: AconsiaPageBackground(
+        colors: const [UiPalette.blue50, UiPalette.white],
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(UiSpacing.md, UiSpacing.sm,
+                  UiSpacing.md, UiSpacing.xs),
+              child: AconsiaTopActionRow(
+                title: 'Notifikasi',
+                subtitle: 'Pembaruan aktivitas akun Anda',
+                onBack: () => Navigator.of(context).pop(),
+              ),
+            ),
+            Expanded(
+              child: notificationsAsync.when(
+                data: (notifications) {
+                  if (notifications == null || notifications.isEmpty) {
+                    return _buildEmptyState();
+                  }
 
-          // Group notifications by date
-          final groupedNotifications = _groupNotificationsByDate(notifications);
+                  final groupedNotifications =
+                      _groupNotificationsByDate(notifications);
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(fetchUserNotificationsProvider(params: GetUserNotificationsParams(userId: uid)));
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: groupedNotifications.length,
-              itemBuilder: (context, index) {
-                final group = groupedNotifications[index];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date header
-                    Padding(
-                      padding:  EdgeInsets.only(
-                          bottom: 12, top: index == 0 ? 0 : 16),
-                      child: Text(
-                        group['label'] as String,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.textGrayColor,
-                        ),
-                      ),
-                    ),
-                    // Notifications in this group
-                    ...((group['notifications'] as List<NotificationModel>)
-                        .map((notification) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: NotificationCardWidget(
-                          notification: notification,
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(
+                        fetchUserNotificationsProvider(
+                          params: GetUserNotificationsParams(userId: uid),
                         ),
                       );
-                    }).toList()),
-                  ],
-                );
-              },
+                    },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(UiSpacing.md),
+                      itemCount: groupedNotifications.length,
+                      itemBuilder: (context, index) {
+                        final group = groupedNotifications[index];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: UiSpacing.sm,
+                                top: index == 0 ? 0 : UiSpacing.md,
+                              ),
+                              child: Text(
+                                group['label'] as String,
+                                style: UiTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: UiPalette.slate600,
+                                ),
+                              ),
+                            ),
+                            ...((group['notifications']
+                                    as List<NotificationModel>)
+                                .map((notification) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(bottom: UiSpacing.sm),
+                                child: NotificationCardWidget(
+                                    notification: notification),
+                              );
+                            }).toList()),
+                          ],
+                        );
+                      },
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => _buildErrorState(error.toString()),
+              ),
             ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(error.toString()),
+          ],
+        ),
+      ),
       ),
     );
   }
 
   List<Map<String, dynamic>> _groupNotificationsByDate(
-      List<NotificationModel> notifications) {
+    List<NotificationModel> notifications,
+  ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -95,7 +121,7 @@ class NotificationListPage extends ConsumerWidget {
       'Sebelumnya': [],
     };
 
-    for (var notification in notifications) {
+    for (final notification in notifications) {
       final notificationDate = DateTime(
         notification.createdAt.year,
         notification.createdAt.month,
@@ -114,48 +140,41 @@ class NotificationListPage extends ConsumerWidget {
       }
     }
 
-    // Convert to list and filter empty groups
     return groups.entries
         .where((entry) => entry.value.isNotEmpty)
-        .map((entry) => {
-              'label': entry.key,
-              'notifications': entry.value,
-            })
+        .map(
+          (entry) => {
+            'label': entry.key,
+            'notifications': entry.value,
+          },
+        )
         .toList();
   }
 
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.notifications_none,
-              size: 80,
-              color: Colors.grey.shade300,
-            ),
-            const Gap(24),
-            const Text(
-              'Belum Ada Notifikasi',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textColor,
+        padding: const EdgeInsets.all(UiSpacing.xl),
+        child: AconsiaCardSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.notifications_none,
+                  size: 64, color: UiPalette.slate300),
+              const Gap(UiSpacing.md),
+              const Text(
+                'Belum Ada Notifikasi',
+                style: UiTypography.title,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(8),
-            Text(
-              'Notifikasi akan muncul di sini saat ada pembaruan',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
+              const Gap(UiSpacing.sm),
+              const Text(
+                'Notifikasi akan muncul di sini saat ada pembaruan baru.',
+                style: UiTypography.body,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -164,35 +183,28 @@ class NotificationListPage extends ConsumerWidget {
   Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red.shade300,
-            ),
-            const Gap(24),
-            const Text(
-              'Terjadi Kesalahan',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textColor,
+        padding: const EdgeInsets.all(UiSpacing.xl),
+        child: AconsiaCardSurface(
+          borderColor: UiPalette.red600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 64, color: UiPalette.red600),
+              const Gap(UiSpacing.md),
+              const Text(
+                'Terjadi Kesalahan',
+                style: UiTypography.title,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(8),
-            Text(
-              error,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.red,
+              const Gap(UiSpacing.sm),
+              Text(
+                error,
+                style: UiTypography.body.copyWith(color: UiPalette.red600),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

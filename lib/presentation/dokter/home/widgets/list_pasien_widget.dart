@@ -1,7 +1,8 @@
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/utils/assets.gen.dart';
-import 'package:aconsia_app/core/utils/constant/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
@@ -29,7 +30,7 @@ class ListPasienWidget extends StatelessWidget {
       ),
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(UiSpacing.md),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
@@ -42,45 +43,41 @@ class ListPasienWidget extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: const Color(0xFFD0EDFF),
-              child: SvgPicture.asset(
-                Assets.icons.icPerson.path,
-                width: 24,
-                height: 24,
-                color: AppColor.primaryColor,
-              ),
-            ),
-            const Gap(12),
-            Expanded(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 360;
+
+            final identity = Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     pasien.namaLengkap ?? '-',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: 15,
+                      color: UiPalette.slate900,
                     ),
                   ),
-                  const Gap(4),
+                  const Gap(UiSpacing.xs),
                   Text(
                     pasien.noRekamMedis?.isNotEmpty == true
                         ? 'No RM: ${pasien.noRekamMedis}'
                         : 'No RM belum diisi',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColor.textGrayColor,
+                      fontSize: 12,
+                      color: UiPalette.slate500,
                     ),
                   ),
                 ],
               ),
-            ),
-            const Gap(8),
-            Column(
+            );
+
+            final status = Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
@@ -92,21 +89,52 @@ class ListPasienWidget extends StatelessWidget {
                   ),
                   child: Text(
                     statusText,
-                    style: TextStyle(
-                      color: AppColor.primaryWhite,
+                    style: const TextStyle(
+                      color: UiPalette.white,
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
                   ),
                 ),
-                const Gap(8),
+                const Gap(UiSpacing.sm),
                 const Icon(
                   Icons.chevron_right_rounded,
                   color: Color(0xFF8FA0B8),
                 ),
               ],
-            ),
-          ],
+            );
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: const Color(0xFFD0EDFF),
+                  child: SvgPicture.asset(
+                    Assets.icons.icPerson.path,
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      UiPalette.blue600,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+                const Gap(UiSpacing.md),
+                identity,
+                const Gap(UiSpacing.sm),
+                if (isNarrow)
+                  Flexible(
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: status,
+                    ),
+                  )
+                else
+                  status,
+              ],
+            );
+          },
         ),
       ),
     );

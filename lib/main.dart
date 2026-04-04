@@ -8,11 +8,35 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+const Map<String, String> _defaultEnv = {
+  'ENABLE_APP_CHECK': 'false',
+  'USE_MOCK_AI': 'true',
+  'OPENAI_API_KEY': '',
+  'CLOUDINARY_CLOUD_NAME': '',
+  'CLOUDINARY_UPLOAD_PRESET': 'aconsia_app',
+};
+
+Future<void> _loadEnvironment() async {
+  try {
+    await dotenv.load(
+      fileName: ".env",
+      mergeWith: _defaultEnv,
+    );
+    debugPrint('[ENV] Loaded .env successfully');
+  } on FileNotFoundError {
+    debugPrint('[ENV] .env not found, using safe default env');
+    dotenv.testLoad(mergeWith: _defaultEnv);
+  } on EmptyEnvFileError {
+    debugPrint('[ENV] .env is empty, using safe default env');
+    dotenv.testLoad(mergeWith: _defaultEnv);
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  await dotenv.load(fileName: ".env");
+  await _loadEnvironment();
 
   // Inisialisasi Firebase
   await Firebase.initializeApp(
