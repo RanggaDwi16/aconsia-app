@@ -1,8 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect, useCallback, type Dispatch, type SetStateAction } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
 import {
   Users,
   Stethoscope,
@@ -16,35 +27,32 @@ import {
   LogOut,
 } from "lucide-react";
 import {
-  getAdminDashboardPatients,
+  getAdminDashboardPatientsPaginated,
   getAdminDoctorPerformance,
+  type AdminPatientData,
+  type AdminPatientsFilter,
 } from "../../../modules/admin/services/adminDashboardService";
 import {
-  getAdminModerationSnapshot,
   type AdminModerationContent,
+  type AdminModerationContentFilter,
   type AdminModerationUser,
+  type AdminModerationUserFilter,
+  getAdminModerationContentsPaginated,
+  getAdminModerationUsersPaginated,
 } from "../../../modules/admin/services/adminModerationDataService";
 import {
   setKontenPublishStatus,
+  type ModerationCallableErrorCode,
+  ModerationActionError,
   setUserLifecycleStatus,
 } from "../../../modules/admin/services/adminModerationService";
 import { getDesktopSession } from "../../../core/auth/session";
 import { signOutDesktop } from "../../../core/auth/service";
 import { writeAuditLog } from "../../../modules/admin/services/auditWriterService";
 import { finishNavigationMetric } from "../../perf/navigationMetrics";
-
-interface PatientData {
-  id: string;
-  fullName: string;
-  mrn: string;
-  surgeryType: string;
-  surgeryDate: string;
-  anesthesiaType: string | null;
-  status: "pending" | "approved" | "in_progress" | "ready" | "completed";
-  comprehensionScore: number;
-  assignedDoctorId: string;
-  scheduledConsentDate?: string;
-}
+import { userMessages } from "../../copy/userMessages";
+import { getFirebaseInitErrorMessage, isFirebaseClientReady } from "../../../core/firebase/client";
+import { type DocumentData, type QueryDocumentSnapshot } from "firebase/firestore";
 
 interface DoctorData {
   id: string;
@@ -53,9 +61,22 @@ interface DoctorData {
   avgComprehension: number;
 }
 
+type PendingModerationAction =
+  | {
+      kind: "user";
+      user: AdminModerationUser;
+      targetStatus: "active" | "suspended";
+    }
+  | {
+      kind: "content";
+      content: AdminModerationContent;
+      targetStatus: "draft" | "published";
+    };
+
 export function EnhancedAdminDashboard() {
   const navigate = useNavigate();
-  const [patients, setPatients] = useState<PatientData[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [patients, setPatients] = useState<AdminPatientData[]>([]);
   const [doctors, setDoctors] = useState<DoctorData[]>([]);
   const [moderationUsers, setModerationUsers] = useState<AdminModerationUser[]>([]);
   const [moderationContents, setModerationContents] = useState<AdminModerationContent[]>([]);
@@ -64,7 +85,52 @@ export function EnhancedAdminDashboard() {
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
   const [moderationMessage, setModerationMessage] = useState<string>("");
   const [moderationError, setModerationError] = useState<string>("");
+  const [moderationErrorHint, setModerationErrorHint] = useState<string>("");
+  const [moderationErrorCode, setModerationErrorCode] = useState<ModerationCallableErrorCode | null>(null);
   const [adminName, setAdminName] = useState("Admin");
+  const [pendingModerationAction, setPendingModerationAction] = useState<PendingModerationAction | null>(null);
+  const [isConfirmingAction, setIsConfirmingAction] = useState(false);
+  const [patientsHasNext, setPatientsHasNext] = useState(false);
+  const [moderationUsersHasNext, setModerationUsersHasNext] = useState(false);
+  const [moderationContentsHasNext, setModerationContentsHasNext] = useState(false);
+  const [patientsCursorStack, setPatientsCursorStack] = useState<Array<QueryDocumentSnapshot<DocumentData> | null>>([null]);
+  const [moderationUsersCursorStack, setModerationUsersCursorStack] = useState<Array<QueryDocumentSnapshot<DocumentData> | null>>([null]);
+  const [moderationContentsCursorStack, setModerationContentsCursorStack] = useState<Array<QueryDocumentSnapshot<DocumentData> | null>>([null]);
+
+  const parsePage = (value: string | null): number => {
+    const parsed = Number(value || "1");
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+  };
+
+  const [patientSearch, setPatientSearch] = useState(searchParams.get("p_search") || "");
+  const [patientStatusFilter, setPatientStatusFilter] = useState<AdminPatientsFilter["status"]>(
+    (searchParams.get("p_status") as AdminPatientsFilter["status"]) || "all",
+  );
+  const [patientAnesthesiaFilter, setPatientAnesthesiaFilter] = useState<string>(
+    searchParams.get("p_anesthesia") || "all",
+  );
+  const [patientsPage, setPatientsPage] = useState<number>(parsePage(searchParams.get("p_page")));
+
+  const [moderationUserSearch, setModerationUserSearch] = useState(searchParams.get("u_search") || "");
+  const [moderationUserRoleFilter, setModerationUserRoleFilter] =
+    useState<AdminModerationUserFilter["role"]>(
+      (searchParams.get("u_role") as AdminModerationUserFilter["role"]) || "all",
+    );
+  const [moderationUserStatusFilter, setModerationUserStatusFilter] =
+    useState<AdminModerationUserFilter["status"]>(
+      (searchParams.get("u_status") as AdminModerationUserFilter["status"]) || "all",
+    );
+  const [moderationUsersPage, setModerationUsersPage] =
+    useState<number>(parsePage(searchParams.get("u_page")));
+
+  const [moderationContentSearch, setModerationContentSearch] =
+    useState(searchParams.get("c_search") || "");
+  const [moderationContentStatusFilter, setModerationContentStatusFilter] =
+    useState<AdminModerationContentFilter["status"]>(
+      (searchParams.get("c_status") as AdminModerationContentFilter["status"]) || "all",
+    );
+  const [moderationContentsPage, setModerationContentsPage] =
+    useState<number>(parsePage(searchParams.get("c_page")));
 
   // Resolve current admin session
   useEffect(() => {
@@ -75,103 +141,376 @@ export function EnhancedAdminDashboard() {
       return;
     }
 
+    if (!isFirebaseClientReady()) {
+      const initMessage = getFirebaseInitErrorMessage();
+      setLoadError(userMessages.admin.moderationPreflight);
+      setModerationErrorHint(
+        initMessage ? userMessages.admin.hintTryAgain : userMessages.admin.hintReloginAdmin,
+      );
+      setIsLoading(false);
+      return;
+    }
+
     setAdminName(session.displayName || session.email || "Admin");
   }, [navigate]);
 
+  const mapModerationHint = (code: ModerationCallableErrorCode): string => {
+    if (code === "unauthenticated") return userMessages.admin.hintReloginAdmin;
+    if (code === "permission-denied") return userMessages.admin.hintCheckAdminRole;
+    if (code === "not-found") return userMessages.admin.hintCheckContentExists;
+    if (code === "invalid-argument") return userMessages.admin.hintTryAgain;
+    return userMessages.admin.hintTryAgain;
+  };
+
+  const applyNextCursor = (
+    page: number,
+    nextCursor: QueryDocumentSnapshot<DocumentData> | null,
+    hasNext: boolean,
+    setCursorStack: Dispatch<SetStateAction<Array<QueryDocumentSnapshot<DocumentData> | null>>>,
+  ) => {
+    setCursorStack((prev) => {
+      const next = prev.slice(0, page);
+      if (hasNext && nextCursor) {
+        next[page] = nextCursor;
+      }
+      return next.length === 0 ? [null] : next;
+    });
+  };
+
+  const loadPatientsPanel = useCallback(async () => {
+    let cursor = patientsCursorStack[patientsPage - 1] || null;
+    if (patientsPage > 1 && !cursor) {
+      const rebuiltStack: Array<QueryDocumentSnapshot<DocumentData> | null> = [null];
+      let rebuildCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+      for (let page = 1; page < patientsPage; page += 1) {
+        const stepResult = await getAdminDashboardPatientsPaginated({
+          pageSize: 20,
+          cursor: rebuildCursor,
+          search: patientSearch,
+          filters: {
+            status: patientStatusFilter || "all",
+            anesthesiaType: patientAnesthesiaFilter || "all",
+          },
+        });
+        if (!stepResult.hasNext || !stepResult.nextCursor) {
+          setPatientsPage(1);
+          setPatientsCursorStack([null]);
+          return;
+        }
+        rebuildCursor = stepResult.nextCursor;
+        rebuiltStack[page] = rebuildCursor;
+      }
+      setPatientsCursorStack(rebuiltStack);
+      cursor = rebuiltStack[patientsPage - 1] || null;
+    }
+    const result = await getAdminDashboardPatientsPaginated({
+      pageSize: 20,
+      cursor,
+      search: patientSearch,
+      filters: {
+        status: patientStatusFilter || "all",
+        anesthesiaType: patientAnesthesiaFilter || "all",
+      },
+    });
+    setPatients(result.items);
+    setPatientsHasNext(result.hasNext);
+    applyNextCursor(patientsPage, result.nextCursor, result.hasNext, setPatientsCursorStack);
+    const doctorPerformance = await getAdminDoctorPerformance(result.items);
+    setDoctors(doctorPerformance);
+  }, [
+    patientAnesthesiaFilter,
+    patientSearch,
+    patientStatusFilter,
+    patientsCursorStack,
+    patientsPage,
+  ]);
+
+  const loadModerationUsersPanel = useCallback(async () => {
+    let cursor = moderationUsersCursorStack[moderationUsersPage - 1] || null;
+    if (moderationUsersPage > 1 && !cursor) {
+      const rebuiltStack: Array<QueryDocumentSnapshot<DocumentData> | null> = [null];
+      let rebuildCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+      for (let page = 1; page < moderationUsersPage; page += 1) {
+        const stepResult = await getAdminModerationUsersPaginated({
+          pageSize: 20,
+          cursor: rebuildCursor,
+          search: moderationUserSearch,
+          filters: {
+            role: moderationUserRoleFilter || "all",
+            status: moderationUserStatusFilter || "all",
+          },
+        });
+        if (!stepResult.hasNext || !stepResult.nextCursor) {
+          setModerationUsersPage(1);
+          setModerationUsersCursorStack([null]);
+          return;
+        }
+        rebuildCursor = stepResult.nextCursor;
+        rebuiltStack[page] = rebuildCursor;
+      }
+      setModerationUsersCursorStack(rebuiltStack);
+      cursor = rebuiltStack[moderationUsersPage - 1] || null;
+    }
+    const result = await getAdminModerationUsersPaginated({
+      pageSize: 20,
+      cursor,
+      search: moderationUserSearch,
+      filters: {
+        role: moderationUserRoleFilter || "all",
+        status: moderationUserStatusFilter || "all",
+      },
+    });
+    setModerationUsers(result.items);
+    setModerationUsersHasNext(result.hasNext);
+    applyNextCursor(
+      moderationUsersPage,
+      result.nextCursor,
+      result.hasNext,
+      setModerationUsersCursorStack,
+    );
+  }, [
+    moderationUserRoleFilter,
+    moderationUserSearch,
+    moderationUserStatusFilter,
+    moderationUsersCursorStack,
+    moderationUsersPage,
+  ]);
+
+  const loadModerationContentsPanel = useCallback(async () => {
+    let cursor = moderationContentsCursorStack[moderationContentsPage - 1] || null;
+    if (moderationContentsPage > 1 && !cursor) {
+      const rebuiltStack: Array<QueryDocumentSnapshot<DocumentData> | null> = [null];
+      let rebuildCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+      for (let page = 1; page < moderationContentsPage; page += 1) {
+        const stepResult = await getAdminModerationContentsPaginated({
+          pageSize: 20,
+          cursor: rebuildCursor,
+          search: moderationContentSearch,
+          filters: {
+            status: moderationContentStatusFilter || "all",
+          },
+        });
+        if (!stepResult.hasNext || !stepResult.nextCursor) {
+          setModerationContentsPage(1);
+          setModerationContentsCursorStack([null]);
+          return;
+        }
+        rebuildCursor = stepResult.nextCursor;
+        rebuiltStack[page] = rebuildCursor;
+      }
+      setModerationContentsCursorStack(rebuiltStack);
+      cursor = rebuiltStack[moderationContentsPage - 1] || null;
+    }
+    const result = await getAdminModerationContentsPaginated({
+      pageSize: 20,
+      cursor,
+      search: moderationContentSearch,
+      filters: {
+        status: moderationContentStatusFilter || "all",
+      },
+    });
+    setModerationContents(result.items);
+    setModerationContentsHasNext(result.hasNext);
+    applyNextCursor(
+      moderationContentsPage,
+      result.nextCursor,
+      result.hasNext,
+      setModerationContentsCursorStack,
+    );
+  }, [
+    moderationContentSearch,
+    moderationContentStatusFilter,
+    moderationContentsCursorStack,
+    moderationContentsPage,
+  ]);
+
   const loadData = useCallback(async () => {
     try {
-      const [allPatients, moderationSnapshot] = await Promise.all([
-        getAdminDashboardPatients(),
-        getAdminModerationSnapshot(),
+      await Promise.all([
+        loadPatientsPanel(),
+        loadModerationUsersPanel(),
+        loadModerationContentsPanel(),
       ]);
-
-      setPatients(allPatients);
-      setModerationUsers(moderationSnapshot.users);
-      setModerationContents(moderationSnapshot.contents);
-
-      const doctorPerformance = await getAdminDoctorPerformance(allPatients);
-      setDoctors(doctorPerformance);
       setLoadError("");
-
       setIsLoading(false);
-      return;
     } catch (error) {
-      console.error("[AdminDashboard] Firestore load failed", error);
-      setLoadError("Gagal memuat dashboard dari Firestore. Periksa koneksi dan konfigurasi Firebase.");
+      console.error("[AdminDashboard] Firestore paginated load failed", error);
+      setLoadError(userMessages.admin.dashboardLoadError);
       setPatients([]);
       setDoctors([]);
       setModerationUsers([]);
       setModerationContents([]);
       setIsLoading(false);
     }
-  }, []);
+  }, [loadModerationContentsPanel, loadModerationUsersPanel, loadPatientsPanel]);
 
-  // Load patients from Firestore (authoritative source)
   useEffect(() => {
     void loadData();
+  }, [loadData]);
 
-    // Auto-sync every 5 seconds
+  useEffect(() => {
     const interval = setInterval(() => {
       void loadData();
     }, 5000);
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const handleUserLifecycleAction = async (user: AdminModerationUser) => {
-    const targetStatus = user.status === "suspended" ? "active" : "suspended";
-    if (!window.confirm(`Ubah status ${user.displayName} menjadi ${targetStatus}?`)) {
-      return;
-    }
+  useEffect(() => {
+    const nextParams = new URLSearchParams();
+    const setOrDelete = (key: string, value: string, defaultValue: string) => {
+      if (value === defaultValue) {
+        nextParams.delete(key);
+      } else {
+        nextParams.set(key, value);
+      }
+    };
 
-    setActionLoadingKey(`user-${user.id}`);
-    setModerationMessage("");
-    setModerationError("");
+    setOrDelete("p_search", patientSearch.trim(), "");
+    setOrDelete("p_status", patientStatusFilter || "all", "all");
+    setOrDelete("p_anesthesia", patientAnesthesiaFilter || "all", "all");
+    setOrDelete("p_page", String(patientsPage), "1");
+    setOrDelete("u_search", moderationUserSearch.trim(), "");
+    setOrDelete("u_role", moderationUserRoleFilter || "all", "all");
+    setOrDelete("u_status", moderationUserStatusFilter || "all", "all");
+    setOrDelete("u_page", String(moderationUsersPage), "1");
+    setOrDelete("c_search", moderationContentSearch.trim(), "");
+    setOrDelete("c_status", moderationContentStatusFilter || "all", "all");
+    setOrDelete("c_page", String(moderationContentsPage), "1");
+    setSearchParams(nextParams, { replace: true });
+  }, [
+    moderationContentSearch,
+    moderationContentStatusFilter,
+    moderationContentsPage,
+    moderationUserRoleFilter,
+    moderationUserSearch,
+    moderationUserStatusFilter,
+    moderationUsersPage,
+    patientAnesthesiaFilter,
+    patientSearch,
+    patientStatusFilter,
+    patientsPage,
+    setSearchParams,
+  ]);
 
-    try {
-      await setUserLifecycleStatus({
-        userId: user.id,
-        targetStatus,
-        reason:
-          targetStatus === "suspended"
-            ? "Suspended by admin desktop moderation"
-            : "Reactivated by admin desktop moderation",
-      });
-      setModerationMessage(`Status user ${user.displayName} berhasil diubah ke ${targetStatus}.`);
-      await loadData();
-    } catch (error) {
-      console.error("[AdminDashboard] User moderation action failed", error);
-      setModerationError(`Gagal mengubah status user ${user.displayName}.`);
-    } finally {
-      setActionLoadingKey(null);
-    }
+  const resetPatientsQuery = () => {
+    setPatientsPage(1);
+    setPatientsCursorStack([null]);
   };
 
-  const handleContentPublishAction = async (content: AdminModerationContent) => {
-    const targetStatus = content.status === "published" ? "draft" : "published";
-    if (!window.confirm(`Ubah status konten \"${content.title}\" menjadi ${targetStatus}?`)) {
-      return;
-    }
+  const resetModerationUsersQuery = () => {
+    setModerationUsersPage(1);
+    setModerationUsersCursorStack([null]);
+  };
 
-    setActionLoadingKey(`content-${content.id}`);
+  const resetModerationContentsQuery = () => {
+    setModerationContentsPage(1);
+    setModerationContentsCursorStack([null]);
+  };
+
+  const handleUserLifecycleAction = (user: AdminModerationUser) => {
+    const targetStatus = user.status === "suspended" ? "active" : "suspended";
+    setPendingModerationAction({
+      kind: "user",
+      user,
+      targetStatus,
+    });
+  };
+
+  const handleContentPublishAction = (content: AdminModerationContent) => {
+    const targetStatus = content.status === "published" ? "draft" : "published";
+    setPendingModerationAction({
+      kind: "content",
+      content,
+      targetStatus,
+    });
+  };
+
+  const executePendingModerationAction = async () => {
+    if (!pendingModerationAction || isConfirmingAction) return;
+    const action = pendingModerationAction;
+
+    setIsConfirmingAction(true);
+    setPendingModerationAction(null);
     setModerationMessage("");
     setModerationError("");
+    setModerationErrorHint("");
+    setModerationErrorCode(null);
 
     try {
+      if (action.kind === "user") {
+        setActionLoadingKey(`user-${action.user.id}`);
+        await setUserLifecycleStatus({
+          userId: action.user.id,
+          targetStatus: action.targetStatus,
+          reason:
+            action.targetStatus === "suspended"
+              ? "Suspended by admin desktop moderation"
+              : "Reactivated by admin desktop moderation",
+        });
+        setModerationMessage(
+          `Status user ${action.user.displayName} berhasil diubah ke ${action.targetStatus}.`,
+        );
+        await loadModerationUsersPanel();
+        return;
+      }
+
+      setActionLoadingKey(`content-${action.content.id}`);
       await setKontenPublishStatus({
-        kontenId: content.id,
-        targetStatus,
+        kontenId: action.content.id,
+        targetStatus: action.targetStatus,
         reason:
-          targetStatus === "published"
+          action.targetStatus === "published"
             ? "Published by admin desktop moderation"
             : "Unpublished by admin desktop moderation",
       });
-      setModerationMessage(`Status konten ${content.title} berhasil diubah ke ${targetStatus}.`);
-      await loadData();
+      setModerationMessage(
+        `Status konten ${action.content.title} berhasil diubah ke ${action.targetStatus}.`,
+      );
+      await loadModerationContentsPanel();
     } catch (error) {
-      console.error("[AdminDashboard] Content moderation action failed", error);
-      setModerationError(`Gagal mengubah status konten ${content.title}.`);
+      if (error instanceof ModerationActionError) {
+        if (action.kind === "user") {
+          console.error("[AdminDashboard] User moderation action failed", {
+            code: error.code,
+            debugMessage: error.debugMessage,
+            userId: action.user.id,
+            targetStatus: action.targetStatus,
+          });
+        } else {
+          console.error("[AdminDashboard] Content moderation action failed", {
+            code: error.code,
+            debugMessage: error.debugMessage,
+            contentId: action.content.id,
+            contentTitle: action.content.title,
+            targetStatus: action.targetStatus,
+          });
+        }
+        setModerationError(error.userMessage);
+        setModerationErrorHint(mapModerationHint(error.code));
+        setModerationErrorCode(error.code);
+      } else {
+        if (action.kind === "user") {
+          console.error("[AdminDashboard] User moderation action failed", {
+            error,
+            userId: action.user.id,
+            targetStatus: action.targetStatus,
+          });
+          setModerationError(userMessages.admin.lifecycleUnknown);
+        } else {
+          console.error("[AdminDashboard] Content moderation action failed", {
+            error,
+            contentId: action.content.id,
+            contentTitle: action.content.title,
+            targetStatus: action.targetStatus,
+          });
+          setModerationError(userMessages.admin.publishUnknown);
+        }
+        setModerationErrorHint(userMessages.admin.hintTryAgain);
+        setModerationErrorCode("unknown");
+      }
     } finally {
       setActionLoadingKey(null);
+      setIsConfirmingAction(false);
     }
   };
 
@@ -231,6 +570,9 @@ export function EnhancedAdminDashboard() {
           <CardHeader>
             <CardTitle className="text-red-700">Gagal Memuat Dashboard</CardTitle>
             <CardDescription>{loadError}</CardDescription>
+            {moderationErrorHint ? (
+              <CardDescription className="text-red-700">{moderationErrorHint}</CardDescription>
+            ) : null}
           </CardHeader>
           <CardContent className="flex gap-3">
             <Button variant="outline" onClick={() => navigate("/login")}>Kembali ke Login</Button>
@@ -481,13 +823,55 @@ export function EnhancedAdminDashboard() {
                 <Users className="w-5 h-5" />
                 Status Pasien Real-Time
               </CardTitle>
-              <CardDescription>Update otomatis setiap 2 detik</CardDescription>
+              <CardDescription>
+                Update otomatis setiap 5 detik · Halaman {patientsPage} · 20 item per halaman
+              </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                <Input
+                  value={patientSearch}
+                  onChange={(event) => {
+                    setPatientSearch(event.target.value);
+                    resetPatientsQuery();
+                  }}
+                  placeholder="Cari nama atau MRN pasien"
+                />
+                <select
+                  value={patientStatusFilter || "all"}
+                  onChange={(event) => {
+                    setPatientStatusFilter(event.target.value as AdminPatientsFilter["status"]);
+                    resetPatientsQuery();
+                  }}
+                  className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                >
+                  <option value="all">Semua status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="ready">Ready</option>
+                  <option value="completed">Completed</option>
+                </select>
+                <select
+                  value={patientAnesthesiaFilter || "all"}
+                  onChange={(event) => {
+                    setPatientAnesthesiaFilter(event.target.value);
+                    resetPatientsQuery();
+                  }}
+                  className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                >
+                  <option value="all">Semua anestesi</option>
+                  <option value="General Anesthesia">General Anesthesia</option>
+                  <option value="Spinal Anesthesia">Spinal Anesthesia</option>
+                  <option value="Epidural Anesthesia">Epidural Anesthesia</option>
+                  <option value="Regional Anesthesia">Regional Anesthesia</option>
+                  <option value="Local Anesthesia + Sedation">Local + Sedation</option>
+                </select>
+              </div>
               {patients.length === 0 ? (
                 <div className="text-center py-12">
                   <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Tidak ada pasien terdaftar</p>
+                  <p className="text-gray-600">Tidak ada pasien sesuai filter saat ini</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -579,6 +963,35 @@ export function EnhancedAdminDashboard() {
                   ))}
                 </div>
               )}
+              <div className="mt-4 flex items-center justify-between border-t pt-4">
+                <p className="text-xs text-slate-500">
+                  Menampilkan {patients.length} pasien pada halaman ini
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={patientsPage <= 1}
+                    onClick={() => {
+                      setPatientsPage((prev) => Math.max(1, prev - 1));
+                    }}
+                  >
+                    Prev
+                  </Button>
+                  <span className="text-sm font-medium text-slate-700">Halaman {patientsPage}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!patientsHasNext}
+                    onClick={() => {
+                      if (!patientsHasNext) return;
+                      setPatientsPage((prev) => prev + 1);
+                    }}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -587,7 +1000,7 @@ export function EnhancedAdminDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-purple-600" />
-                Moderasi Admin (Callable-Only)
+                Moderasi Admin
               </CardTitle>
               <CardDescription>
                 Kontrol status user dan publish status konten. Semua aksi tercatat di audit trail immutable.
@@ -601,16 +1014,59 @@ export function EnhancedAdminDashboard() {
               )}
               {moderationError && (
                 <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {moderationError}
+                  <p>{moderationError}</p>
+                  {moderationErrorHint ? (
+                    <p className="mt-1 text-xs text-red-700/90">{moderationErrorHint}</p>
+                  ) : null}
+                  {moderationErrorCode ? (
+                    <p className="mt-1 text-xs text-red-700/80">
+                      Kode: <span className="font-mono">{moderationErrorCode}</span>
+                    </p>
+                  ) : null}
                 </div>
               )}
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">User Lifecycle</h4>
+                  <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+                    <Input
+                      value={moderationUserSearch}
+                      onChange={(event) => {
+                        setModerationUserSearch(event.target.value);
+                        resetModerationUsersQuery();
+                      }}
+                      placeholder="Cari nama/email user"
+                    />
+                    <select
+                      value={moderationUserRoleFilter || "all"}
+                      onChange={(event) => {
+                        setModerationUserRoleFilter(event.target.value as AdminModerationUserFilter["role"]);
+                        resetModerationUsersQuery();
+                      }}
+                      className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                    >
+                      <option value="all">Semua role</option>
+                      <option value="admin">Admin</option>
+                      <option value="doctor">Doctor</option>
+                      <option value="patient">Patient</option>
+                    </select>
+                    <select
+                      value={moderationUserStatusFilter || "all"}
+                      onChange={(event) => {
+                        setModerationUserStatusFilter(event.target.value as AdminModerationUserFilter["status"]);
+                        resetModerationUsersQuery();
+                      }}
+                      className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                    >
+                      <option value="all">Semua status</option>
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </div>
                   <div className="space-y-2">
                     {moderationUsers.length === 0 ? (
-                      <p className="text-sm text-gray-500">Belum ada data user.</p>
+                      <p className="text-sm text-gray-500">Tidak ada user sesuai filter saat ini.</p>
                     ) : (
                       moderationUsers.map((user) => {
                         const isAdminUser = user.role === "admin";
@@ -657,13 +1113,65 @@ export function EnhancedAdminDashboard() {
                       })
                     )}
                   </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-xs text-slate-500">
+                      Halaman {moderationUsersPage} · {moderationUsers.length} user
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={moderationUsersPage <= 1}
+                        onClick={() => {
+                          setModerationUsersPage((prev) => Math.max(1, prev - 1));
+                        }}
+                      >
+                        Prev
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!moderationUsersHasNext}
+                        onClick={() => {
+                          if (!moderationUsersHasNext) return;
+                          setModerationUsersPage((prev) => prev + 1);
+                        }}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">Content Publish Control</h4>
+                  <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <Input
+                      value={moderationContentSearch}
+                      onChange={(event) => {
+                        setModerationContentSearch(event.target.value);
+                        resetModerationContentsQuery();
+                      }}
+                      placeholder="Cari judul konten / nama dokter"
+                    />
+                    <select
+                      value={moderationContentStatusFilter || "all"}
+                      onChange={(event) => {
+                        setModerationContentStatusFilter(
+                          event.target.value as AdminModerationContentFilter["status"],
+                        );
+                        resetModerationContentsQuery();
+                      }}
+                      className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                    >
+                      <option value="all">Semua status</option>
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
                   <div className="space-y-2">
                     {moderationContents.length === 0 ? (
-                      <p className="text-sm text-gray-500">Belum ada data konten.</p>
+                      <p className="text-sm text-gray-500">Tidak ada konten sesuai filter saat ini.</p>
                     ) : (
                       moderationContents.map((content) => (
                         <div
@@ -701,12 +1209,84 @@ export function EnhancedAdminDashboard() {
                       ))
                     )}
                   </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-xs text-slate-500">
+                      Halaman {moderationContentsPage} · {moderationContents.length} konten
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={moderationContentsPage <= 1}
+                        onClick={() => {
+                          setModerationContentsPage((prev) => Math.max(1, prev - 1));
+                        }}
+                      >
+                        Prev
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!moderationContentsHasNext}
+                        onClick={() => {
+                          if (!moderationContentsHasNext) return;
+                          setModerationContentsPage((prev) => prev + 1);
+                        }}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <AlertDialog
+        open={Boolean(pendingModerationAction)}
+        onOpenChange={(open) => {
+          if (!open && !isConfirmingAction) {
+            setPendingModerationAction(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="max-w-md rounded-2xl border-slate-200 p-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-slate-50 to-purple-50 px-6 py-4 border-b border-slate-100">
+            <AlertDialogHeader className="text-left">
+              <AlertDialogTitle className="text-slate-900">
+                Konfirmasi Aksi Moderasi
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-600">
+                {pendingModerationAction?.kind === "user"
+                  ? `Ubah status user "${pendingModerationAction.user.displayName}" menjadi ${pendingModerationAction.targetStatus}?`
+                  : pendingModerationAction?.kind === "content"
+                  ? `Ubah status konten "${pendingModerationAction.content.title}" menjadi ${pendingModerationAction.targetStatus}?`
+                  : ""}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </div>
+          <div className="px-6 py-4">
+            <p className="text-sm text-slate-500">
+              Aksi ini akan langsung disimpan dan tercatat pada audit trail.
+            </p>
+          </div>
+          <AlertDialogFooter className="px-6 pb-6">
+            <AlertDialogCancel disabled={isConfirmingAction}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isConfirmingAction}
+              onClick={(event) => {
+                event.preventDefault();
+                void executePendingModerationAction();
+              }}
+              className="bg-slate-900 text-white hover:bg-slate-800"
+            >
+              {isConfirmingAction ? "Memproses..." : "Ya, Lanjutkan"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

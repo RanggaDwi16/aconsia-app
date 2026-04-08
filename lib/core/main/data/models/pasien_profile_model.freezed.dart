@@ -44,6 +44,28 @@ mixin _$PasienProfileModel {
   Timestamp? get tanggalLahir => throw _privateConstructorUsedError;
   @JsonKey(name: "jenisKelamin")
   String? get jenisKelamin => throw _privateConstructorUsedError;
+  @JsonKey(name: "agama")
+  String? get agama => throw _privateConstructorUsedError;
+  @JsonKey(name: "statusPernikahan")
+  String? get statusPernikahan => throw _privateConstructorUsedError;
+  @JsonKey(name: "pendidikanTerakhir")
+  String? get pendidikanTerakhir => throw _privateConstructorUsedError;
+  @JsonKey(name: "pekerjaan")
+  String? get pekerjaan => throw _privateConstructorUsedError;
+  @JsonKey(name: "alamatLengkap")
+  String? get alamatLengkap => throw _privateConstructorUsedError;
+  @JsonKey(name: "rt")
+  String? get rt => throw _privateConstructorUsedError;
+  @JsonKey(name: "rw")
+  String? get rw => throw _privateConstructorUsedError;
+  @JsonKey(name: "kelurahanDesa")
+  String? get kelurahanDesa => throw _privateConstructorUsedError;
+  @JsonKey(name: "kecamatan")
+  String? get kecamatan => throw _privateConstructorUsedError;
+  @JsonKey(name: "kotaKabupaten")
+  String? get kotaKabupaten => throw _privateConstructorUsedError;
+  @JsonKey(name: "provinsi")
+  String? get provinsi => throw _privateConstructorUsedError;
   @JsonKey(name: "tempatLahir")
   String? get tempatLahir => throw _privateConstructorUsedError;
   @JsonKey(name: "jenisOperasi")
@@ -107,6 +129,17 @@ abstract class $PasienProfileModelCopyWith<$Res> {
           toJson: timestampToJson)
       Timestamp? tanggalLahir,
       @JsonKey(name: "jenisKelamin") String? jenisKelamin,
+      @JsonKey(name: "agama") String? agama,
+      @JsonKey(name: "statusPernikahan") String? statusPernikahan,
+      @JsonKey(name: "pendidikanTerakhir") String? pendidikanTerakhir,
+      @JsonKey(name: "pekerjaan") String? pekerjaan,
+      @JsonKey(name: "alamatLengkap") String? alamatLengkap,
+      @JsonKey(name: "rt") String? rt,
+      @JsonKey(name: "rw") String? rw,
+      @JsonKey(name: "kelurahanDesa") String? kelurahanDesa,
+      @JsonKey(name: "kecamatan") String? kecamatan,
+      @JsonKey(name: "kotaKabupaten") String? kotaKabupaten,
+      @JsonKey(name: "provinsi") String? provinsi,
       @JsonKey(name: "tempatLahir") String? tempatLahir,
       @JsonKey(name: "jenisOperasi") String? jenisOperasi,
       @JsonKey(name: "jenisAnestesi") String? jenisAnestesi,
@@ -156,6 +189,17 @@ class _$PasienProfileModelCopyWithImpl<$Res, $Val extends PasienProfileModel>
     Object? nik = freezed,
     Object? tanggalLahir = freezed,
     Object? jenisKelamin = freezed,
+    Object? agama = freezed,
+    Object? statusPernikahan = freezed,
+    Object? pendidikanTerakhir = freezed,
+    Object? pekerjaan = freezed,
+    Object? alamatLengkap = freezed,
+    Object? rt = freezed,
+    Object? rw = freezed,
+    Object? kelurahanDesa = freezed,
+    Object? kecamatan = freezed,
+    Object? kotaKabupaten = freezed,
+    Object? provinsi = freezed,
     Object? tempatLahir = freezed,
     Object? jenisOperasi = freezed,
     Object? jenisAnestesi = freezed,
@@ -211,6 +255,50 @@ class _$PasienProfileModelCopyWithImpl<$Res, $Val extends PasienProfileModel>
       jenisKelamin: freezed == jenisKelamin
           ? _value.jenisKelamin
           : jenisKelamin // ignore: cast_nullable_to_non_nullable
+              as String?,
+      agama: freezed == agama
+          ? _value.agama
+          : agama // ignore: cast_nullable_to_non_nullable
+              as String?,
+      statusPernikahan: freezed == statusPernikahan
+          ? _value.statusPernikahan
+          : statusPernikahan // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pendidikanTerakhir: freezed == pendidikanTerakhir
+          ? _value.pendidikanTerakhir
+          : pendidikanTerakhir // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pekerjaan: freezed == pekerjaan
+          ? _value.pekerjaan
+          : pekerjaan // ignore: cast_nullable_to_non_nullable
+              as String?,
+      alamatLengkap: freezed == alamatLengkap
+          ? _value.alamatLengkap
+          : alamatLengkap // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rt: freezed == rt
+          ? _value.rt
+          : rt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rw: freezed == rw
+          ? _value.rw
+          : rw // ignore: cast_nullable_to_non_nullable
+              as String?,
+      kelurahanDesa: freezed == kelurahanDesa
+          ? _value.kelurahanDesa
+          : kelurahanDesa // ignore: cast_nullable_to_non_nullable
+              as String?,
+      kecamatan: freezed == kecamatan
+          ? _value.kecamatan
+          : kecamatan // ignore: cast_nullable_to_non_nullable
+              as String?,
+      kotaKabupaten: freezed == kotaKabupaten
+          ? _value.kotaKabupaten
+          : kotaKabupaten // ignore: cast_nullable_to_non_nullable
+              as String?,
+      provinsi: freezed == provinsi
+          ? _value.provinsi
+          : provinsi // ignore: cast_nullable_to_non_nullable
               as String?,
       tempatLahir: freezed == tempatLahir
           ? _value.tempatLahir
@@ -295,6 +383,17 @@ abstract class _$$PasienProfileModelImplCopyWith<$Res>
           toJson: timestampToJson)
       Timestamp? tanggalLahir,
       @JsonKey(name: "jenisKelamin") String? jenisKelamin,
+      @JsonKey(name: "agama") String? agama,
+      @JsonKey(name: "statusPernikahan") String? statusPernikahan,
+      @JsonKey(name: "pendidikanTerakhir") String? pendidikanTerakhir,
+      @JsonKey(name: "pekerjaan") String? pekerjaan,
+      @JsonKey(name: "alamatLengkap") String? alamatLengkap,
+      @JsonKey(name: "rt") String? rt,
+      @JsonKey(name: "rw") String? rw,
+      @JsonKey(name: "kelurahanDesa") String? kelurahanDesa,
+      @JsonKey(name: "kecamatan") String? kecamatan,
+      @JsonKey(name: "kotaKabupaten") String? kotaKabupaten,
+      @JsonKey(name: "provinsi") String? provinsi,
       @JsonKey(name: "tempatLahir") String? tempatLahir,
       @JsonKey(name: "jenisOperasi") String? jenisOperasi,
       @JsonKey(name: "jenisAnestesi") String? jenisAnestesi,
@@ -342,6 +441,17 @@ class __$$PasienProfileModelImplCopyWithImpl<$Res>
     Object? nik = freezed,
     Object? tanggalLahir = freezed,
     Object? jenisKelamin = freezed,
+    Object? agama = freezed,
+    Object? statusPernikahan = freezed,
+    Object? pendidikanTerakhir = freezed,
+    Object? pekerjaan = freezed,
+    Object? alamatLengkap = freezed,
+    Object? rt = freezed,
+    Object? rw = freezed,
+    Object? kelurahanDesa = freezed,
+    Object? kecamatan = freezed,
+    Object? kotaKabupaten = freezed,
+    Object? provinsi = freezed,
     Object? tempatLahir = freezed,
     Object? jenisOperasi = freezed,
     Object? jenisAnestesi = freezed,
@@ -397,6 +507,50 @@ class __$$PasienProfileModelImplCopyWithImpl<$Res>
       jenisKelamin: freezed == jenisKelamin
           ? _value.jenisKelamin
           : jenisKelamin // ignore: cast_nullable_to_non_nullable
+              as String?,
+      agama: freezed == agama
+          ? _value.agama
+          : agama // ignore: cast_nullable_to_non_nullable
+              as String?,
+      statusPernikahan: freezed == statusPernikahan
+          ? _value.statusPernikahan
+          : statusPernikahan // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pendidikanTerakhir: freezed == pendidikanTerakhir
+          ? _value.pendidikanTerakhir
+          : pendidikanTerakhir // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pekerjaan: freezed == pekerjaan
+          ? _value.pekerjaan
+          : pekerjaan // ignore: cast_nullable_to_non_nullable
+              as String?,
+      alamatLengkap: freezed == alamatLengkap
+          ? _value.alamatLengkap
+          : alamatLengkap // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rt: freezed == rt
+          ? _value.rt
+          : rt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rw: freezed == rw
+          ? _value.rw
+          : rw // ignore: cast_nullable_to_non_nullable
+              as String?,
+      kelurahanDesa: freezed == kelurahanDesa
+          ? _value.kelurahanDesa
+          : kelurahanDesa // ignore: cast_nullable_to_non_nullable
+              as String?,
+      kecamatan: freezed == kecamatan
+          ? _value.kecamatan
+          : kecamatan // ignore: cast_nullable_to_non_nullable
+              as String?,
+      kotaKabupaten: freezed == kotaKabupaten
+          ? _value.kotaKabupaten
+          : kotaKabupaten // ignore: cast_nullable_to_non_nullable
+              as String?,
+      provinsi: freezed == provinsi
+          ? _value.provinsi
+          : provinsi // ignore: cast_nullable_to_non_nullable
               as String?,
       tempatLahir: freezed == tempatLahir
           ? _value.tempatLahir
@@ -476,6 +630,17 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
           toJson: timestampToJson)
       this.tanggalLahir,
       @JsonKey(name: "jenisKelamin") this.jenisKelamin,
+      @JsonKey(name: "agama") this.agama,
+      @JsonKey(name: "statusPernikahan") this.statusPernikahan,
+      @JsonKey(name: "pendidikanTerakhir") this.pendidikanTerakhir,
+      @JsonKey(name: "pekerjaan") this.pekerjaan,
+      @JsonKey(name: "alamatLengkap") this.alamatLengkap,
+      @JsonKey(name: "rt") this.rt,
+      @JsonKey(name: "rw") this.rw,
+      @JsonKey(name: "kelurahanDesa") this.kelurahanDesa,
+      @JsonKey(name: "kecamatan") this.kecamatan,
+      @JsonKey(name: "kotaKabupaten") this.kotaKabupaten,
+      @JsonKey(name: "provinsi") this.provinsi,
       @JsonKey(name: "tempatLahir") this.tempatLahir,
       @JsonKey(name: "jenisOperasi") this.jenisOperasi,
       @JsonKey(name: "jenisAnestesi") this.jenisAnestesi,
@@ -538,6 +703,39 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
   @override
   @JsonKey(name: "jenisKelamin")
   final String? jenisKelamin;
+  @override
+  @JsonKey(name: "agama")
+  final String? agama;
+  @override
+  @JsonKey(name: "statusPernikahan")
+  final String? statusPernikahan;
+  @override
+  @JsonKey(name: "pendidikanTerakhir")
+  final String? pendidikanTerakhir;
+  @override
+  @JsonKey(name: "pekerjaan")
+  final String? pekerjaan;
+  @override
+  @JsonKey(name: "alamatLengkap")
+  final String? alamatLengkap;
+  @override
+  @JsonKey(name: "rt")
+  final String? rt;
+  @override
+  @JsonKey(name: "rw")
+  final String? rw;
+  @override
+  @JsonKey(name: "kelurahanDesa")
+  final String? kelurahanDesa;
+  @override
+  @JsonKey(name: "kecamatan")
+  final String? kecamatan;
+  @override
+  @JsonKey(name: "kotaKabupaten")
+  final String? kotaKabupaten;
+  @override
+  @JsonKey(name: "provinsi")
+  final String? provinsi;
   @override
   @JsonKey(name: "tempatLahir")
   final String? tempatLahir;
@@ -603,7 +801,7 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
 
   @override
   String toString() {
-    return 'PasienProfileModel(uid: $uid, dokterId: $dokterId, namaLengkap: $namaLengkap, nomorTelepon: $nomorTelepon, email: $email, fotoProfilUrl: $fotoProfilUrl, noRekamMedis: $noRekamMedis, nik: $nik, tanggalLahir: $tanggalLahir, jenisKelamin: $jenisKelamin, tempatLahir: $tempatLahir, jenisOperasi: $jenisOperasi, jenisAnestesi: $jenisAnestesi, klasifikasiAsa: $klasifikasiAsa, tinggiBadan: $tinggiBadan, beratBadan: $beratBadan, namaWali: $namaWali, hubunganWali: $hubunganWali, nomorHpWali: $nomorHpWali, alamatWali: $alamatWali, kontenFavoritIds: $kontenFavoritIds, aiKeywords: $aiKeywords, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'PasienProfileModel(uid: $uid, dokterId: $dokterId, namaLengkap: $namaLengkap, nomorTelepon: $nomorTelepon, email: $email, fotoProfilUrl: $fotoProfilUrl, noRekamMedis: $noRekamMedis, nik: $nik, tanggalLahir: $tanggalLahir, jenisKelamin: $jenisKelamin, agama: $agama, statusPernikahan: $statusPernikahan, pendidikanTerakhir: $pendidikanTerakhir, pekerjaan: $pekerjaan, alamatLengkap: $alamatLengkap, rt: $rt, rw: $rw, kelurahanDesa: $kelurahanDesa, kecamatan: $kecamatan, kotaKabupaten: $kotaKabupaten, provinsi: $provinsi, tempatLahir: $tempatLahir, jenisOperasi: $jenisOperasi, jenisAnestesi: $jenisAnestesi, klasifikasiAsa: $klasifikasiAsa, tinggiBadan: $tinggiBadan, beratBadan: $beratBadan, namaWali: $namaWali, hubunganWali: $hubunganWali, nomorHpWali: $nomorHpWali, alamatWali: $alamatWali, kontenFavoritIds: $kontenFavoritIds, aiKeywords: $aiKeywords, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -628,6 +826,25 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
                 other.tanggalLahir == tanggalLahir) &&
             (identical(other.jenisKelamin, jenisKelamin) ||
                 other.jenisKelamin == jenisKelamin) &&
+            (identical(other.agama, agama) || other.agama == agama) &&
+            (identical(other.statusPernikahan, statusPernikahan) ||
+                other.statusPernikahan == statusPernikahan) &&
+            (identical(other.pendidikanTerakhir, pendidikanTerakhir) ||
+                other.pendidikanTerakhir == pendidikanTerakhir) &&
+            (identical(other.pekerjaan, pekerjaan) ||
+                other.pekerjaan == pekerjaan) &&
+            (identical(other.alamatLengkap, alamatLengkap) ||
+                other.alamatLengkap == alamatLengkap) &&
+            (identical(other.rt, rt) || other.rt == rt) &&
+            (identical(other.rw, rw) || other.rw == rw) &&
+            (identical(other.kelurahanDesa, kelurahanDesa) ||
+                other.kelurahanDesa == kelurahanDesa) &&
+            (identical(other.kecamatan, kecamatan) ||
+                other.kecamatan == kecamatan) &&
+            (identical(other.kotaKabupaten, kotaKabupaten) ||
+                other.kotaKabupaten == kotaKabupaten) &&
+            (identical(other.provinsi, provinsi) ||
+                other.provinsi == provinsi) &&
             (identical(other.tempatLahir, tempatLahir) ||
                 other.tempatLahir == tempatLahir) &&
             (identical(other.jenisOperasi, jenisOperasi) ||
@@ -672,6 +889,17 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
         nik,
         tanggalLahir,
         jenisKelamin,
+        agama,
+        statusPernikahan,
+        pendidikanTerakhir,
+        pekerjaan,
+        alamatLengkap,
+        rt,
+        rw,
+        kelurahanDesa,
+        kecamatan,
+        kotaKabupaten,
+        provinsi,
         tempatLahir,
         jenisOperasi,
         jenisAnestesi,
@@ -721,6 +949,17 @@ abstract class _PasienProfileModel implements PasienProfileModel {
           toJson: timestampToJson)
       final Timestamp? tanggalLahir,
       @JsonKey(name: "jenisKelamin") final String? jenisKelamin,
+      @JsonKey(name: "agama") final String? agama,
+      @JsonKey(name: "statusPernikahan") final String? statusPernikahan,
+      @JsonKey(name: "pendidikanTerakhir") final String? pendidikanTerakhir,
+      @JsonKey(name: "pekerjaan") final String? pekerjaan,
+      @JsonKey(name: "alamatLengkap") final String? alamatLengkap,
+      @JsonKey(name: "rt") final String? rt,
+      @JsonKey(name: "rw") final String? rw,
+      @JsonKey(name: "kelurahanDesa") final String? kelurahanDesa,
+      @JsonKey(name: "kecamatan") final String? kecamatan,
+      @JsonKey(name: "kotaKabupaten") final String? kotaKabupaten,
+      @JsonKey(name: "provinsi") final String? provinsi,
       @JsonKey(name: "tempatLahir") final String? tempatLahir,
       @JsonKey(name: "jenisOperasi") final String? jenisOperasi,
       @JsonKey(name: "jenisAnestesi") final String? jenisAnestesi,
@@ -780,6 +1019,39 @@ abstract class _PasienProfileModel implements PasienProfileModel {
   @override
   @JsonKey(name: "jenisKelamin")
   String? get jenisKelamin;
+  @override
+  @JsonKey(name: "agama")
+  String? get agama;
+  @override
+  @JsonKey(name: "statusPernikahan")
+  String? get statusPernikahan;
+  @override
+  @JsonKey(name: "pendidikanTerakhir")
+  String? get pendidikanTerakhir;
+  @override
+  @JsonKey(name: "pekerjaan")
+  String? get pekerjaan;
+  @override
+  @JsonKey(name: "alamatLengkap")
+  String? get alamatLengkap;
+  @override
+  @JsonKey(name: "rt")
+  String? get rt;
+  @override
+  @JsonKey(name: "rw")
+  String? get rw;
+  @override
+  @JsonKey(name: "kelurahanDesa")
+  String? get kelurahanDesa;
+  @override
+  @JsonKey(name: "kecamatan")
+  String? get kecamatan;
+  @override
+  @JsonKey(name: "kotaKabupaten")
+  String? get kotaKabupaten;
+  @override
+  @JsonKey(name: "provinsi")
+  String? get provinsi;
   @override
   @JsonKey(name: "tempatLahir")
   String? get tempatLahir;

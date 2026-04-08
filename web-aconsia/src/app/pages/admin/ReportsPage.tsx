@@ -15,6 +15,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { getAdminDashboardPatients } from "../../../modules/admin/services/adminDashboardService";
+import { userMessages } from "../../copy/userMessages";
 
 interface PatientData {
   id: string;
@@ -78,7 +79,7 @@ export function ReportsPage() {
         return;
       } catch (error) {
         console.error("[ReportsPage] Firestore load failed", error);
-        setLoadError("Gagal memuat laporan dari Firestore. Periksa koneksi dan konfigurasi Firebase.");
+        setLoadError(userMessages.admin.reportsLoadError);
         setIsLoading(false);
       }
     };

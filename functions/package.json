@@ -13,7 +13,8 @@
     "test:rules": "npx firebase emulators:exec --only firestore \"node --test tests/firestore.rules.test.js\"",
     "create:admin": "node scripts/create-admin-user.js",
     "seed:bootstrap": "node scripts/bootstrap-initial-data.js",
-    "db:normalize-contract": "node scripts/normalize-mobile-web-contract.js"
+    "db:normalize-contract": "node scripts/normalize-mobile-web-contract.js",
+    "db:sync-public-dokter-options": "node scripts/sync-public-dokter-options.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

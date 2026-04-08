@@ -6,7 +6,8 @@ import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 
 class CustomDropdown extends StatefulWidget {
   final List<String>? items; // 🔹 Masih bisa pakai List<String> lama
-  final List<Map<String, String>>? itemsWithValue; // 🔹 Untuk value–label pair
+  final List<Map<String, dynamic>>?
+      itemsWithValue; // 🔹 Untuk value–label pair
   final String? title;
   final String? selectedValue;
   final Function(String)? onChanged;
@@ -49,8 +50,45 @@ class _CustomDropdownState extends State<CustomDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    // Tentukan sumber item (pakai itemsWithValue jika ada)
-    final useValueLabel = widget.itemsWithValue != null;
+    final valueLabelItems = (widget.itemsWithValue ?? [])
+        .map<Map<String, String>>((item) {
+      final label = (item['label'] ?? '').toString().trim();
+      final value = (item['value'] ?? '').toString().trim();
+      return <String, String>{
+        'label': label,
+        'value': value,
+      };
+    }).where((item) => item['value']!.isNotEmpty).toList();
+    final plainItems = (widget.items ?? []).map((item) => item.trim()).toList();
+    final useValueLabel = valueLabelItems.isNotEmpty;
+    final allowedValues = useValueLabel
+        ? valueLabelItems.map((item) => item['value']!).toSet()
+        : plainItems.toSet();
+    final selectedValue =
+        _selected != null && allowedValues.contains(_selected!) ? _selected : null;
+    final dropdownItems = useValueLabel
+        ? valueLabelItems
+            .map((item) => DropdownMenuItem<String>(
+                  value: item['value'],
+                  child: Text(
+                    item['label'] ?? '',
+                    style: UiTypography.body.copyWith(
+                      color: UiPalette.slate900,
+                    ),
+                  ),
+                ))
+            .toList()
+        : plainItems
+            .map((item) => DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(
+                    item,
+                    style: UiTypography.body.copyWith(
+                      color: UiPalette.slate900,
+                    ),
+                  ),
+                ))
+            .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,30 +119,8 @@ class _CustomDropdownState extends State<CustomDropdown> {
               'Pilih',
               style: UiTypography.body.copyWith(color: UiPalette.slate400),
             ),
-            items: useValueLabel
-                ? widget.itemsWithValue!
-                    .map((item) => DropdownMenuItem(
-                          value: item['value'],
-                          child: Text(
-                            item['label'] ?? '',
-                            style: UiTypography.body.copyWith(
-                              color: UiPalette.slate900,
-                            ),
-                          ),
-                        ))
-                    .toList()
-                : widget.items!
-                    .map((item) => DropdownMenuItem(
-                          value: item,
-                          child: Text(
-                            item,
-                            style: UiTypography.body.copyWith(
-                              color: UiPalette.slate900,
-                            ),
-                          ),
-                        ))
-                    .toList(),
-            value: _selected,
+            items: dropdownItems,
+            value: selectedValue,
             onChanged: widget.disabled
                 ? null
                 : (value) {

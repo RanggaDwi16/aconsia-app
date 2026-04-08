@@ -45,12 +45,35 @@ class PasienChooseDokterWidget extends HookConsumerWidget {
           const Gap(UiSpacing.lg),
           allDokter.when(
             data: (dokterList) {
-              final items = (dokterList ?? []).map((d) {
-                return {
-                  'label': '${d.namaLengkap ?? '-'} (${d.nomorTelepon ?? ''})',
-                  'value': d.uid ?? '',
+              final List<Map<String, String>> items = dokterList
+                  .map<Map<String, String>>((d) {
+                final nama = (d.namaLengkap ?? '').trim().isEmpty
+                    ? '-'
+                    : d.namaLengkap!.trim();
+                final telp = (d.nomorTelepon ?? '').trim();
+                final uid = (d.uid ?? '').trim();
+                return <String, String>{
+                  'label': telp.isEmpty ? nama : '$nama ($telp)',
+                  'value': uid,
                 };
               }).toList();
+
+              if (items.isEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Dokter belum tersedia.',
+                      style: TextStyle(color: UiPalette.slate500),
+                    ),
+                    const Gap(UiSpacing.xs),
+                    TextButton(
+                      onPressed: () => ref.invalidate(fetchAllDokterOptionsProvider),
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ],
+                );
+              }
 
               return CustomDropdown(
                 title: 'Pilih Dokter',
@@ -65,9 +88,19 @@ class PasienChooseDokterWidget extends HookConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Text(
-              'Gagal memuat data dokter: $error',
-              style: const TextStyle(color: UiPalette.red600),
+            error: (error, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Gagal memuat data dokter. Silakan coba lagi.',
+                  style: TextStyle(color: UiPalette.red600),
+                ),
+                const Gap(UiSpacing.xs),
+                TextButton(
+                  onPressed: () => ref.invalidate(fetchAllDokterOptionsProvider),
+                  child: const Text('Coba Lagi'),
+                ),
+              ],
             ),
           ),
         ],

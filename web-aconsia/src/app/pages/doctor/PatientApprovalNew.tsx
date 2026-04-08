@@ -21,6 +21,7 @@ import {
   getPatientForApproval,
   rejectPatient,
 } from "../../../modules/doctor/services/patientApprovalService";
+import { userMessages } from "../../copy/userMessages";
 
 export function PatientApprovalNew() {
   const navigate = useNavigate();
@@ -58,14 +59,12 @@ export function PatientApprovalNew() {
           return;
         }
 
-        setLoadError("Pasien tidak ditemukan di Firestore.");
+        setLoadError(userMessages.patientApproval.notFound);
         setIsLoading(false);
         return;
       } catch (error) {
         console.error("[PatientApproval] Firestore load failed", error);
-        setLoadError(
-          "Gagal memuat data pasien. Periksa koneksi dan konfigurasi Firebase.",
-        );
+        setLoadError(userMessages.patientApproval.loadError);
         setIsLoading(false);
       }
     };
@@ -101,9 +100,7 @@ export function PatientApprovalNew() {
       return;
     } catch (error) {
       console.error("[PatientApproval] Approve failed", error);
-      alert(
-        "Approve pasien gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
-      );
+      alert(userMessages.patientApproval.approveError);
       return;
     }
   };
@@ -119,9 +116,7 @@ export function PatientApprovalNew() {
       return;
     } catch (error) {
       console.error("[PatientApproval] Reject failed", error);
-      alert(
-        "Reject pasien gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
-      );
+      alert(userMessages.patientApproval.rejectError);
       return;
     }
   };

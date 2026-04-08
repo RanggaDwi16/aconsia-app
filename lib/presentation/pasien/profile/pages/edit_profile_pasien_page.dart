@@ -35,8 +35,19 @@ class EditProfilePasienPage extends HookConsumerWidget {
     final nikController = useTextEditingController();
     final tanggalLahirController = useTextEditingController();
     final jenisKelaminController = useTextEditingController();
+    final agamaController = useTextEditingController();
+    final statusPernikahanController = useTextEditingController();
+    final pendidikanTerakhirController = useTextEditingController();
+    final pekerjaanController = useTextEditingController();
     final emailController = useTextEditingController();
     final phoneController = useTextEditingController();
+    final alamatLengkapController = useTextEditingController();
+    final rtController = useTextEditingController();
+    final rwController = useTextEditingController();
+    final kelurahanDesaController = useTextEditingController();
+    final kecamatanController = useTextEditingController();
+    final kotaKabupatenController = useTextEditingController();
+    final provinsiController = useTextEditingController();
     final jenisOperasiController = useTextEditingController();
     final jenisAnestesiController = useTextEditingController();
     final klasifikasiasaController = useTextEditingController();
@@ -78,8 +89,21 @@ class EditProfilePasienPage extends HookConsumerWidget {
               : '';
 
           jenisKelaminController.text = pasienProfile.jenisKelamin ?? '';
+          agamaController.text = pasienProfile.agama ?? '';
+          statusPernikahanController.text =
+              pasienProfile.statusPernikahan ?? '';
+          pendidikanTerakhirController.text =
+              pasienProfile.pendidikanTerakhir ?? '';
+          pekerjaanController.text = pasienProfile.pekerjaan ?? '';
           emailController.text = pasienProfile.email ?? '';
           phoneController.text = pasienProfile.nomorTelepon ?? '';
+          alamatLengkapController.text = pasienProfile.alamatLengkap ?? '';
+          rtController.text = pasienProfile.rt ?? '';
+          rwController.text = pasienProfile.rw ?? '';
+          kelurahanDesaController.text = pasienProfile.kelurahanDesa ?? '';
+          kecamatanController.text = pasienProfile.kecamatan ?? '';
+          kotaKabupatenController.text = pasienProfile.kotaKabupaten ?? '';
+          provinsiController.text = pasienProfile.provinsi ?? '';
           jenisOperasiController.text = pasienProfile.jenisOperasi ?? '';
           jenisAnestesiController.text = pasienProfile.jenisAnestesi ?? '';
           klasifikasiasaController.text = pasienProfile.klasifikasiAsa ?? '';
@@ -103,8 +127,19 @@ class EditProfilePasienPage extends HookConsumerWidget {
     useListenable(nikController);
     useListenable(tanggalLahirController);
     useListenable(jenisKelaminController);
+    useListenable(agamaController);
+    useListenable(statusPernikahanController);
+    useListenable(pendidikanTerakhirController);
+    useListenable(pekerjaanController);
     useListenable(emailController);
     useListenable(phoneController);
+    useListenable(alamatLengkapController);
+    useListenable(rtController);
+    useListenable(rwController);
+    useListenable(kelurahanDesaController);
+    useListenable(kecamatanController);
+    useListenable(kotaKabupatenController);
+    useListenable(provinsiController);
     // useListenable(jenisOperasiController);
     // useListenable(jenisAnestesiController);
     // useListenable(klasifikasiasaController);
@@ -120,13 +155,22 @@ class EditProfilePasienPage extends HookConsumerWidget {
         nikController.text.isEmpty ||
         tanggalLahirController.text.isEmpty ||
         jenisKelaminController.text.isEmpty ||
+        agamaController.text.isEmpty ||
+        statusPernikahanController.text.isEmpty ||
+        pendidikanTerakhirController.text.isEmpty ||
+        pekerjaanController.text.isEmpty ||
         emailController.text.isEmpty ||
         phoneController.text.isEmpty ||
+        alamatLengkapController.text.isEmpty ||
+        rtController.text.isEmpty ||
+        rwController.text.isEmpty ||
+        kelurahanDesaController.text.isEmpty ||
+        kecamatanController.text.isEmpty ||
+        kotaKabupatenController.text.isEmpty ||
+        provinsiController.text.isEmpty ||
         // jenisOperasiController.text.isEmpty ||
         // jenisAnestesiController.text.isEmpty ||
         // klasifikasiasaController.text.isEmpty ||
-        tinggiBadanController.text.isEmpty ||
-        beratBadanController.text.isEmpty ||
         namaWaliController.text.isEmpty ||
         hubunganController.text.isEmpty ||
         nomorHpController.text.isEmpty ||
@@ -168,7 +212,9 @@ class EditProfilePasienPage extends HookConsumerWidget {
                   child: Column(
                     children: [
                       Text(
-                        namaController.text.isEmpty ? 'Pasien' : namaController.text,
+                        namaController.text.isEmpty
+                            ? 'Pasien'
+                            : namaController.text,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -208,16 +254,27 @@ class EditProfilePasienPage extends HookConsumerWidget {
                   nikController: nikController,
                   tanggalLahirController: tanggalLahirController,
                   jenisKelaminController: jenisKelaminController,
+                  agamaController: agamaController,
+                  statusPernikahanController: statusPernikahanController,
+                  pendidikanTerakhirController: pendidikanTerakhirController,
+                  pekerjaanController: pekerjaanController,
                 ),
                 const Gap(16),
                 PasienContactWidget(
                   isEditable: true,
                   emailController: emailController,
                   phoneController: phoneController,
+                  alamatLengkapController: alamatLengkapController,
+                  rtController: rtController,
+                  rwController: rwController,
+                  kelurahanDesaController: kelurahanDesaController,
+                  kecamatanController: kecamatanController,
+                  kotaKabupatenController: kotaKabupatenController,
+                  provinsiController: provinsiController,
                 ),
                 const Gap(16),
                 PasienMedicInformationWidget(
-                  isEditable: true,
+                  isEditable: false,
                   jenisOperasiController: jenisOperasiController,
                   jenisAnestesiController: jenisAnestesiController,
                   klasifikasiasaController: klasifikasiasaController,
@@ -252,8 +309,19 @@ class EditProfilePasienPage extends HookConsumerWidget {
                     nik: nikController.text,
                     tanggalLahir: tryParseTanggal(tanggalLahirController.text),
                     jenisKelamin: jenisKelaminController.text,
+                    agama: agamaController.text,
+                    statusPernikahan: statusPernikahanController.text,
+                    pendidikanTerakhir: pendidikanTerakhirController.text,
+                    pekerjaan: pekerjaanController.text,
                     email: emailController.text,
                     nomorTelepon: phoneController.text,
+                    alamatLengkap: alamatLengkapController.text,
+                    rt: rtController.text,
+                    rw: rwController.text,
+                    kelurahanDesa: kelurahanDesaController.text,
+                    kecamatan: kecamatanController.text,
+                    kotaKabupaten: kotaKabupatenController.text,
+                    provinsi: provinsiController.text,
                     jenisOperasi: jenisOperasiController.text,
                     jenisAnestesi: jenisAnestesiController.text,
                     klasifikasiAsa: klasifikasiasaController.text,
