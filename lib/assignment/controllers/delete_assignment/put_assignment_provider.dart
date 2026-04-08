@@ -1,4 +1,3 @@
-import 'package:aconsia_app/assignment/controllers/assignment_impl_provider.dart';
 import 'package:aconsia_app/assignment/controllers/delete_assignment/delete_assignment_provider.dart';
 import 'package:aconsia_app/assignment/domain/usecases/delete_assignment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

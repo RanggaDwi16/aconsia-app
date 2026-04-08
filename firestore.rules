@@ -149,6 +149,16 @@ service cloud.firestore {
       return isAdmin() || isSystem();
     }
 
+    function pasienAssignedDokterId(data) {
+      return ('dokterId' in data && data.dokterId is string && data.dokterId.size() > 0)
+        ? data.dokterId
+        : (
+          ('assignedDokterId' in data && data.assignedDokterId is string && data.assignedDokterId.size() > 0)
+            ? data.assignedDokterId
+            : null
+        );
+    }
+
     function dokterNotChangingSensitivePasienFields() {
       return !request.resource.data.diff(resource.data).changedKeys().hasAny([
         'status',
@@ -173,12 +183,76 @@ service cloud.firestore {
       ]);
     }
 
+    function adminKontenModerationUpdateValid() {
+      return isAdmin()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status',
+          'publishedAt',
+          'moderationReason',
+          'moderatedByUid',
+          'moderatedByRole',
+          'moderatedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.status in ['draft', 'published']
+        && request.resource.data.moderatedByUid == request.auth.uid
+        && request.resource.data.moderatedByRole == 'admin'
+        && request.resource.data.moderationReason is string
+        && request.resource.data.moderationReason.size() >= 1
+        && request.resource.data.moderationReason.size() <= 200
+        && request.resource.data.moderatedAt is timestamp
+        && request.resource.data.updatedAt is timestamp
+        && (
+          (request.resource.data.status == 'published' && request.resource.data.publishedAt is timestamp)
+          || (request.resource.data.status == 'draft' && request.resource.data.publishedAt == null)
+        );
+    }
+
     function assignmentReadableByDokter(assignData) {
       return isDokterLike() && (assignData.assignedBy == request.auth.uid || assignData.dokterId == request.auth.uid);
     }
 
     function chatParticipant(sessionData) {
       return isSignedIn() && (sessionData.pasienId == request.auth.uid || sessionData.dokterId == request.auth.uid);
+    }
+
+    function adminAuditClientCreateValid() {
+      return request.resource.data.keys().hasOnly([
+          'actorUid',
+          'actorRole',
+          'actorName',
+          'actionType',
+          'entityType',
+          'entityId',
+          'message',
+          'status',
+          'meta',
+          'createdAt',
+          'userId',
+          'userRole',
+          'userName',
+          'action',
+          'target',
+          'details',
+          'timestamp'
+        ])
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.actorRole == 'admin'
+        && request.resource.data.userRole == 'admin'
+        && request.resource.data.status in ['success', 'failed']
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.timestamp is string
+        && request.resource.data.timestamp.size() >= 10
+        && request.resource.data.timestamp.size() <= 80
+        && nonEmptyText(request.resource.data.actorName, 1, 120)
+        && nonEmptyText(request.resource.data.actionType, 1, 80)
+        && nonEmptyText(request.resource.data.entityType, 1, 80)
+        && nonEmptyText(request.resource.data.userName, 1, 120)
+        && nonEmptyText(request.resource.data.action, 1, 80)
+        && nonEmptyText(request.resource.data.target, 1, 120)
+        && nonEmptyText(request.resource.data.details, 1, 500)
+        && nonEmptyText(request.resource.data.message, 1, 500);
     }
 
     // ----------------------
@@ -231,7 +305,7 @@ service cloud.firestore {
       allow read: if
         (isOwner(uid) && isPasien())
         || isAdminOrSystem()
-        || (isDokterLike() && resource.data.assignedDokterId == request.auth.uid);
+        || (isDokterLike() && pasienAssignedDokterId(resource.data) == request.auth.uid);
 
       allow update: if
         // pasien update own profile
@@ -239,7 +313,7 @@ service cloud.firestore {
         // dokter update pasien in scope
         || (
           isDokterLike()
-          && resource.data.assignedDokterId == request.auth.uid
+          && pasienAssignedDokterId(resource.data) == request.auth.uid
           && dokterNotChangingSensitivePasienFields()
         )
         || isAdminOrSystem();
@@ -262,7 +336,7 @@ service cloud.firestore {
         || (
           isPasien() &&
           exists(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)).data.assignedDokterId == uid
+          pasienAssignedDokterId(get(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)).data) == uid
         );
 
       allow update: if
@@ -273,6 +347,11 @@ service cloud.firestore {
           && doctorProfileDocShapeValid(uid)
         );
       allow delete: if isAdminOrSystem();
+    }
+
+    match /public_dokter_options/{uid} {
+      allow read: if true;
+      allow create, update, delete: if isAdminOrSystem();
     }
 
     // ----------------------
@@ -293,6 +372,8 @@ service cloud.firestore {
         );
 
       allow update: if
+        adminKontenModerationUpdateValid()
+        || 
         (isAdminOrSystem() && (isSystem() || kontenModerationFieldsNotChanged()))
         || (isDokterLike() && resource.data.dokterId == request.auth.uid && kontenModerationFieldsNotChanged());
 
@@ -441,7 +522,7 @@ service cloud.firestore {
     // audit logs (immutable)
     // ----------------------
     match /admin_audit_logs/{logId} {
-      allow create: if isSystem();
+      allow create: if isSystem() || (isAdmin() && adminAuditClientCreateValid());
       allow read: if isAdminOrSystem();
       allow update, delete: if false;
     }

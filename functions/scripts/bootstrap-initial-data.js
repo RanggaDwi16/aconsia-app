@@ -171,6 +171,19 @@ async function main() {
     { merge: true },
   );
 
+  await db.collection("public_dokter_options").doc(seededDoctor.uid).set(
+    {
+      uid: seededDoctor.uid,
+      namaLengkap: seededDoctor.name,
+      nomorTelepon: doctorSeed.phone,
+      spesialisasi: doctorSeed.specialization,
+      status: "active",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+
   await upsertUserDoc(db, {
     uid: seededPatient.uid,
     email: seededPatient.email,
@@ -195,6 +208,7 @@ async function main() {
       jenisKelamin: patientSeed.gender,
       nomorTelepon: patientSeed.phone,
       alamat: patientSeed.address,
+      dokterId: seededDoctor.uid,
       assignedDokterId: seededDoctor.uid,
       status: "pending",
       diagnosis: "",
@@ -221,7 +235,7 @@ async function main() {
   }
   console.log("=======================================");
   console.log("Catatan:");
-  console.log("- Firestore collections terisi: users, dokter_profiles, pasien_profiles");
+  console.log("- Firestore collections terisi: users, dokter_profiles, public_dokter_options, pasien_profiles");
   console.log("- Jika user sudah login sebelumnya, lakukan logout/login ulang agar claim terbaru terbaca.");
 }
 

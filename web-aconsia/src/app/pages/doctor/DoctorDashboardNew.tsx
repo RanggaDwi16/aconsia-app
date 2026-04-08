@@ -32,6 +32,7 @@ import {
   getDoctorScopedPatients,
 } from "../../../modules/doctor/services/doctorDashboardService";
 import { finishNavigationMetric } from "../../perf/navigationMetrics";
+import { userMessages } from "../../copy/userMessages";
 
 export function DoctorDashboardNew() {
   const navigate = useNavigate();
@@ -44,7 +45,6 @@ export function DoctorDashboardNew() {
   const [selectedAnesthesia, setSelectedAnesthesia] = useState<string>(""); // Selected type
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [loadErrorCode, setLoadErrorCode] = useState("");
 
   const mapLoadErrorMessage = (error: unknown) => {
     const code =
@@ -58,31 +58,27 @@ export function DoctorDashboardNew() {
     if (code === "permission-denied") {
       return {
         code,
-        message:
-          "Akses Firestore ditolak (permission-denied). Pastikan akun dokter memiliki role yang benar di Firebase.",
+        message: userMessages.auth.accessDenied,
       };
     }
 
     if (code === "auth/not-authenticated" || code === "unauthenticated") {
       return {
         code,
-        message:
-          "Sesi login Firebase belum aktif. Silakan logout lalu login ulang dokter.",
+        message: userMessages.doctorDashboard.notAuthenticated,
       };
     }
 
     if (code === "auth/session-mismatch") {
       return {
         code,
-        message:
-          "Sesi lokal tidak sinkron dengan sesi Firebase. Silakan logout lalu login ulang.",
+        message: userMessages.doctorDashboard.sessionMismatch,
       };
     }
 
     return {
       code: code || "unknown",
-      message:
-        "Gagal memuat data dashboard dokter. Periksa koneksi dan konfigurasi Firebase.",
+      message: userMessages.doctorDashboard.loadError,
     };
   };
 
@@ -129,7 +125,6 @@ export function DoctorDashboardNew() {
         ),
       );
       setLoadError("");
-      setLoadErrorCode("");
       setIsLoading(false);
       return;
     } catch (error) {
@@ -144,7 +139,6 @@ export function DoctorDashboardNew() {
       setApprovedPatients([]);
       setPatientsNeedAnesthesia([]);
       setLoadError(parsedError.message);
-      setLoadErrorCode(parsedError.code);
       setIsLoading(false);
     }
   };
@@ -180,9 +174,7 @@ export function DoctorDashboardNew() {
       return;
     } catch (error) {
       console.error("[DoctorDashboard] Assign anesthesia failed", error);
-      alert(
-        "Assign anestesi gagal. Pastikan Firebase Functions sudah deploy dan koneksi stabil.",
-      );
+      alert(userMessages.doctorDashboard.assignAnesthesiaError);
       return;
     }
   };
@@ -221,11 +213,6 @@ export function DoctorDashboardNew() {
             <CardContent className="p-6 text-center">
               <AlertCircle className="w-10 h-10 text-red-600 mx-auto mb-3" />
               <p className="text-red-700 font-medium mb-3">{loadError}</p>
-              {loadErrorCode && (
-                <p className="text-xs text-red-600/80 mb-3">
-                  Kode error: <span className="font-mono">{loadErrorCode}</span>
-                </p>
-              )}
               <Button variant="outline" onClick={() => void loadData()}>
                 Coba Lagi
               </Button>

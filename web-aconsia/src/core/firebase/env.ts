@@ -1,3 +1,5 @@
+import { userMessages } from "../../app/copy/userMessages";
+
 const REQUIRED_FIREBASE_ENV_KEYS = [
   "VITE_FIREBASE_API_KEY",
   "VITE_FIREBASE_AUTH_DOMAIN",
@@ -26,7 +28,5 @@ export function buildFirebaseMissingEnvMessage(): string {
     return "";
   }
 
-  return `Konfigurasi Firebase desktop belum lengkap. Field yang wajib diisi: ${missing.join(
-    ", ",
-  )}. Salin web-aconsia/.env.example menjadi web-aconsia/.env lalu isi nilai project Firebase Anda.`;
+  return userMessages.auth.missingConfig;
 }

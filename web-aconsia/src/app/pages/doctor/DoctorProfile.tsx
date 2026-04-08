@@ -15,6 +15,7 @@ import {
   type DoctorProfileData,
   type DoctorPerformanceData,
 } from "../../../modules/doctor/services/doctorProfileService";
+import { userMessages } from "../../copy/userMessages";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^(\+62|62|0)[0-9]{9,12}$/;
@@ -74,7 +75,7 @@ export function DoctorProfile() {
       setLoadError("");
     } catch (error) {
       console.error("[DoctorProfile] load failed", error);
-      setLoadError("Gagal memuat profil dokter dari Firestore.");
+      setLoadError(userMessages.doctorProfile.loadError);
     } finally {
       setIsLoading(false);
     }
@@ -127,7 +128,7 @@ export function DoctorProfile() {
       await loadData();
     } catch (error) {
       console.error("[DoctorProfile] save failed", error);
-      setSaveError("Gagal menyimpan perubahan profil ke Firestore.");
+      setSaveError(userMessages.doctorProfile.saveError);
     } finally {
       setIsSaving(false);
     }

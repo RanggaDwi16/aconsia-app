@@ -2,6 +2,7 @@ import 'package:aconsia_app/core/main/data/models/dokter_profile_model.dart';
 import 'package:aconsia_app/core/helpers/timestamp/timestamp_convert.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
 
 abstract class PasienProfileRemoteDataSource {
@@ -108,6 +109,17 @@ class PasienProfileRemoteDataSourceImpl
       nik: readString(['nik']),
       tanggalLahir: readTimestamp(['tanggalLahir', 'dateOfBirth']),
       jenisKelamin: readString(['jenisKelamin', 'gender']),
+      agama: readString(['agama', 'religion']),
+      statusPernikahan: readString(['statusPernikahan', 'maritalStatus']),
+      pendidikanTerakhir: readString(['pendidikanTerakhir', 'lastEducation']),
+      pekerjaan: readString(['pekerjaan', 'occupation']),
+      alamatLengkap: readString(['alamatLengkap', 'fullAddress']),
+      rt: readString(['rt']),
+      rw: readString(['rw']),
+      kelurahanDesa: readString(['kelurahanDesa', 'village']),
+      kecamatan: readString(['kecamatan', 'district']),
+      kotaKabupaten: readString(['kotaKabupaten', 'city']),
+      provinsi: readString(['provinsi', 'province']),
       tempatLahir: readString(['tempatLahir']),
       jenisOperasi: readString(['jenisOperasi', 'surgeryType']),
       jenisAnestesi: readString(['jenisAnestesi', 'anesthesiaType']),
@@ -264,6 +276,17 @@ class PasienProfileRemoteDataSourceImpl
           'nik': model.nik,
           'tanggalLahir': model.tanggalLahir,
           'jenisKelamin': model.jenisKelamin,
+          'agama': model.agama,
+          'statusPernikahan': model.statusPernikahan,
+          'pendidikanTerakhir': model.pendidikanTerakhir,
+          'pekerjaan': model.pekerjaan,
+          'alamatLengkap': model.alamatLengkap,
+          'rt': model.rt,
+          'rw': model.rw,
+          'kelurahanDesa': model.kelurahanDesa,
+          'kecamatan': model.kecamatan,
+          'kotaKabupaten': model.kotaKabupaten,
+          'provinsi': model.provinsi,
           'jenisOperasi': diagnosis,
           'jenisAnestesi': anesthesia,
           'klasifikasiASA': model.klasifikasiAsa,
@@ -298,7 +321,26 @@ class PasienProfileRemoteDataSourceImpl
   @override
   Future<Either<String, List<DokterProfileModel>>> getAllDokterOptions() async {
     try {
-      final querySnapshot = await firestore.collection('dokter_profiles').get();
+      final publicSnapshot = await firestore
+          .collection('public_dokter_options')
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      if (publicSnapshot.docs.isNotEmpty) {
+        final dokterList = publicSnapshot.docs
+            .map((doc) => _toDokterProfileModel(doc.id, doc.data()))
+            .toList();
+        return Right(dokterList);
+      }
+
+      if (FirebaseAuth.instance.currentUser == null) {
+        return const Right(<DokterProfileModel>[]);
+      }
+
+      final querySnapshot = await firestore
+          .collection('dokter_profiles')
+          .where('status', isEqualTo: 'active')
+          .get();
 
       final dokterList = querySnapshot.docs
           .map((doc) => _toDokterProfileModel(doc.id, doc.data()))
@@ -324,8 +366,8 @@ class PasienProfileRemoteDataSourceImpl
 
     return DokterProfileModel(
       uid: uid,
-      namaLengkap:
-          readString(['namaLengkap', 'fullName', 'nama', 'name', 'displayName']),
+      namaLengkap: readString(
+          ['namaLengkap', 'fullName', 'nama', 'name', 'displayName']),
       nomorStr: readString(['nomorSTR', 'nomorStr', 'strNumber']),
       nomorSip: readString(['nomorSIP', 'nomorSip', 'sipNumber']),
       spesialisasi: readString(['spesialisasi', 'specialization']),
@@ -336,6 +378,7 @@ class PasienProfileRemoteDataSourceImpl
       email: readString(['email']),
       nomorTelepon:
           readString(['nomorTelepon', 'phoneNumber', 'noTelepon', 'phone']),
+      status: readString(['status']),
       fotoProfilUrl: readString(['fotoProfilUrl', 'photoUrl', 'avatarUrl']),
       createdAt: readString(['createdAt']),
       updatedAt: readString(['updatedAt']),

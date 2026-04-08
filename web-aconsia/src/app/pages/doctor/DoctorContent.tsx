@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "../../components/ui/badge";
 import { Plus, FileText, BookOpen, Trash2, Edit, AlertCircle } from "lucide-react";
 import { getDesktopSession } from "../../../core/auth/session";
+import { userMessages } from "../../copy/userMessages";
 import {
   createDoctorContent,
   deleteDoctorContent,
@@ -77,7 +78,7 @@ export function DoctorContent() {
       setError("");
     } catch (loadErr) {
       console.error("[DoctorContent] Firestore load failed", loadErr);
-      setError("Gagal memuat konten edukasi dari Firestore.");
+      setError(userMessages.doctorContent.loadError);
       setContents([]);
     } finally {
       setIsLoading(false);
@@ -144,7 +145,7 @@ export function DoctorContent() {
       await loadContents();
     } catch (saveErr) {
       console.error("[DoctorContent] create failed", saveErr);
-      setError("Gagal membuat konten. Periksa rules/konfigurasi Firestore.");
+      setError(userMessages.doctorContent.createError);
     } finally {
       setSaving(false);
     }
@@ -173,7 +174,7 @@ export function DoctorContent() {
       await loadContents();
     } catch (saveErr) {
       console.error("[DoctorContent] update failed", saveErr);
-      setError("Gagal mengubah konten. Periksa rules/konfigurasi Firestore.");
+      setError(userMessages.doctorContent.updateError);
     } finally {
       setSaving(false);
     }
@@ -188,7 +189,7 @@ export function DoctorContent() {
       await loadContents();
     } catch (deleteErr) {
       console.error("[DoctorContent] delete failed", deleteErr);
-      setError("Gagal menghapus konten. Pastikan Anda pemilik konten tersebut.");
+      setError(userMessages.doctorContent.deleteError);
     }
   };
 
@@ -213,7 +214,7 @@ export function DoctorContent() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Konten Edukasi</h1>
-            <p className="text-gray-600 mt-1">Konten dokter terhubung langsung ke Firestore</p>
+            <p className="text-gray-600 mt-1">{userMessages.doctorContent.subtitle}</p>
           </div>
 
           <Dialog
@@ -233,7 +234,7 @@ export function DoctorContent() {
               <DialogHeader>
                 <DialogTitle>Tambah Konten Edukasi Baru</DialogTitle>
                 <DialogDescription>
-                  Konten yang dibuat akan tersimpan di Firestore dengan status awal draft.
+                  {userMessages.doctorContent.createDialogDescription}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -326,7 +327,7 @@ export function DoctorContent() {
         <Card>
           <CardHeader>
             <CardTitle>Daftar Konten Edukasi</CardTitle>
-            <CardDescription>Semua data di bawah ini berasal dari Firestore.</CardDescription>
+            <CardDescription>{userMessages.doctorContent.listDescription}</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -390,7 +391,7 @@ export function DoctorContent() {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Konten</DialogTitle>
-              <DialogDescription>Perubahan akan langsung disimpan ke Firestore.</DialogDescription>
+              <DialogDescription>{userMessages.doctorContent.editDialogDescription}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">

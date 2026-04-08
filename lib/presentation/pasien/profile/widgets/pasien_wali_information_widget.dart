@@ -44,28 +44,28 @@ class PasienWaliInformationWidget extends HookConsumerWidget {
         children: [
           _SectionHeader(
             iconPath: Assets.icons.icPerson.path,
-            title: 'Wali / Pendamping',
-            subtitle: 'Informasi pendamping utama pasien',
+            title: 'Penanggung Jawab',
+            subtitle: 'Informasi keluarga/pendamping pasien',
           ),
           const Gap(UiSpacing.lg),
           CustomTextField(
             controller: namaController,
-            hintText: 'Nama Lengkap',
-            labelText: 'Nama Lengkap',
+            hintText: 'Nama keluarga',
+            labelText: 'Nama Penanggung Jawab',
             isDisabled: !editable,
           ),
           const Gap(UiSpacing.md),
           CustomTextField(
             controller: hubunganController,
-            hintText: 'Hubungan',
+            hintText: 'Suami, Istri, Anak, dll',
             labelText: 'Hubungan',
             isDisabled: !editable,
           ),
           const Gap(UiSpacing.md),
           CustomTextField(
             controller: nomorHpController,
-            hintText: 'Nomor Telepon Wali',
-            labelText: 'Nomor Telepon Wali',
+            hintText: '08xxxxxxxxxx',
+            labelText: 'No. Telepon Penanggung Jawab',
             isDisabled: !editable,
             keyboardType: TextInputType.phone,
             inputFormatters: [
@@ -76,8 +76,8 @@ class PasienWaliInformationWidget extends HookConsumerWidget {
           const Gap(UiSpacing.md),
           CustomTextField(
             controller: alamatController,
-            hintText: 'Alamat Wali',
-            labelText: 'Alamat Wali',
+            hintText: 'Alamat penanggung jawab',
+            labelText: 'Alamat Penanggung Jawab',
             isDisabled: !editable,
             maxLines: 3,
           ),

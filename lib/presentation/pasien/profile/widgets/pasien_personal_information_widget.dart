@@ -16,6 +16,10 @@ class PasienPersonalInformationWidget extends HookConsumerWidget {
   final TextEditingController nikController;
   final TextEditingController tanggalLahirController;
   final TextEditingController jenisKelaminController;
+  final TextEditingController agamaController;
+  final TextEditingController statusPernikahanController;
+  final TextEditingController pendidikanTerakhirController;
+  final TextEditingController pekerjaanController;
 
   const PasienPersonalInformationWidget({
     super.key,
@@ -25,11 +29,35 @@ class PasienPersonalInformationWidget extends HookConsumerWidget {
     required this.nikController,
     required this.tanggalLahirController,
     required this.jenisKelaminController,
+    required this.agamaController,
+    required this.statusPernikahanController,
+    required this.pendidikanTerakhirController,
+    required this.pekerjaanController,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final editable = isEditable ?? false;
+    final isWide = MediaQuery.sizeOf(context).width >= 720;
+
+    Widget pairFields({required Widget left, required Widget right}) {
+      if (isWide) {
+        return Row(
+          children: [
+            Expanded(child: left),
+            const Gap(UiSpacing.md),
+            Expanded(child: right),
+          ],
+        );
+      }
+      return Column(
+        children: [
+          left,
+          const Gap(UiSpacing.md),
+          right,
+        ],
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -76,33 +104,80 @@ class PasienPersonalInformationWidget extends HookConsumerWidget {
             inputFormatters: [LengthLimitingTextInputFormatter(16)],
           ),
           const Gap(UiSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  controller: tanggalLahirController,
-                  hintText: 'Tanggal Lahir',
-                  labelText: 'Tanggal Lahir',
-                  isDisabled: !editable,
-                  suffixIcon: const Icon(Icons.calendar_month_outlined),
-                  isCalendar: true,
-                ),
-              ),
-              const Gap(UiSpacing.md),
-              Expanded(
-                child: CustomDropdown(
-                  title: 'Jenis Kelamin',
-                  items: const ['Laki-laki', 'Perempuan'],
-                  selectedValue: jenisKelaminController.text.isEmpty
-                      ? null
-                      : jenisKelaminController.text,
-                  onChanged: (selected) {
-                    jenisKelaminController.text = selected;
-                  },
-                  disabled: !editable,
-                ),
-              ),
-            ],
+          pairFields(
+            left: CustomTextField(
+              controller: tanggalLahirController,
+              hintText: 'Tanggal Lahir',
+              labelText: 'Tanggal Lahir',
+              isDisabled: !editable,
+              suffixIcon: const Icon(Icons.calendar_month_outlined),
+              isCalendar: true,
+            ),
+            right: CustomDropdown(
+              title: 'Jenis Kelamin',
+              items: const ['Laki-laki', 'Perempuan'],
+              selectedValue: jenisKelaminController.text.isEmpty
+                  ? null
+                  : jenisKelaminController.text,
+              onChanged: (selected) {
+                jenisKelaminController.text = selected;
+              },
+              disabled: !editable,
+            ),
+          ),
+          const Gap(UiSpacing.md),
+          pairFields(
+            left: CustomDropdown(
+              title: 'Agama',
+              items: const [
+                'Islam',
+                'Kristen',
+                'Katolik',
+                'Hindu',
+                'Buddha',
+                'Konghucu',
+                'Lainnya',
+              ],
+              selectedValue:
+                  agamaController.text.isEmpty ? null : agamaController.text,
+              onChanged: (selected) {
+                agamaController.text = selected;
+              },
+              disabled: !editable,
+            ),
+            right: CustomDropdown(
+              title: 'Status Pernikahan',
+              items: const [
+                'Belum Menikah',
+                'Menikah',
+                'Cerai Hidup',
+                'Cerai Mati',
+              ],
+              selectedValue: statusPernikahanController.text.isEmpty
+                  ? null
+                  : statusPernikahanController.text,
+              onChanged: (selected) {
+                statusPernikahanController.text = selected;
+              },
+              disabled: !editable,
+            ),
+          ),
+          const Gap(UiSpacing.md),
+          pairFields(
+            left: CustomTextField(
+              controller: pendidikanTerakhirController,
+              hintText: 'SD, SMP, SMA, S1, dll',
+              labelText: 'Pendidikan Terakhir',
+              isDisabled: !editable,
+              inputFormatters: [LengthLimitingTextInputFormatter(50)],
+            ),
+            right: CustomTextField(
+              controller: pekerjaanController,
+              hintText: 'Pegawai, Wiraswasta, dll',
+              labelText: 'Pekerjaan',
+              isDisabled: !editable,
+              inputFormatters: [LengthLimitingTextInputFormatter(50)],
+            ),
           ),
         ],
       ),

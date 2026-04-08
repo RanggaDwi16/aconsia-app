@@ -26,8 +26,12 @@ Tanggal: 31 Maret 2026
   - [ ] `approvePasienProfile`
   - [ ] `rejectPasienProfile`
   - [ ] `setUserLifecycleStatus`
-  - [ ] `setKontenPublishStatus`
+  - [ ] `setKontenPublishStatus` (opsional bila mode Blaze/callable aktif)
+  - [ ] Jika mode Spark/free: publish konten via direct Firestore admin + rules valid
 - [ ] Claims role (`doctor/admin`) tervalidasi untuk akun uji
+  - [ ] `users/{uid}.role` konsisten dengan role akun uji
+  - [ ] Custom claim role sesuai (khusus admin: `role=admin`)
+  - [ ] Setelah update claim, sudah diverifikasi dengan logout/login ulang
 
 ## 3) Data & Migration Gate
 
@@ -48,12 +52,14 @@ Tanggal: 31 Maret 2026
 - [ ] Dokter approve/reject pasien -> status pasien berubah -> audit log tercatat
 - [ ] Admin suspend/activate user -> status user berubah -> audit log tercatat
 - [ ] Admin publish/unpublish konten -> status konten berubah -> audit log tercatat
+  - [ ] Jika gagal, jalankan runbook: `web-aconsia/docs/ADMIN_PUBLISH_INCIDENT_RUNBOOK.md`
 - [ ] Export report/admin audit tetap berfungsi
 
 ## 5) Deployment Steps
 
 1. Deploy Functions:
    - `firebase deploy --only functions`
+   - Verifikasi `setKontenPublishStatus` tersedia di region target
 2. Deploy Firestore Rules + Indexes:
    - `firebase deploy --only firestore:rules,firestore:indexes`
 3. Deploy desktop web hosting (sesuai pipeline/project)
@@ -72,6 +78,7 @@ Tanggal: 31 Maret 2026
 
 - [ ] Pantau error login desktop
 - [ ] Pantau error callable (`permission-denied`, `invalid-argument`)
+- [ ] Pantau error callable `setKontenPublishStatus` (`unauthenticated`, `permission-denied`, `not-found`)
 - [ ] Pantau latensi fungsi moderation
 - [ ] Pantau anomali audit logs (jumlah drop signifikan)
 

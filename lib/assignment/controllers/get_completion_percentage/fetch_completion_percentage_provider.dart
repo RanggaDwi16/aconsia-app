@@ -1,4 +1,3 @@
-import 'package:aconsia_app/assignment/controllers/assignment_impl_provider.dart';
 import 'package:aconsia_app/assignment/controllers/get_completion_percentage/get_completion_percentage_provider.dart';
 import 'package:aconsia_app/assignment/domain/usecases/get_completion_percentage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

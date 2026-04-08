@@ -20,6 +20,7 @@ import {
   getDoctorMonitoringPatients,
   type MonitoringPatient,
 } from "../../../modules/doctor/services/doctorMonitoringService";
+import { userMessages } from "../../copy/userMessages";
 
 export function DoctorMonitoring() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ export function DoctorMonitoring() {
       setError("");
     } catch (loadErr) {
       console.error("[DoctorMonitoring] failed to load Firestore data", loadErr);
-      setError("Gagal memuat data monitoring dari Firestore.");
+      setError(userMessages.doctorMonitoring.loadError);
       setPatients([]);
     } finally {
       setIsLoading(false);
@@ -90,7 +91,7 @@ export function DoctorMonitoring() {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">Monitoring Progres Pasien</h1>
-            <p className="text-sm text-gray-600">Terhubung ke Firestore (auto-refresh 10 detik)</p>
+            <p className="text-sm text-gray-600">{userMessages.doctorMonitoring.subtitle}</p>
           </div>
           <Badge variant="secondary" className="bg-blue-600 text-white">
             <Bell className="w-4 h-4 mr-1" />

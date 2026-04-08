@@ -34,6 +34,7 @@ import {
   finishNavigationMetric,
   startNavigationMetric,
 } from "../perf/navigationMetrics";
+import { userMessages } from "../copy/userMessages";
 
 type LoginRole = "doctor" | "admin";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -158,7 +159,7 @@ export function UnifiedLoginPage() {
         if (err instanceof DesktopAuthError) {
           setError(err.message);
         } else {
-          setError("Login dokter gagal. Periksa koneksi/Firebase config.");
+          setError(userMessages.auth.loginDoctorFailed);
         }
       }
       return;
@@ -191,7 +192,7 @@ export function UnifiedLoginPage() {
         if (err instanceof DesktopAuthError) {
           setError(err.message);
         } else {
-          setError("Login admin gagal. Periksa koneksi/Firebase config.");
+          setError(userMessages.auth.loginAdminFailed);
         }
       }
       return;
@@ -387,7 +388,7 @@ export function UnifiedLoginPage() {
                       <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-amber-900 mb-1">
-                          Konfigurasi Firebase Belum Lengkap
+                          Layanan Belum Siap
                         </p>
                         <p className="text-sm text-amber-800">{firebaseEnvMessage}</p>
                       </div>
@@ -533,12 +534,12 @@ export function UnifiedLoginPage() {
                 <p className="text-xs text-slate-600 text-center">
                   {selectedRole === "doctor" && (
                     <>
-                      Login Firebase dengan role <strong>dokter</strong>.
+                      Login menggunakan akun <strong>dokter</strong> yang aktif.
                     </>
                   )}
                   {selectedRole === "admin" && (
                     <>
-                      Login Firebase dengan role <strong>admin</strong>.
+                      Login menggunakan akun <strong>admin</strong> yang aktif.
                     </>
                   )}
                 </p>

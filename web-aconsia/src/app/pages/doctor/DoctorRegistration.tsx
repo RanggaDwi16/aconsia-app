@@ -20,6 +20,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { BrandLogo } from "../../components/BrandLogo";
+import { userMessages } from "../../copy/userMessages";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { firebaseAuth, firestore } from "../../../core/firebase/client";
@@ -321,7 +322,7 @@ export function DoctorRegistration() {
       } else if (code === "auth/invalid-email") {
         setSubmitError("Format email tidak valid.");
       } else {
-        setSubmitError("Registrasi dokter gagal. Periksa koneksi/Firebase config lalu coba lagi.");
+        setSubmitError(userMessages.doctorRegistration.submitError);
       }
     } finally {
       setIsSubmitting(false);

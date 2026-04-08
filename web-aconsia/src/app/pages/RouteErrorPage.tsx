@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router";
+import { userMessages } from "../copy/userMessages";
 
 function getErrorInfo(error: unknown): {
   title: string;
@@ -34,15 +35,14 @@ function getErrorInfo(error: unknown): {
   if (error instanceof Error) {
     if (error.message.includes("auth/invalid-api-key")) {
       return {
-        title: "Konfigurasi Firebase Tidak Valid",
-        message:
-          "API Key Firebase tidak valid. Isi ulang VITE_FIREBASE_API_KEY pada web-aconsia/.env, lalu restart dev server.",
+        title: "Layanan Sedang Bermasalah",
+        message: userMessages.routeError.serviceUnavailable,
       };
     }
 
     return {
       title: "Terjadi Kesalahan Aplikasi",
-      message: error.message,
+      message: userMessages.routeError.generic,
     };
   }
 

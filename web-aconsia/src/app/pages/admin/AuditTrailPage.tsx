@@ -18,6 +18,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { getAdminAuditLogs, type AdminAuditLog } from "../../../modules/admin/services/adminAuditService";
+import { userMessages } from "../../copy/userMessages";
 
 export function AuditTrailPage() {
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export function AuditTrailPage() {
       return;
     } catch (error) {
       console.error("[AuditTrailPage] Firestore load failed", error);
-      setLoadError("Gagal memuat audit trail dari Firestore. Periksa koneksi dan konfigurasi Firebase.");
+      setLoadError(userMessages.admin.auditLoadError);
       setLogs([]);
       setSummary(buildSummary([]));
     }

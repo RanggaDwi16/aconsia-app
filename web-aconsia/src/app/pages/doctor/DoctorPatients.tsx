@@ -11,6 +11,7 @@ import { Button } from "../../components/ui/button";
 import { Search, Eye, TrendingUp, AlertCircle } from "lucide-react";
 import { getDesktopSession } from "../../../core/auth/session";
 import { firestore } from "../../../core/firebase/client";
+import { userMessages } from "../../copy/userMessages";
 
 type DoctorPatient = {
   id: string;
@@ -88,7 +89,7 @@ export function DoctorPatients() {
         setLoadError("");
       } catch (error) {
         console.error("[DoctorPatients] failed to load from Firestore", error);
-        setLoadError("Gagal memuat data pasien dari Firestore.");
+        setLoadError(userMessages.doctorPatients.loadError);
       } finally {
         setIsLoading(false);
       }
@@ -134,13 +135,13 @@ export function DoctorPatients() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Kelola Pasien</h1>
-            <p className="text-gray-600 mt-1">Data pasien dokter dari Firestore (real data)</p>
+            <p className="text-gray-600 mt-1">{userMessages.doctorPatients.subtitle}</p>
           </div>
         </div>
 
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="pt-6 text-sm text-amber-900">
-            Penambahan pasien langsung dari halaman ini belum diaktifkan. Data pasien muncul dari alur registrasi/assignment yang sudah tersimpan di Firestore.
+            {userMessages.doctorPatients.infoBanner}
           </CardContent>
         </Card>
 

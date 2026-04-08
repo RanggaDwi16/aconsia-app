@@ -12,17 +12,51 @@ class PasienContactWidget extends HookConsumerWidget {
   final bool? isEditable;
   final TextEditingController emailController;
   final TextEditingController phoneController;
+  final TextEditingController alamatLengkapController;
+  final TextEditingController rtController;
+  final TextEditingController rwController;
+  final TextEditingController kelurahanDesaController;
+  final TextEditingController kecamatanController;
+  final TextEditingController kotaKabupatenController;
+  final TextEditingController provinsiController;
 
   const PasienContactWidget({
     super.key,
     this.isEditable = false,
     required this.emailController,
     required this.phoneController,
+    required this.alamatLengkapController,
+    required this.rtController,
+    required this.rwController,
+    required this.kelurahanDesaController,
+    required this.kecamatanController,
+    required this.kotaKabupatenController,
+    required this.provinsiController,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final editable = isEditable ?? false;
+    final isWide = MediaQuery.sizeOf(context).width >= 720;
+
+    Widget pairFields({required Widget left, required Widget right}) {
+      if (isWide) {
+        return Row(
+          children: [
+            Expanded(child: left),
+            const Gap(UiSpacing.md),
+            Expanded(child: right),
+          ],
+        );
+      }
+      return Column(
+        children: [
+          left,
+          const Gap(UiSpacing.md),
+          right,
+        ],
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -61,6 +95,69 @@ class PasienContactWidget extends HookConsumerWidget {
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(15),
             ],
+          ),
+          const Gap(UiSpacing.md),
+          CustomTextField(
+            controller: alamatLengkapController,
+            hintText: 'Jalan, nomor rumah',
+            labelText: 'Alamat Lengkap',
+            isDisabled: !editable,
+            maxLines: 3,
+          ),
+          const Gap(UiSpacing.md),
+          pairFields(
+            left: CustomTextField(
+              controller: rtController,
+              hintText: '001',
+              labelText: 'RT',
+              isDisabled: !editable,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+            ),
+            right: CustomTextField(
+              controller: rwController,
+              hintText: '002',
+              labelText: 'RW',
+              isDisabled: !editable,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+            ),
+          ),
+          const Gap(UiSpacing.md),
+          pairFields(
+            left: CustomTextField(
+              controller: kelurahanDesaController,
+              hintText: 'Kelurahan/Desa',
+              labelText: 'Kelurahan/Desa',
+              isDisabled: !editable,
+            ),
+            right: CustomTextField(
+              controller: kecamatanController,
+              hintText: 'Kecamatan',
+              labelText: 'Kecamatan',
+              isDisabled: !editable,
+            ),
+          ),
+          const Gap(UiSpacing.md),
+          pairFields(
+            left: CustomTextField(
+              controller: kotaKabupatenController,
+              hintText: 'Kota/Kabupaten',
+              labelText: 'Kota/Kabupaten',
+              isDisabled: !editable,
+            ),
+            right: CustomTextField(
+              controller: provinsiController,
+              hintText: 'Provinsi',
+              labelText: 'Provinsi',
+              isDisabled: !editable,
+            ),
           ),
         ],
       ),

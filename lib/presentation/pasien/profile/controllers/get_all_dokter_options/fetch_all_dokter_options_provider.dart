@@ -8,9 +8,7 @@ part 'fetch_all_dokter_options_provider.g.dart';
 @riverpod
 class FetchAllDokterOptions extends _$FetchAllDokterOptions {
   @override
-  FutureOr<List<DokterProfileModel>?> build() async {
-    state = const AsyncLoading();
-
+  FutureOr<List<DokterProfileModel>> build() async {
     GetAllDokterOptions getAllDokterOptions =
         ref.read(getAllDokterOptionsProvider);
 
@@ -18,13 +16,9 @@ class FetchAllDokterOptions extends _$FetchAllDokterOptions {
 
     return result.fold(
       (failure) {
-        state = AsyncError(failure, StackTrace.current);
-        return null;
+        throw Exception(failure);
       },
-      (dokterList) {
-        state = AsyncData(dokterList);
-        return dokterList;
-      },
+      (dokterList) => dokterList,
     );
   }
 }

@@ -13,6 +13,7 @@ import {
   buildFirebaseMissingEnvMessage,
   isFirebaseEnvReady,
 } from "../firebase/env";
+import { userMessages } from "../../app/copy/userMessages";
 
 export class DesktopAuthError extends Error {
   constructor(message: string) {
@@ -45,7 +46,7 @@ function mapFirebaseSignInError(error: unknown): string | null {
     case "auth/network-request-failed":
       return "Koneksi internet bermasalah. Coba periksa jaringan Anda.";
     case "permission-denied":
-      return "Akses ke data profil ditolak. Periksa Firestore Rules.";
+      return userMessages.auth.accessDenied;
     default:
       return null;
   }
@@ -63,15 +64,10 @@ export async function signInDesktop(params: {
   if (!isFirebaseClientReady()) {
     const initErrorMessage = getFirebaseInitErrorMessage();
     if (initErrorMessage.includes("auth/invalid-api-key")) {
-      throw new DesktopAuthError(
-        "Firebase API Key tidak valid. Periksa VITE_FIREBASE_API_KEY di file web-aconsia/.env lalu restart dev server.",
-      );
+      throw new DesktopAuthError(userMessages.auth.serviceUnavailable);
     }
 
-    throw new DesktopAuthError(
-      initErrorMessage ||
-        "Firebase client belum siap. Periksa konfigurasi .env dan restart dev server.",
-    );
+    throw new DesktopAuthError(initErrorMessage || userMessages.auth.serviceUnavailable);
   }
 
   const { email, password, expectedRole } = params;
@@ -89,9 +85,7 @@ export async function signInDesktop(params: {
 
     if (!userSnap.exists()) {
       await signOut(firebaseAuth);
-      throw new DesktopAuthError(
-        "Profil user tidak ditemukan di Firestore. Hubungi admin.",
-      );
+      throw new DesktopAuthError(userMessages.auth.profileNotFound);
     }
 
     const data = userSnap.data();
@@ -99,15 +93,15 @@ export async function signInDesktop(params: {
 
     if (!role) {
       await signOut(firebaseAuth);
-      throw new DesktopAuthError("Role user tidak valid.");
+      throw new DesktopAuthError(userMessages.auth.invalidRole);
     }
 
     if (role !== expectedRole) {
       await signOut(firebaseAuth);
       throw new DesktopAuthError(
         expectedRole === "doctor"
-          ? "Akun ini bukan role dokter."
-          : "Akun ini bukan role admin.",
+          ? userMessages.auth.wrongDoctorRole
+          : userMessages.auth.wrongAdminRole,
       );
     }
 
