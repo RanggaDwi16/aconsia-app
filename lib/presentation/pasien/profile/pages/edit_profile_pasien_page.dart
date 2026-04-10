@@ -5,7 +5,7 @@ import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
 import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
-import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
+import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_accessible_konten_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/update_pasien_profile/patch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
@@ -341,7 +341,7 @@ class EditProfilePasienPage extends HookConsumerWidget {
                           onSuccess: (message) {
                             context.showSuccessDialog(context, message);
                             ref.invalidate(fetchPasienProfileProvider);
-                            ref.invalidate(fetchKontenByDokterIdProvider);
+                            ref.invalidate(pasienAccessibleKontenProvider);
                             ref.invalidate(fetchQuizResultByKontenProvider);
                             context.goNamed(RouteName.mainPasien);
                           },

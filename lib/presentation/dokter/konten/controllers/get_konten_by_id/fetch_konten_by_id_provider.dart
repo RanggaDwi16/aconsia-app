@@ -8,9 +8,7 @@ part 'fetch_konten_by_id_provider.g.dart';
 @riverpod
 class FetchKontenById extends _$FetchKontenById {
   @override
-  FutureOr<KontenModel?> build({required String kontenId}) async {
-    state = const AsyncLoading();
-
+  FutureOr<KontenModel> build({required String kontenId}) async {
     GetKontenById getKontenById = ref.read(getKontenByIdProvider);
 
     final result = await getKontenById(
@@ -18,14 +16,8 @@ class FetchKontenById extends _$FetchKontenById {
     );
 
     return result.fold(
-      (failure) {
-        state = AsyncError(failure, StackTrace.current);
-        return null;
-      },
-      (konten) {
-        state = AsyncData(konten);
-        return konten;
-      },
+      (failure) => throw Exception(failure),
+      (konten) => konten,
     );
   }
 }

@@ -7,7 +7,7 @@ part of 'fetch_konten_by_dokter_id_provider.dart';
 // **************************************************************************
 
 String _$fetchKontenByDokterIdHash() =>
-    r'6e155f95e6727f861641d1b5fd4fe0c9f2887ef4';
+    r'00508ce543af207fd3460b7e1be60889bf933ef2';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$FetchKontenByDokterId
-    extends BuildlessAutoDisposeAsyncNotifier<List<KontenModel>?> {
+    extends BuildlessAutoDisposeAsyncNotifier<List<KontenModel>> {
   late final String dokterId;
 
-  FutureOr<List<KontenModel>?> build({
+  FutureOr<List<KontenModel>> build({
     required String dokterId,
   });
 }
@@ -45,7 +45,7 @@ const fetchKontenByDokterIdProvider = FetchKontenByDokterIdFamily();
 
 /// See also [FetchKontenByDokterId].
 class FetchKontenByDokterIdFamily
-    extends Family<AsyncValue<List<KontenModel>?>> {
+    extends Family<AsyncValue<List<KontenModel>>> {
   /// See also [FetchKontenByDokterId].
   const FetchKontenByDokterIdFamily();
 
@@ -85,7 +85,7 @@ class FetchKontenByDokterIdFamily
 /// See also [FetchKontenByDokterId].
 class FetchKontenByDokterIdProvider
     extends AutoDisposeAsyncNotifierProviderImpl<FetchKontenByDokterId,
-        List<KontenModel>?> {
+        List<KontenModel>> {
   /// See also [FetchKontenByDokterId].
   FetchKontenByDokterIdProvider({
     required String dokterId,
@@ -116,7 +116,7 @@ class FetchKontenByDokterIdProvider
   final String dokterId;
 
   @override
-  FutureOr<List<KontenModel>?> runNotifierBuild(
+  FutureOr<List<KontenModel>> runNotifierBuild(
     covariant FetchKontenByDokterId notifier,
   ) {
     return notifier.build(
@@ -142,7 +142,7 @@ class FetchKontenByDokterIdProvider
 
   @override
   AutoDisposeAsyncNotifierProviderElement<FetchKontenByDokterId,
-      List<KontenModel>?> createElement() {
+      List<KontenModel>> createElement() {
     return _FetchKontenByDokterIdProviderElement(this);
   }
 
@@ -163,14 +163,14 @@ class FetchKontenByDokterIdProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin FetchKontenByDokterIdRef
-    on AutoDisposeAsyncNotifierProviderRef<List<KontenModel>?> {
+    on AutoDisposeAsyncNotifierProviderRef<List<KontenModel>> {
   /// The parameter `dokterId` of this provider.
   String get dokterId;
 }
 
 class _FetchKontenByDokterIdProviderElement
     extends AutoDisposeAsyncNotifierProviderElement<FetchKontenByDokterId,
-        List<KontenModel>?> with FetchKontenByDokterIdRef {
+        List<KontenModel>> with FetchKontenByDokterIdRef {
   _FetchKontenByDokterIdProviderElement(super.provider);
 
   @override

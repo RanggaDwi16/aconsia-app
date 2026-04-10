@@ -40,6 +40,16 @@ export const userMessages = {
       "Penambahan pasien dilakukan melalui proses registrasi dan penugasan yang tersedia di sistem.",
     loadError: "Terjadi kendala memuat data pasien. Silakan coba lagi.",
   },
+  doctorChats: {
+    subtitle: "Daftar percakapan chat langsung dengan pasien Anda.",
+    infoBanner:
+      "Komunikasi pada halaman ini bersifat chat-only. Fitur telepon dan video call tidak tersedia pada fase ini.",
+    loadError: "Terjadi kendala memuat daftar chat pasien. Silakan coba lagi.",
+    permissionDenied:
+      "Akses chat belum tersedia untuk akun ini. Pastikan akun dokter Anda sesuai dengan data penugasan pasien.",
+    authMismatch:
+      "Sesi akun tidak sinkron. Silakan logout lalu login kembali.",
+  },
   doctorMonitoring: {
     subtitle: "Pemantauan progres pasien diperbarui otomatis setiap 10 detik.",
     loadError: "Terjadi kendala memuat data monitoring. Silakan coba lagi.",

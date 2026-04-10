@@ -7,7 +7,7 @@ part of 'fetch_konten_count_by_dokter_id_provider.dart';
 // **************************************************************************
 
 String _$fetchKontenCountByDokterIdHash() =>
-    r'752ae390bd393628f730a6770858e070e091fe40';
+    r'cbbadabb7c887ef2f2d28587a96a93bd2971c01e';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$FetchKontenCountByDokterId
-    extends BuildlessAutoDisposeAsyncNotifier<int?> {
+    extends BuildlessAutoDisposeAsyncNotifier<int> {
   late final String dokterId;
 
-  FutureOr<int?> build({
+  FutureOr<int> build({
     required String dokterId,
   });
 }
@@ -44,7 +44,7 @@ abstract class _$FetchKontenCountByDokterId
 const fetchKontenCountByDokterIdProvider = FetchKontenCountByDokterIdFamily();
 
 /// See also [FetchKontenCountByDokterId].
-class FetchKontenCountByDokterIdFamily extends Family<AsyncValue<int?>> {
+class FetchKontenCountByDokterIdFamily extends Family<AsyncValue<int>> {
   /// See also [FetchKontenCountByDokterId].
   const FetchKontenCountByDokterIdFamily();
 
@@ -84,7 +84,7 @@ class FetchKontenCountByDokterIdFamily extends Family<AsyncValue<int?>> {
 /// See also [FetchKontenCountByDokterId].
 class FetchKontenCountByDokterIdProvider
     extends AutoDisposeAsyncNotifierProviderImpl<FetchKontenCountByDokterId,
-        int?> {
+        int> {
   /// See also [FetchKontenCountByDokterId].
   FetchKontenCountByDokterIdProvider({
     required String dokterId,
@@ -115,7 +115,7 @@ class FetchKontenCountByDokterIdProvider
   final String dokterId;
 
   @override
-  FutureOr<int?> runNotifierBuild(
+  FutureOr<int> runNotifierBuild(
     covariant FetchKontenCountByDokterId notifier,
   ) {
     return notifier.build(
@@ -140,7 +140,7 @@ class FetchKontenCountByDokterIdProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<FetchKontenCountByDokterId, int?>
+  AutoDisposeAsyncNotifierProviderElement<FetchKontenCountByDokterId, int>
       createElement() {
     return _FetchKontenCountByDokterIdProviderElement(this);
   }
@@ -163,14 +163,14 @@ class FetchKontenCountByDokterIdProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin FetchKontenCountByDokterIdRef
-    on AutoDisposeAsyncNotifierProviderRef<int?> {
+    on AutoDisposeAsyncNotifierProviderRef<int> {
   /// The parameter `dokterId` of this provider.
   String get dokterId;
 }
 
 class _FetchKontenCountByDokterIdProviderElement
     extends AutoDisposeAsyncNotifierProviderElement<FetchKontenCountByDokterId,
-        int?> with FetchKontenCountByDokterIdRef {
+        int> with FetchKontenCountByDokterIdRef {
   _FetchKontenCountByDokterIdProviderElement(super.provider);
 
   @override

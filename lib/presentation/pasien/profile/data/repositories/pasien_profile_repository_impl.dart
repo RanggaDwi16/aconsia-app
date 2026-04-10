@@ -57,13 +57,32 @@ class PasienProfileRepositoryImpl implements PasienProfileRepository {
   Future<Either<String, PasienProfileModel>> getPasienProfile(
       {required String uid}) async {
     try {
-      final result = await remoteDataSource.getPasienProfile(uid: uid);
+      final safeUid = uid.trim();
+      if (safeUid.isEmpty) {
+        return const Left('[invalidArgument] UID pasien tidak valid.');
+      }
+
+      final result = await remoteDataSource.getPasienProfile(uid: safeUid);
       return result.fold(
-        (failure) => Left(failure),
+        (failure) {
+          final lower = failure.toLowerCase();
+          if (failure.startsWith('[')) {
+            return Left(failure);
+          }
+          if (lower.contains('permission-denied')) {
+            return const Left(
+              '[permissionDenied] Anda tidak memiliki akses ke data pasien ini.',
+            );
+          }
+          if (lower.contains('not found')) {
+            return const Left('[notFound] Profil pasien tidak ditemukan.');
+          }
+          return Left('[unknown] $failure');
+        },
         (profile) => Right(profile),
       );
     } catch (e) {
-      return Left('Gagal mendapatkan profil: $e');
+      return Left('[unknown] Gagal mendapatkan profil: $e');
     }
   }
 
@@ -152,6 +171,27 @@ class PasienProfileRepositoryImpl implements PasienProfileRepository {
       );
     } catch (e) {
       return Left('Gagal mendapatkan daftar dokter: $e');
+    }
+  }
+
+  @override
+  Future<Either<String, String>> submitPreOperativeAssessment({
+    required String uid,
+    required String asaStatusSnapshot,
+    required Map<String, dynamic> assessmentData,
+  }) async {
+    try {
+      final result = await remoteDataSource.submitPreOperativeAssessment(
+        uid: uid,
+        asaStatusSnapshot: asaStatusSnapshot,
+        assessmentData: assessmentData,
+      );
+      return result.fold(
+        (failure) => Left(failure),
+        (success) => Right(success),
+      );
+    } catch (e) {
+      return Left('Gagal submit asesmen pra-operasi: $e');
     }
   }
 }

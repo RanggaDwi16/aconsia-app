@@ -1,79 +1,60 @@
-import 'package:aconsia_app/core/utils/assets.gen.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
+import 'package:aconsia_app/presentation/chat/pages/dokter_pasien_chat_page.dart';
+import 'package:aconsia_app/presentation/pasien/assessment/pages/pre_operative_assessment_page.dart';
 import 'package:aconsia_app/presentation/pasien/home/pages/home_pasien_page.dart';
+import 'package:aconsia_app/presentation/pasien/konten/pages/chat_ai_page.dart';
 import 'package:aconsia_app/presentation/pasien/konten/pages/konten_pasien_page.dart';
+import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
+import 'package:aconsia_app/presentation/pasien/main/widgets/pasien_main_shell_scope.dart';
+import 'package:aconsia_app/presentation/pasien/main/widgets/pasien_sidebar_drawer.dart';
 import 'package:aconsia_app/presentation/pasien/profile/pages/profile_pasien_page.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aconsia_app/presentation/pasien/schedule/pages/schedule_signature_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../controllers/selected_index_provider.dart';
-
-class MainPasienPage extends ConsumerWidget {
+class MainPasienPage extends ConsumerStatefulWidget {
   const MainPasienPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedIndex = ref.watch(selectedIndexPasienProvider);
+  ConsumerState<MainPasienPage> createState() => _MainPasienPageState();
+}
 
-    final List<Widget> pages = [
-      HomePasienPage(),
-      KontenPasienPage(),
-      ProfilePasienPage(),
-    ];
+class _MainPasienPageState extends ConsumerState<MainPasienPage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-    final icons = [
-      [Assets.icons.icHome, Assets.icons.icHome],
-      [Assets.icons.icKonten, Assets.icons.icKonten],
-      [Assets.icons.icPerson, Assets.icons.icPerson],
-    ];
+  @override
+  Widget build(BuildContext context) {
+    final rawSelectedIndex = ref.watch(selectedIndexPasienProvider);
+    final selectedIndex = rawSelectedIndex.clamp(0, 6);
 
-    final labels = [
-      'Dashboard',
-      'Konten',
-      'Profil',
+    if (rawSelectedIndex != selectedIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(selectedIndexPasienProvider.notifier).state = selectedIndex;
+      });
+    }
+
+    final pages = <Widget>[
+      const HomePasienPage(),
+      const ProfilePasienPage(),
+      const PreOperativeAssessmentPage(),
+      const KontenPasienPage(),
+      const ChatAiPage(),
+      const DokterPasienChatPage(
+        role: 'pasien',
+        embeddedInMainShell: true,
+      ),
+      const ScheduleSignaturePage(),
     ];
 
     return Scaffold(
-      body: pages[selectedIndex],
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          splashFactory: NoSplash.splashFactory,
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
-          currentIndex: selectedIndex,
-          elevation: 6,
-          selectedItemColor: UiPalette.blue600,
-          unselectedItemColor: UiPalette.slate400,
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
-          ),
-          onTap: (index) {
-            ref.read(selectedIndexPasienProvider.notifier).state = index;
-          },
-          items: List.generate(icons.length, (index) {
-            final isSelected = selectedIndex == index;
-            return BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                isSelected ? icons[index][1].path : icons[index][0].path,
-                width: 24,
-                height: 24,
-                color: isSelected
-                    ? UiPalette.blue600
-                    : UiPalette.slate400,
-              ),
-              label: labels[index],
-            );
-          }),
+      key: _scaffoldKey,
+      backgroundColor: UiPalette.white,
+      drawer: PasienSidebarDrawer(selectedIndex: selectedIndex),
+      body: PasienMainShellScope(
+        openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+        child: IndexedStack(
+          index: selectedIndex,
+          children: pages,
         ),
       ),
     );

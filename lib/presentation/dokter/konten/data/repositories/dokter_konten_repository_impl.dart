@@ -99,6 +99,22 @@ class DokterKontenRepositoryImpl implements DokterKontenRepository {
   }
 
   @override
+  Future<Either<String, KontenSectionModel>> ensureSectionExistsForKonten({
+    required KontenModel konten,
+  }) async {
+    try {
+      final result =
+          await remoteDataSource.ensureSectionExistsForKonten(konten: konten);
+      return result.fold(
+        (failure) => Left(failure),
+        (section) => Right(section),
+      );
+    } catch (e) {
+      return Left('Gagal memastikan section konten tersedia: $e');
+    }
+  }
+
+  @override
   Future<Either<String, String>> updateKonten({
     required KontenModel konten,
     required KontenSectionModel section,

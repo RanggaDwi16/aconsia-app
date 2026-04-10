@@ -4,14 +4,19 @@ import 'package:aconsia_app/core/utils/constant/app_theme.dart';
 import 'package:aconsia_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 const Map<String, String> _defaultEnv = {
   'ENABLE_APP_CHECK': 'false',
   'USE_MOCK_AI': 'true',
-  'OPENAI_API_KEY': '',
+  'AI_PROVIDER': 'mock_local',
+  'AI_GATEWAY_ENABLED': 'false',
+  'AI_GATEWAY_REGION': '',
+  'AI_GATEWAY_CALLABLE': '',
   'CLOUDINARY_CLOUD_NAME': '',
   'CLOUDINARY_UPLOAD_PRESET': 'aconsia_app',
 };
@@ -34,6 +39,9 @@ Future<void> _loadEnvironment() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize locale data once for all DateFormat usages (e.g. id_ID).
+  await initializeDateFormatting('id_ID', null);
 
   // Load environment variables
   await _loadEnvironment();
@@ -69,6 +77,16 @@ class MainApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       title: 'Aconsia App',
       theme: AppTheme.lightTheme,
+      locale: const Locale('id', 'ID'),
+      supportedLocales: const [
+        Locale('id', 'ID'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routeInformationParser: ref.watch(routerProvider).routeInformationParser,
       routeInformationProvider:
           ref.watch(routerProvider).routeInformationProvider,

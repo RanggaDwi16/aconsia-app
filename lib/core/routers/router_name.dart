@@ -27,4 +27,7 @@ class RouteName {
   static const String chatList = '/chat-list';
   static const String chatRoom = '/chat-room';
   static const String allRecommendations = '/all-recommendations';
+  static const String asesmenPraOperasi = '/asesmen-pra-operasi';
+  static const String hubungiDokterPasien = '/hubungi-dokter-pasien';
+  static const String jadwalTandaTangan = '/jadwal-tanda-tangan';
 }

@@ -13,6 +13,25 @@ dynamic timestampToJson(Timestamp? timestamp) {
   return timestamp;
 }
 
+DateTime? dateTimeFromJson(dynamic value) {
+  if (value == null) return null;
+  if (value is DateTime) return value;
+  if (value is Timestamp) return value.toDate();
+  if (value is String) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) return parsed;
+  }
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value);
+  }
+  return null;
+}
+
+dynamic dateTimeToJson(DateTime? value) {
+  if (value == null) return null;
+  return Timestamp.fromDate(value);
+}
+
 Timestamp? tryParseTanggal(String input) {
   try {
     // format d/M/yyyy → contoh 4/11/2025

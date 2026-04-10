@@ -323,7 +323,11 @@ class RegisterPasienPage extends HookConsumerWidget {
               },
               onError: (error) {
                 isSubmitting.value = false;
-                context.showErrorSnackbar(context, error);
+                final lower = error.toLowerCase();
+                final friendly = lower.contains('permission-denied')
+                    ? 'Akses pasien belum sinkron. Silakan logout-login lalu coba lagi.'
+                    : error;
+                context.showErrorSnackbar(context, friendly);
               },
             );
       }

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
+import 'package:flutter/foundation.dart';
 
 abstract class PasienProfileRemoteDataSource {
   /// Get pasien profile by UID
@@ -48,6 +49,12 @@ abstract class PasienProfileRemoteDataSource {
   /// Check if pasien profile exists
   Future<Either<String, bool>> checkProfileExists({required String uid});
   Future<Either<String, List<DokterProfileModel>>> getAllDokterOptions();
+
+  Future<Either<String, String>> submitPreOperativeAssessment({
+    required String uid,
+    required String asaStatusSnapshot,
+    required Map<String, dynamic> assessmentData,
+  });
 }
 
 class PasienProfileRemoteDataSourceImpl
@@ -86,6 +93,23 @@ class PasienProfileRemoteDataSourceImpl
       if (value is List) {
         return value.map((e) => e.toString()).toList();
       }
+      return null;
+    }
+
+    bool readBool(List<String> keys, {bool defaultValue = false}) {
+      final value = readValue(keys);
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      if (value is String) {
+        return value.toLowerCase() == 'true' || value == '1';
+      }
+      return defaultValue;
+    }
+
+    Map<String, dynamic>? readMap(List<String> keys) {
+      final value = readValue(keys);
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) return value.cast<String, dynamic>();
       return null;
     }
 
@@ -132,6 +156,15 @@ class PasienProfileRemoteDataSourceImpl
       alamatWali: readString(['alamatWali']),
       kontenFavoritIds: readStringList(['kontenFavoritIds']),
       aiKeywords: readStringList(['aiKeywords']),
+      assessmentCompleted: readBool(
+        ['assessmentCompleted'],
+        defaultValue: false,
+      ),
+      preOperativeAssessment:
+          readMap(['preOperativeAssessment', 'pre_operative_assessment']),
+      preOperativeAssessmentUpdatedAt: readTimestamp(
+        ['preOperativeAssessmentUpdatedAt'],
+      ),
       createdAt: readTimestamp(['createdAt']),
       updatedAt: readTimestamp(['updatedAt']),
     );
@@ -175,21 +208,37 @@ class PasienProfileRemoteDataSourceImpl
   Future<Either<String, PasienProfileModel>> getPasienProfile(
       {required String uid}) async {
     try {
+      final safeUid = uid.trim();
+      if (safeUid.isEmpty) {
+        return const Left('[invalidArgument] UID pasien tidak valid.');
+      }
+
       final profileDoc =
-          await firestore.collection('pasien_profiles').doc(uid).get();
-      final userDoc = await firestore.collection('users').doc(uid).get();
+          await firestore.collection('pasien_profiles').doc(safeUid).get();
+      final userDoc = await firestore.collection('users').doc(safeUid).get();
 
       if (!profileDoc.exists && !userDoc.exists) {
-        return Left('Pasien profile not found.');
+        return const Left('[notFound] Profil pasien tidak ditemukan.');
       }
 
       final merged = <String, dynamic>{};
       if (userDoc.exists) merged.addAll(userDoc.data()!);
       if (profileDoc.exists) merged.addAll(profileDoc.data()!);
-      final profile = _toPasienProfileModel(uid, merged);
+      final profile = _toPasienProfileModel(safeUid, merged);
       return Right(profile);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        return const Left(
+          '[permissionDenied] Anda tidak memiliki akses ke data pasien ini.',
+        );
+      }
+      if (e.code == 'not-found') {
+        return const Left('[notFound] Profil pasien tidak ditemukan.');
+      }
+      return Left(
+          '[unknown] Gagal mengambil profil pasien: ${e.message ?? e.code}');
     } catch (e) {
-      return Left('Failed to get pasien profile: $e');
+      return Left('[unknown] Failed to get pasien profile: $e');
     }
   }
 
@@ -250,8 +299,8 @@ class PasienProfileRemoteDataSourceImpl
   @override
   Future<Either<String, String>> updatePasienProfile(
       {required PasienProfileModel model}) async {
+    final uid = model.uid ?? '';
     try {
-      final uid = model.uid ?? '';
       if (uid.isEmpty) {
         return const Left('UID pasien tidak valid.');
       }
@@ -268,6 +317,7 @@ class PasienProfileRemoteDataSourceImpl
         firestore.collection('pasien_profiles').doc(uid).set({
           'uid': uid,
           'dokterId': assignedDokterId,
+          'assignedDokterId': assignedDokterId,
           'namaLengkap': fullName,
           'nomorTelepon': phone,
           'email': email,
@@ -313,6 +363,13 @@ class PasienProfileRemoteDataSourceImpl
       ]);
 
       return const Right('Profil berhasil diperbarui.');
+    } on FirebaseException catch (e) {
+      debugPrint(
+        '[PasienProfileDS] update failed uid=$uid path=pasien_profiles/$uid code=${e.code} message=${e.message}',
+      );
+      return Left(
+        'Gagal update profil: [${e.code}] ${e.message ?? e.toString()}',
+      );
     } catch (e) {
       return Left('Gagal update profil: $e');
     }
@@ -383,5 +440,31 @@ class PasienProfileRemoteDataSourceImpl
       createdAt: readString(['createdAt']),
       updatedAt: readString(['updatedAt']),
     );
+  }
+
+  @override
+  Future<Either<String, String>> submitPreOperativeAssessment({
+    required String uid,
+    required String asaStatusSnapshot,
+    required Map<String, dynamic> assessmentData,
+  }) async {
+    try {
+      await firestore.collection('pasien_profiles').doc(uid).set({
+        'assessmentCompleted': true,
+        'preOperativeAssessment': {
+          'version': 1,
+          'completed': true,
+          'completedAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'asaStatusSnapshot': asaStatusSnapshot,
+          'data': assessmentData,
+        },
+        'preOperativeAssessmentUpdatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return const Right('Asesmen pra-operasi berhasil disimpan.');
+    } catch (e) {
+      return Left('Gagal menyimpan asesmen pra-operasi: $e');
+    }
   }
 }

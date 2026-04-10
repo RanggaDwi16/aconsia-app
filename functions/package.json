@@ -14,7 +14,10 @@
     "create:admin": "node scripts/create-admin-user.js",
     "seed:bootstrap": "node scripts/bootstrap-initial-data.js",
     "db:normalize-contract": "node scripts/normalize-mobile-web-contract.js",
-    "db:sync-public-dokter-options": "node scripts/sync-public-dokter-options.js"
+    "db:cleanup-draft-assignments": "node scripts/cancel-draft-assignments.js",
+    "db:sync-public-dokter-options": "node scripts/sync-public-dokter-options.js",
+    "auth:sync-dokter-claims": "node scripts/sync-dokter-role-claims.js",
+    "auth:sync-pasien-claims": "node scripts/sync-pasien-role-claims.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

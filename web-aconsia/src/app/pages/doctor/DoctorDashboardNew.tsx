@@ -23,7 +23,6 @@ import {
   Phone,
   Monitor,
   Activity,
-  Stethoscope,
   AlertCircle,
 } from "lucide-react";
 import { getDesktopSession } from "../../../core/auth/session";
@@ -45,6 +44,7 @@ export function DoctorDashboardNew() {
   const [selectedAnesthesia, setSelectedAnesthesia] = useState<string>(""); // Selected type
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [quickActionNotice, setQuickActionNotice] = useState("");
 
   const mapLoadErrorMessage = (error: unknown) => {
     const code =
@@ -147,6 +147,19 @@ export function DoctorDashboardNew() {
     navigate(`/doctor/approval?patientId=${patientId}`);
   };
 
+  const handleQuickReviewEntry = () => {
+    const firstPendingId = pendingPatients[0]?.id;
+    if (firstPendingId) {
+      setQuickActionNotice("");
+      navigate(`/doctor/approval?patientId=${firstPendingId}`);
+      return;
+    }
+    setQuickActionNotice(
+      "Belum ada pasien menunggu review. Silakan buka Kelola Pasien untuk melihat daftar pasien.",
+    );
+    navigate("/doctor/patients");
+  };
+
   // NEW: Handle assign anesthesia
   const handleAssignAnesthesia = (patient: any) => {
     setSelectedPatient(patient);
@@ -220,6 +233,14 @@ export function DoctorDashboardNew() {
           </Card>
         )}
 
+        {!isLoading && !loadError && quickActionNotice && (
+          <Card className="mb-6 border-amber-200 bg-amber-50">
+            <CardContent className="p-4 text-sm text-amber-900">
+              {quickActionNotice}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -249,7 +270,7 @@ export function DoctorDashboardNew() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate("/doctor/approval")}>
+          <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-lg transition-all cursor-pointer" onClick={handleQuickReviewEntry}>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-purple-600 rounded-lg flex items-center justify-center">
@@ -348,28 +369,28 @@ export function DoctorDashboardNew() {
                     key={patient.id}
                     className="bg-white rounded-lg p-4 border border-orange-200"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex min-w-0 items-start gap-4">
                         <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
                           <User className="w-6 h-6 text-orange-600" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <h4 className="font-semibold text-gray-900">
                             {patient.fullName}
                           </h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
                             <span>No. RM: {patient.mrn}</span>
                             <span>•</span>
                             <span>NIK: {patient.nik}</span>
                             <span>•</span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex min-w-0 items-center gap-1">
                               <Phone className="w-3 h-3" />
-                              {patient.phone}
+                              <span className="truncate">{patient.phone}</span>
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                         <Badge className="bg-orange-100 text-orange-800">
                           Menunggu Review
                         </Badge>
@@ -408,19 +429,19 @@ export function DoctorDashboardNew() {
                     key={patient.id}
                     className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex min-w-0 items-start gap-4 flex-1">
                         <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                           <User className="w-6 h-6 text-green-600" />
                         </div>
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                           <h4 className="font-semibold text-gray-900">
                             {patient.fullName}
                           </h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
                             <span>No. RM: {patient.mrn}</span>
                             <span>•</span>
-                            <span>{patient.diagnosis || "-"}</span>
+                            <span className="truncate">{patient.diagnosis || "-"}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
@@ -431,8 +452,8 @@ export function DoctorDashboardNew() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
+                      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                        <div className="text-left lg:text-right">
                           <p className="text-xs text-gray-500">Pemahaman</p>
                           <p className="text-lg font-bold text-blue-600">
                             {patient.comprehensionScore || 0}%
@@ -472,28 +493,28 @@ export function DoctorDashboardNew() {
                     key={patient.id}
                     className="bg-white rounded-lg p-4 border border-blue-200"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex min-w-0 items-start gap-4">
                         <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                           <User className="w-6 h-6 text-blue-600" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <h4 className="font-semibold text-gray-900">
                             {patient.fullName}
                           </h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
                             <span>No. RM: {patient.mrn}</span>
                             <span>•</span>
                             <span>NIK: {patient.nik}</span>
                             <span>•</span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex min-w-0 items-center gap-1">
                               <Phone className="w-3 h-3" />
-                              {patient.phone}
+                              <span className="truncate">{patient.phone}</span>
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                         <Badge className="bg-blue-100 text-blue-800">
                           Membutuhkan Anestesi
                         </Badge>

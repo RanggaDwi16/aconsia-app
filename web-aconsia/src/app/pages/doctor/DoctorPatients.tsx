@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { useNavigate } from "react-router";
 import { DoctorLayout } from "../../layouts/DoctorLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -8,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../../components/ui/badge";
 import { Progress } from "../../components/ui/progress";
 import { Button } from "../../components/ui/button";
-import { Search, Eye, TrendingUp, AlertCircle } from "lucide-react";
+import { Search, MessageCircle, TrendingUp, AlertCircle } from "lucide-react";
 import { getDesktopSession } from "../../../core/auth/session";
 import { firestore } from "../../../core/firebase/client";
 import { userMessages } from "../../copy/userMessages";
@@ -61,6 +62,7 @@ function mapPatient(docId: string, data: Record<string, unknown>): DoctorPatient
 }
 
 export function DoctorPatients() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [patients, setPatients] = useState<DoctorPatient[]>([]);
@@ -77,19 +79,59 @@ export function DoctorPatients() {
       }
 
       try {
-        const pasienQuery = query(
+        const dokterIdQuery = query(
+          collection(firestore, "pasien_profiles"),
+          where("dokterId", "==", session.uid),
+        );
+        const assignedDokterIdQuery = query(
           collection(firestore, "pasien_profiles"),
           where("assignedDokterId", "==", session.uid),
         );
-        const snapshot = await getDocs(pasienQuery);
-        const mapped = snapshot.docs.map((docSnap) =>
-          mapPatient(docSnap.id, docSnap.data() as Record<string, unknown>),
+        const [dokterIdSnapshot, assignedSnapshot] = await Promise.all([
+          getDocs(dokterIdQuery),
+          getDocs(assignedDokterIdQuery),
+        ]);
+
+        const mergedDocs = new Map<string, Record<string, unknown>>();
+        for (const docSnap of [...dokterIdSnapshot.docs, ...assignedSnapshot.docs]) {
+          mergedDocs.set(docSnap.id, docSnap.data() as Record<string, unknown>);
+        }
+
+        const mapped = Array.from(mergedDocs.entries()).map(([docId, data]) =>
+          mapPatient(docId, data),
         );
+
+        console.info("[DoctorPatients] load summary", {
+          doctor_uid: session.uid,
+          dokterIdCount: dokterIdSnapshot.size,
+          assignedDokterIdCount: assignedSnapshot.size,
+          mergedCount: mapped.length,
+        });
+
         setPatients(mapped);
         setLoadError("");
       } catch (error) {
-        console.error("[DoctorPatients] failed to load from Firestore", error);
-        setLoadError(userMessages.doctorPatients.loadError);
+        const code =
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          typeof (error as { code?: unknown }).code === "string"
+            ? String((error as { code?: string }).code)
+            : "";
+
+        console.error("[DoctorPatients] failed to load from Firestore", {
+          error,
+          code: code || "unknown",
+          doctor_uid: session.uid,
+        });
+
+        if (code === "permission-denied") {
+          setLoadError(userMessages.auth.accessDenied);
+        } else if (code === "auth/session-mismatch" || code === "unauthenticated") {
+          setLoadError(userMessages.doctorDashboard.sessionMismatch);
+        } else {
+          setLoadError(userMessages.doctorPatients.loadError);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -250,9 +292,14 @@ export function DoctorPatients() {
                           <Badge className={getStatusColor(patient.status)}>{patient.status}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm" className="gap-2" disabled>
-                            <Eye className="w-4 h-4" />
-                            Detail
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => navigate(`/doctor/chat/${patient.id}`)}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Chat
                           </Button>
                         </TableCell>
                       </TableRow>

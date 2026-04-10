@@ -16,6 +16,10 @@ abstract class DokterKontenRepository {
     required String kontenId,
   });
 
+  Future<Either<String, KontenSectionModel>> ensureSectionExistsForKonten({
+    required KontenModel konten,
+  });
+
   Future<Either<String, List<KontenModel>>> getKontenByDokterId({
     required String dokterId,
   });
@@ -36,5 +40,4 @@ abstract class DokterKontenRepository {
   Future<Either<String, int>> getKontenCountByDokterId({
     required String dokterId,
   });
-
 }

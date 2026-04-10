@@ -8,8 +8,6 @@ import { MobileLayout } from "../../layouts/MobileLayout";
 import { 
   ArrowLeft, 
   Send, 
-  Phone, 
-  Video, 
   Clock,
   CheckCheck,
   Stethoscope,
@@ -164,28 +162,6 @@ export function ContactDoctor() {
             </Badge>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 px-4 pb-3">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              onClick={() => window.open(`tel:${doctorInfo.phone}`, '_self')}
-              disabled={!doctorInfo.phone || doctorInfo.phone === "-"}
-            >
-              <Phone className="w-4 h-4 mr-2" />
-              Telepon
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              disabled
-            >
-              <Video className="w-4 h-4 mr-2" />
-              Video Call
-            </Button>
-          </div>
         </div>
 
         {/* Info Banner */}

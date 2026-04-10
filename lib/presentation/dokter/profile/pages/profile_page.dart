@@ -188,7 +188,7 @@ class ProfilePage extends HookConsumerWidget {
             ),
             const Gap(UiSpacing.sm),
             Button.outlined(
-              onPressed: () => context.showLogoutDialog(ref),
+              onPressed: () => context.showLogoutDialog(),
               label: 'Keluar',
               borderColor: UiPalette.red600,
               textColor: UiPalette.red600,

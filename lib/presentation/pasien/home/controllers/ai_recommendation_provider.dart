@@ -1,5 +1,5 @@
 import 'package:aconsia_app/core/main/data/models/konten_model.dart';
-import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
+import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_accessible_konten_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -43,10 +43,15 @@ class FetchAiRecommendations extends _$FetchAiRecommendations {
 
     // Get all konten from dokter
     final allKonten = await ref.read(
-      fetchKontenByDokterIdProvider(dokterId: pasienProfile.dokterId!).future,
+      pasienAccessibleKontenProvider(
+        PasienAccessibleKontenParams(
+          pasienId: pasienId,
+          dokterId: pasienProfile.dokterId!,
+        ),
+      ).future,
     );
 
-    if (allKonten == null || allKonten.isEmpty) {
+    if (allKonten.isEmpty) {
       return [];
     }
 
@@ -172,10 +177,15 @@ class FetchAllUnreadKonten extends _$FetchAllUnreadKonten {
 
     // Get all konten from dokter
     final allKonten = await ref.read(
-      fetchKontenByDokterIdProvider(dokterId: pasienProfile.dokterId!).future,
+      pasienAccessibleKontenProvider(
+        PasienAccessibleKontenParams(
+          pasienId: pasienId,
+          dokterId: pasienProfile.dokterId!,
+        ),
+      ).future,
     );
 
-    if (allKonten == null || allKonten.isEmpty) {
+    if (allKonten.isEmpty) {
       return [];
     }
 

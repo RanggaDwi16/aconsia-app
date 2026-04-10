@@ -1,9 +1,11 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions, logger } = require("firebase-functions/v2");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 const db = admin.firestore();
+const openAiApiKeySecret = defineSecret("OPENAI_API_KEY");
 
 setGlobalOptions({
   region: process.env.FUNCTIONS_REGION || "us-central1",
@@ -36,6 +38,149 @@ function roleRawToAuditRole(rawRole) {
 function ensureSignedIn(auth) {
   if (!auth?.uid) {
     throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+}
+
+function parseBoolean(value, fallback = false) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+  return fallback;
+}
+
+function normalizeMessageList(rawMessages) {
+  if (!Array.isArray(rawMessages)) {
+    throw new HttpsError("invalid-argument", "messages must be an array.");
+  }
+
+  if (rawMessages.length == 0 || rawMessages.length > 80) {
+    throw new HttpsError("invalid-argument", "messages length must be between 1 and 80.");
+  }
+
+  const validRoles = new Set(["system", "user", "assistant"]);
+  return rawMessages.map((item, index) => {
+    const role = String(item?.role || "").trim();
+    const content = String(item?.content || "").trim();
+
+    if (!validRoles.has(role)) {
+      throw new HttpsError("invalid-argument", `messages[${index}].role is invalid.`);
+    }
+    if (!content || content.length > 8000) {
+      throw new HttpsError("invalid-argument", `messages[${index}].content is invalid.`);
+    }
+
+    return { role, content };
+  });
+}
+
+function normalizeModel(rawModel) {
+  const model = String(rawModel || "gpt-4o-mini").trim();
+  if (!model) return "gpt-4o-mini";
+  if (model.length > 100) {
+    throw new HttpsError("invalid-argument", "model is too long.");
+  }
+  return model;
+}
+
+function normalizeMaxTokens(rawValue) {
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed)) return 500;
+  const rounded = Math.round(parsed);
+  if (rounded < 1) return 1;
+  if (rounded > 2000) return 2000;
+  return rounded;
+}
+
+function normalizeTemperature(rawValue) {
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed)) return 0.7;
+  if (parsed < 0) return 0;
+  if (parsed > 1.5) return 1.5;
+  return parsed;
+}
+
+async function callOpenAiChatCompletion({
+  apiKey,
+  messages,
+  model,
+  maxTokens,
+  temperature,
+  jsonMode,
+}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+
+  const payload = {
+    model,
+    messages,
+    max_tokens: maxTokens,
+    temperature,
+  };
+  if (jsonMode) {
+    payload.response_format = { type: "json_object" };
+  }
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    const rawText = await response.text();
+    const body = rawText ? JSON.parse(rawText) : {};
+
+    if (!response.ok) {
+      const upstreamMessage = body?.error?.message || "OpenAI request failed.";
+      if (response.status === 401 || response.status === 403) {
+        throw new HttpsError("failed-precondition", upstreamMessage, {
+          errorCode: "unauthorized",
+          statusCode: response.status,
+        });
+      }
+      if (response.status === 429) {
+        throw new HttpsError("resource-exhausted", upstreamMessage, {
+          errorCode: "rate_limited",
+          statusCode: response.status,
+        });
+      }
+      throw new HttpsError("unavailable", upstreamMessage, {
+        errorCode: "upstream_error",
+        statusCode: response.status,
+      });
+    }
+
+    const content = String(body?.choices?.[0]?.message?.content || "").trim();
+    if (!content) {
+      throw new HttpsError("internal", "OpenAI returned empty content.", {
+        errorCode: "empty_response",
+      });
+    }
+    return content;
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    if (error?.name === "AbortError") {
+      throw new HttpsError("deadline-exceeded", "OpenAI request timeout.", {
+        errorCode: "timeout",
+      });
+    }
+    logger.error("ai_gateway_upstream_exception", {
+      message: error?.message || String(error),
+    });
+    throw new HttpsError("unavailable", "AI service unavailable.", {
+      errorCode: "service_unavailable",
+    });
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -330,6 +475,91 @@ exports.rejectPasienProfile = onCall(async (request) => {
 
   return { ok: true };
 });
+
+exports.aiGatewayChat = onCall(
+  {
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    secrets: [openAiApiKeySecret],
+  },
+  async (request) => {
+    ensureSignedIn(request.auth);
+    const role = await resolveRoleRaw(request.auth);
+    if (!["pasien", "dokter", "admin"].includes(String(role))) {
+      throw new HttpsError("permission-denied", "Role is not allowed to use AI gateway.");
+    }
+
+    if (parseBoolean(process.env.AI_GATEWAY_ENABLED, true) === false) {
+      throw new HttpsError("failed-precondition", "AI gateway is disabled by configuration.", {
+        errorCode: "missing_config",
+      });
+    }
+
+    const apiKey = String(openAiApiKeySecret.value() || "").trim();
+    if (!apiKey) {
+      throw new HttpsError("failed-precondition", "OPENAI_API_KEY secret is missing.", {
+        errorCode: "missing_config",
+      });
+    }
+
+    const data = request.data || {};
+    const traceId = String(data.traceId || `${request.auth.uid}-${Date.now()}`).trim();
+    const action = String(data.action || "chat").trim();
+    const messages = normalizeMessageList(data.messages);
+    const model = normalizeModel(data.model);
+    const maxTokens = normalizeMaxTokens(data.maxTokens);
+    const temperature = normalizeTemperature(data.temperature);
+    const jsonMode = parseBoolean(data.jsonMode, false);
+
+    logger.info("ai_request_started", {
+      uid: request.auth.uid,
+      role,
+      action,
+      traceId,
+      messageCount: messages.length,
+      model,
+      jsonMode,
+      maxTokens,
+    });
+
+    try {
+      const reply = await callOpenAiChatCompletion({
+        apiKey,
+        messages,
+        model,
+        maxTokens,
+        temperature,
+        jsonMode,
+      });
+
+      logger.info("ai_request_succeeded", {
+        uid: request.auth.uid,
+        role,
+        action,
+        traceId,
+      });
+
+      return {
+        reply,
+        source: "openai_gateway",
+        errorCode: null,
+        traceId,
+      };
+    } catch (error) {
+      const errorCode = error instanceof HttpsError
+        ? (error.details?.errorCode || error.code || "service_unavailable")
+        : "service_unavailable";
+      logger.error("ai_request_failed", {
+        uid: request.auth.uid,
+        role,
+        action,
+        traceId,
+        errorCode,
+      });
+      throw error;
+    }
+  },
+);
 
 exports.setUserLifecycleStatus = onCall(async (request) => {
   ensureSignedIn(request.auth);

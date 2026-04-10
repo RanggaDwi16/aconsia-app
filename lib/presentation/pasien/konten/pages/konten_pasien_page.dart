@@ -4,14 +4,15 @@ import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
 import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
+import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
+import 'package:aconsia_app/presentation/dokter/konten/controllers/get_sections_by_konten_id/fetch_sections_by_konten_id_provider.dart';
+import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_accessible_konten_provider.dart';
+import 'package:aconsia_app/presentation/pasien/konten/controllers/material_read_progress_provider.dart';
+import 'package:aconsia_app/presentation/pasien/main/widgets/pasien_main_shell_scope.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
-import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_dokter_id/fetch_konten_by_dokter_id_provider.dart';
-import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
-import 'package:aconsia_app/presentation/pasien/home/widgets/tag_widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:aconsia_app/core/helpers/widgets/custom_search_field.dart';
-import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -59,14 +60,19 @@ class KontenPasienPage extends HookConsumerWidget {
             }
 
             final kontenAsync = ref.watch(
-              fetchKontenByDokterIdProvider(dokterId: profile.dokterId!),
+              pasienAccessibleKontenProvider(
+                PasienAccessibleKontenParams(
+                  pasienId: uid,
+                  dokterId: profile.dokterId!,
+                ),
+              ),
             );
 
             return RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(fetchPasienProfileProvider);
-                ref.invalidate(fetchKontenByDokterIdProvider);
-                ref.invalidate(fetchQuizResultByKontenProvider);
+                ref.invalidate(pasienAccessibleKontenProvider);
+                ref.invalidate(materialReadProgressMapProvider);
 
                 await Future.delayed(Duration(milliseconds: 300));
               },
@@ -83,9 +89,11 @@ class KontenPasienPage extends HookConsumerWidget {
                           AconsiaTopActionRow(
                             title: 'Konten Pembelajaran',
                             subtitle: 'Materi edukasi dari dokter Anda',
-                            trailing: IconButton(
-                              onPressed: () => context.showLogoutDialog(ref),
-                              icon: const Icon(Icons.logout_rounded),
+                            leading: IconButton(
+                              onPressed: () => PasienMainShellScope.maybeOf(
+                                context,
+                              )?.openDrawer(),
+                              icon: const Icon(Icons.menu_rounded),
                               color: UiPalette.slate600,
                             ),
                           ),
@@ -107,18 +115,6 @@ class KontenPasienPage extends HookConsumerWidget {
                             iconColor: UiPalette.blue600,
                             textColor: Color(0xFF23415F),
                           ),
-                          Gap(UiSpacing.sm),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: () => context.pushNamed(
-                                RouteName.chatAi,
-                                extra: const {'source': 'konten_pasien'},
-                              ),
-                              icon: const Icon(Icons.smart_toy_outlined),
-                              label: const Text('Buka Sesi AI Sekarang'),
-                            ),
-                          ),
                           Gap(UiSpacing.lg),
                           const AconsiaSectionTitle(
                             title: 'Materi Pembelajaran',
@@ -134,7 +130,7 @@ class KontenPasienPage extends HookConsumerWidget {
                   // 🔹 List konten dari dokter
                   kontenAsync.when(
                     data: (kontenList) {
-                      if (kontenList == null || kontenList.isEmpty) {
+                      if (kontenList.isEmpty) {
                         return SliverFillRemaining(
                           hasScrollBody: false,
                           child: Center(
@@ -145,9 +141,9 @@ class KontenPasienPage extends HookConsumerWidget {
                                     size: 64, color: Colors.grey),
                                 Gap(UiSpacing.md),
                                 Text(
-                                  'Belum ada konten tersedia',
-                                  style:
-                                      TextStyle(color: UiPalette.slate500),
+                                  'Belum ada konten published atau assignment dari dokter.',
+                                  style: TextStyle(color: UiPalette.slate500),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
@@ -177,8 +173,7 @@ class KontenPasienPage extends HookConsumerWidget {
                                 Gap(UiSpacing.md),
                                 Text(
                                   'Tidak ada konten yang cocok',
-                                  style:
-                                      TextStyle(color: UiPalette.slate500),
+                                  style: TextStyle(color: UiPalette.slate500),
                                 ),
                               ],
                             ),
@@ -200,12 +195,27 @@ class KontenPasienPage extends HookConsumerWidget {
                         },
                       );
                     },
-                    loading: () => SliverFillRemaining(
+                    loading: () => const SliverFillRemaining(
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                    error: (error, stack) => SliverFillRemaining(
+                    error: (_, __) => SliverFillRemaining(
+                      hasScrollBody: false,
                       child: Center(
-                        child: Text('Error: $error'),
+                        child: Padding(
+                          padding: const EdgeInsets.all(UiSpacing.lg),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF4F4),
+                              borderRadius: BorderRadius.circular(12),
+                              border:
+                                  Border.all(color: const Color(0xFFFECACA)),
+                            ),
+                            child: const AconsiaCardSurface(
+                              borderColor: Colors.transparent,
+                              child: _KontenErrorMessage(),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   )
@@ -213,9 +223,13 @@ class KontenPasienPage extends HookConsumerWidget {
               ),
             );
           },
-          loading: () => Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(
-            child: Text('Error: $error'),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => Center(
+            child: Text(
+              'Profil pasien belum dapat dimuat. Silakan coba lagi.',
+              style: UiTypography.bodySmall.copyWith(color: UiPalette.red600),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),
@@ -224,14 +238,45 @@ class KontenPasienPage extends HookConsumerWidget {
 
   Widget _buildKontenCard(
       BuildContext context, WidgetRef ref, String uid, KontenModel konten) {
-    final quizResultAsync = ref.watch(
-      fetchQuizResultByKontenProvider(
-        pasienId: uid,
-        kontenId: konten.id ?? '',
+    final kontenId = konten.id ?? '';
+    final sectionsAsync =
+        ref.watch(fetchSectionsByKontenIdProvider(kontenId: kontenId));
+    final totalSections = sectionsAsync.valueOrNull?.length ?? 0;
+    final progressAsync = ref.watch(
+      materialReadProgressProvider(
+        MaterialReadProgressParams(
+          pasienId: uid,
+          kontenId: kontenId,
+          totalSections: totalSections,
+        ),
       ),
     );
+    final progress = progressAsync.valueOrNull ??
+        MaterialReadProgress(
+          kontenId: kontenId,
+          totalSections: totalSections,
+          completedSectionIds: const <String>[],
+          currentSectionIndex: 0,
+        );
+    final title = (konten.judul ?? 'Judul tidak tersedia').trim();
+    final anesthesia =
+        (konten.jenisAnestesi ?? 'Jenis anestesi tidak tersedia').trim();
+    final description = (konten.indikasiTindakan ??
+            konten.resikoTindakan ??
+            'Konten edukasi dari dokter Anda')
+        .trim();
 
-    final hasCompletedQuiz = quizResultAsync.valueOrNull != null;
+    final tags = <String>[
+      progress.statusLabel,
+      if ((konten.jenisAnestesi ?? '').trim().isNotEmpty)
+        konten.jenisAnestesi!.trim(),
+      if ((konten.indikasiTindakan ?? '').trim().isNotEmpty)
+        konten.indikasiTindakan!.trim(),
+      if ((konten.resikoTindakan ?? '').trim().isNotEmpty)
+        konten.resikoTindakan!.trim(),
+    ];
+    final visibleTags = tags.take(2).toList();
+    final hiddenTagCount = tags.length - visibleTags.length;
 
     return InkWell(
       onTap: () {
@@ -242,163 +287,124 @@ class KontenPasienPage extends HookConsumerWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: UiPalette.white,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: Offset(0, 4),
+              color: const Color(0xFF0F172A).withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             )
           ],
-          border: Border.all(color: Colors.grey.shade200, width: 1),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ----------------- IMAGE BANNER -----------------
-            ClipRRect(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: konten.gambarUrl != null
-                    ? Image.network(
-                        konten.gambarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: Colors.grey.shade200,
-                          child: Icon(Icons.broken_image, size: 50),
-                        ),
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: Colors.grey.shade200,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    : Container(
-                        color: Colors.grey.shade200,
-                        child: Center(
-                          child:
-                              Icon(Icons.image, size: 48, color: Colors.grey),
-                        ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                UiSpacing.md,
+                UiSpacing.md,
+                UiSpacing.md,
+                0,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      color: UiPalette.blue600,
+                    ),
+                  ),
+                  const Gap(UiSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      anesthesia,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: UiPalette.slate500,
+                        fontWeight: FontWeight.w600,
                       ),
+                    ),
+                  ),
+                  _buildProgressBadge(progress.statusLabel),
+                ],
               ),
             ),
-
-            // ----------------- CONTENT -----------------
             Padding(
               padding: const EdgeInsets.all(UiSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Judul
                   Text(
-                    konten.judul ?? 'Judul tidak tersedia',
-                    style: TextStyle(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: UiPalette.slate900,
+                      height: 1.25,
                     ),
                   ),
-                  Gap(UiSpacing.xs),
-
-                  // Subjudul / jenis anestesi
+                  const Gap(UiSpacing.xs),
                   Text(
-                    konten.jenisAnestesi ?? 'Jenis anestesi tidak tersedia',
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: UiPalette.slate600,
+                      height: 1.35,
                     ),
                   ),
-                  Gap(UiSpacing.md),
-
-                  // ----------------- TAGS -----------------
-                  SizedBox(
-                    height: 32,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        if (hasCompletedQuiz) ...[
-                          StatusSelesaiTag(),
-                          Gap(UiSpacing.sm),
-                        ],
-                        if (konten.jenisAnestesi != null) ...[
-                          JenisAnestesiTag(text: konten.jenisAnestesi!),
-                          Gap(UiSpacing.sm),
-                        ],
-                        if (konten.tataCara != null) ...[
-                          TataCaraTag(text: konten.tataCara!),
-                          Gap(UiSpacing.sm),
-                        ],
-                        if (konten.resikoTindakan != null) ...[
-                          KomplikasiTag(text: konten.resikoTindakan!),
-                          Gap(UiSpacing.sm),
-                        ],
-                        if (konten.indikasiTindakan != null)
-                          IndikasiTindakanTag(text: konten.indikasiTindakan!),
-                      ],
-                    ),
+                  const Gap(UiSpacing.sm),
+                  Wrap(
+                    spacing: UiSpacing.xs,
+                    runSpacing: UiSpacing.xs,
+                    children: [
+                      for (final tag in visibleTags) _buildInfoTag(tag),
+                      if (hiddenTagCount > 0)
+                        _buildInfoTag('+$hiddenTagCount info'),
+                    ],
                   ),
-                  Gap(20),
-
-                  // ----------------- BUTTON -----------------
+                  const Gap(UiSpacing.md),
                   SizedBox(
                     width: double.infinity,
-                    child: hasCompletedQuiz
-                        ? OutlinedButton(
-                            onPressed: () {
-                              context.pushNamed(
-                                RouteName.detailKonten,
-                                extra: konten.id,
-                              );
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: UiPalette.blue600,
-                              side: BorderSide(
-                                  color: UiPalette.blue600, width: 1.5),
-                              padding: EdgeInsets.symmetric(
-                                vertical: UiSpacing.sm,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: Text(
-                              'Review',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15),
-                            ),
-                          )
-                        : ElevatedButton(
-                            onPressed: () {
-                              context.pushNamed(
-                                RouteName.detailKonten,
-                                extra: konten.id,
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: UiPalette.blue600,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                vertical: UiSpacing.sm,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              'Mulai',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15),
-                            ),
-                          ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.pushNamed(
+                          RouteName.detailKonten,
+                          extra: konten.id,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: UiPalette.blue600,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          vertical: UiSpacing.md - 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        progress.actionLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -406,6 +412,99 @@ class KontenPasienPage extends HookConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProgressBadge(String statusLabel) {
+    final isDone = statusLabel == 'Selesai';
+    final isReading = statusLabel == 'Sedang Dibaca';
+    final bgColor = isDone
+        ? const Color(0xFFDCFCE7)
+        : isReading
+            ? const Color(0xFFEFF6FF)
+            : const Color(0xFFFFF7ED);
+    final borderColor = isDone
+        ? const Color(0xFF86EFAC)
+        : isReading
+            ? const Color(0xFFBFDBFE)
+            : const Color(0xFFFED7AA);
+    final textColor = isDone
+        ? const Color(0xFF166534)
+        : isReading
+            ? const Color(0xFF1D4ED8)
+            : const Color(0xFF9A3412);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: borderColor),
+      ),
+      child: Text(
+        statusLabel,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoTag(String text) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 12,
+          color: UiPalette.slate700,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _KontenErrorMessage extends StatelessWidget {
+  const _KontenErrorMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.error_outline_rounded,
+          color: UiPalette.red600,
+          size: 32,
+        ),
+        const Gap(UiSpacing.sm),
+        Text(
+          'Materi belum bisa dimuat.',
+          style: UiTypography.label.copyWith(
+            color: const Color(0xFF991B1B),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const Gap(UiSpacing.xs),
+        Text(
+          'Silakan tarik layar ke bawah untuk mencoba lagi.',
+          style: UiTypography.bodySmall.copyWith(
+            color: UiPalette.slate500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

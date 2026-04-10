@@ -7,7 +7,7 @@ part of 'fetch_sections_by_konten_id_provider.dart';
 // **************************************************************************
 
 String _$fetchSectionsByKontenIdHash() =>
-    r'0ba10664e7c2dcd53d209fd660f79c155308de17';
+    r'9ec8f7ef96d575dc3dc026ec959de1c7c5de6774';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$FetchSectionsByKontenId
-    extends BuildlessAutoDisposeAsyncNotifier<List<KontenSectionModel>?> {
+    extends BuildlessAutoDisposeAsyncNotifier<List<KontenSectionModel>> {
   late final String kontenId;
 
-  FutureOr<List<KontenSectionModel>?> build({
+  FutureOr<List<KontenSectionModel>> build({
     required String kontenId,
   });
 }
@@ -45,7 +45,7 @@ const fetchSectionsByKontenIdProvider = FetchSectionsByKontenIdFamily();
 
 /// See also [FetchSectionsByKontenId].
 class FetchSectionsByKontenIdFamily
-    extends Family<AsyncValue<List<KontenSectionModel>?>> {
+    extends Family<AsyncValue<List<KontenSectionModel>>> {
   /// See also [FetchSectionsByKontenId].
   const FetchSectionsByKontenIdFamily();
 
@@ -85,7 +85,7 @@ class FetchSectionsByKontenIdFamily
 /// See also [FetchSectionsByKontenId].
 class FetchSectionsByKontenIdProvider
     extends AutoDisposeAsyncNotifierProviderImpl<FetchSectionsByKontenId,
-        List<KontenSectionModel>?> {
+        List<KontenSectionModel>> {
   /// See also [FetchSectionsByKontenId].
   FetchSectionsByKontenIdProvider({
     required String kontenId,
@@ -116,7 +116,7 @@ class FetchSectionsByKontenIdProvider
   final String kontenId;
 
   @override
-  FutureOr<List<KontenSectionModel>?> runNotifierBuild(
+  FutureOr<List<KontenSectionModel>> runNotifierBuild(
     covariant FetchSectionsByKontenId notifier,
   ) {
     return notifier.build(
@@ -142,7 +142,7 @@ class FetchSectionsByKontenIdProvider
 
   @override
   AutoDisposeAsyncNotifierProviderElement<FetchSectionsByKontenId,
-      List<KontenSectionModel>?> createElement() {
+      List<KontenSectionModel>> createElement() {
     return _FetchSectionsByKontenIdProviderElement(this);
   }
 
@@ -164,14 +164,14 @@ class FetchSectionsByKontenIdProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin FetchSectionsByKontenIdRef
-    on AutoDisposeAsyncNotifierProviderRef<List<KontenSectionModel>?> {
+    on AutoDisposeAsyncNotifierProviderRef<List<KontenSectionModel>> {
   /// The parameter `kontenId` of this provider.
   String get kontenId;
 }
 
 class _FetchSectionsByKontenIdProviderElement
     extends AutoDisposeAsyncNotifierProviderElement<FetchSectionsByKontenId,
-        List<KontenSectionModel>?> with FetchSectionsByKontenIdRef {
+        List<KontenSectionModel>> with FetchSectionsByKontenIdRef {
   _FetchSectionsByKontenIdProviderElement(super.provider);
 
   @override
