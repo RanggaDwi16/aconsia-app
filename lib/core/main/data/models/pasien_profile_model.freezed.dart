@@ -89,7 +89,17 @@ mixin _$PasienProfileModel {
   @JsonKey(name: "kontenFavoritIds")
   List<String>? get kontenFavoritIds => throw _privateConstructorUsedError;
   @JsonKey(name: "aiKeywords")
-  List<String>? get aiKeywords =>
+  List<String>? get aiKeywords => throw _privateConstructorUsedError;
+  @JsonKey(name: "assessmentCompleted")
+  bool get assessmentCompleted => throw _privateConstructorUsedError;
+  @JsonKey(name: "preOperativeAssessment")
+  Map<String, dynamic>? get preOperativeAssessment =>
+      throw _privateConstructorUsedError;
+  @JsonKey(
+      name: "preOperativeAssessmentUpdatedAt",
+      fromJson: timestampFromJson,
+      toJson: timestampToJson)
+  Timestamp? get preOperativeAssessmentUpdatedAt =>
       throw _privateConstructorUsedError; // 🔹 Gunakan converter juga di timestamp lain
   @JsonKey(
       name: "createdAt", fromJson: timestampFromJson, toJson: timestampToJson)
@@ -152,6 +162,14 @@ abstract class $PasienProfileModelCopyWith<$Res> {
       @JsonKey(name: "alamatWali") String? alamatWali,
       @JsonKey(name: "kontenFavoritIds") List<String>? kontenFavoritIds,
       @JsonKey(name: "aiKeywords") List<String>? aiKeywords,
+      @JsonKey(name: "assessmentCompleted") bool assessmentCompleted,
+      @JsonKey(name: "preOperativeAssessment")
+      Map<String, dynamic>? preOperativeAssessment,
+      @JsonKey(
+          name: "preOperativeAssessmentUpdatedAt",
+          fromJson: timestampFromJson,
+          toJson: timestampToJson)
+      Timestamp? preOperativeAssessmentUpdatedAt,
       @JsonKey(
           name: "createdAt",
           fromJson: timestampFromJson,
@@ -212,6 +230,9 @@ class _$PasienProfileModelCopyWithImpl<$Res, $Val extends PasienProfileModel>
     Object? alamatWali = freezed,
     Object? kontenFavoritIds = freezed,
     Object? aiKeywords = freezed,
+    Object? assessmentCompleted = null,
+    Object? preOperativeAssessment = freezed,
+    Object? preOperativeAssessmentUpdatedAt = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -348,6 +369,19 @@ class _$PasienProfileModelCopyWithImpl<$Res, $Val extends PasienProfileModel>
           ? _value.aiKeywords
           : aiKeywords // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      assessmentCompleted: null == assessmentCompleted
+          ? _value.assessmentCompleted
+          : assessmentCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      preOperativeAssessment: freezed == preOperativeAssessment
+          ? _value.preOperativeAssessment
+          : preOperativeAssessment // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      preOperativeAssessmentUpdatedAt: freezed ==
+              preOperativeAssessmentUpdatedAt
+          ? _value.preOperativeAssessmentUpdatedAt
+          : preOperativeAssessmentUpdatedAt // ignore: cast_nullable_to_non_nullable
+              as Timestamp?,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -406,6 +440,14 @@ abstract class _$$PasienProfileModelImplCopyWith<$Res>
       @JsonKey(name: "alamatWali") String? alamatWali,
       @JsonKey(name: "kontenFavoritIds") List<String>? kontenFavoritIds,
       @JsonKey(name: "aiKeywords") List<String>? aiKeywords,
+      @JsonKey(name: "assessmentCompleted") bool assessmentCompleted,
+      @JsonKey(name: "preOperativeAssessment")
+      Map<String, dynamic>? preOperativeAssessment,
+      @JsonKey(
+          name: "preOperativeAssessmentUpdatedAt",
+          fromJson: timestampFromJson,
+          toJson: timestampToJson)
+      Timestamp? preOperativeAssessmentUpdatedAt,
       @JsonKey(
           name: "createdAt",
           fromJson: timestampFromJson,
@@ -464,6 +506,9 @@ class __$$PasienProfileModelImplCopyWithImpl<$Res>
     Object? alamatWali = freezed,
     Object? kontenFavoritIds = freezed,
     Object? aiKeywords = freezed,
+    Object? assessmentCompleted = null,
+    Object? preOperativeAssessment = freezed,
+    Object? preOperativeAssessmentUpdatedAt = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -600,6 +645,19 @@ class __$$PasienProfileModelImplCopyWithImpl<$Res>
           ? _value._aiKeywords
           : aiKeywords // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      assessmentCompleted: null == assessmentCompleted
+          ? _value.assessmentCompleted
+          : assessmentCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      preOperativeAssessment: freezed == preOperativeAssessment
+          ? _value._preOperativeAssessment
+          : preOperativeAssessment // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      preOperativeAssessmentUpdatedAt: freezed ==
+              preOperativeAssessmentUpdatedAt
+          ? _value.preOperativeAssessmentUpdatedAt
+          : preOperativeAssessmentUpdatedAt // ignore: cast_nullable_to_non_nullable
+              as Timestamp?,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -653,6 +711,14 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
       @JsonKey(name: "alamatWali") this.alamatWali,
       @JsonKey(name: "kontenFavoritIds") final List<String>? kontenFavoritIds,
       @JsonKey(name: "aiKeywords") final List<String>? aiKeywords,
+      @JsonKey(name: "assessmentCompleted") this.assessmentCompleted = false,
+      @JsonKey(name: "preOperativeAssessment")
+      final Map<String, dynamic>? preOperativeAssessment,
+      @JsonKey(
+          name: "preOperativeAssessmentUpdatedAt",
+          fromJson: timestampFromJson,
+          toJson: timestampToJson)
+      this.preOperativeAssessmentUpdatedAt,
       @JsonKey(
           name: "createdAt",
           fromJson: timestampFromJson,
@@ -664,7 +730,8 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
           toJson: timestampToJson)
       this.updatedAt})
       : _kontenFavoritIds = kontenFavoritIds,
-        _aiKeywords = aiKeywords;
+        _aiKeywords = aiKeywords,
+        _preOperativeAssessment = preOperativeAssessment;
 
   factory _$PasienProfileModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$PasienProfileModelImplFromJson(json);
@@ -789,6 +856,27 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
     return EqualUnmodifiableListView(value);
   }
 
+  @override
+  @JsonKey(name: "assessmentCompleted")
+  final bool assessmentCompleted;
+  final Map<String, dynamic>? _preOperativeAssessment;
+  @override
+  @JsonKey(name: "preOperativeAssessment")
+  Map<String, dynamic>? get preOperativeAssessment {
+    final value = _preOperativeAssessment;
+    if (value == null) return null;
+    if (_preOperativeAssessment is EqualUnmodifiableMapView)
+      return _preOperativeAssessment;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  @JsonKey(
+      name: "preOperativeAssessmentUpdatedAt",
+      fromJson: timestampFromJson,
+      toJson: timestampToJson)
+  final Timestamp? preOperativeAssessmentUpdatedAt;
 // 🔹 Gunakan converter juga di timestamp lain
   @override
   @JsonKey(
@@ -801,7 +889,7 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
 
   @override
   String toString() {
-    return 'PasienProfileModel(uid: $uid, dokterId: $dokterId, namaLengkap: $namaLengkap, nomorTelepon: $nomorTelepon, email: $email, fotoProfilUrl: $fotoProfilUrl, noRekamMedis: $noRekamMedis, nik: $nik, tanggalLahir: $tanggalLahir, jenisKelamin: $jenisKelamin, agama: $agama, statusPernikahan: $statusPernikahan, pendidikanTerakhir: $pendidikanTerakhir, pekerjaan: $pekerjaan, alamatLengkap: $alamatLengkap, rt: $rt, rw: $rw, kelurahanDesa: $kelurahanDesa, kecamatan: $kecamatan, kotaKabupaten: $kotaKabupaten, provinsi: $provinsi, tempatLahir: $tempatLahir, jenisOperasi: $jenisOperasi, jenisAnestesi: $jenisAnestesi, klasifikasiAsa: $klasifikasiAsa, tinggiBadan: $tinggiBadan, beratBadan: $beratBadan, namaWali: $namaWali, hubunganWali: $hubunganWali, nomorHpWali: $nomorHpWali, alamatWali: $alamatWali, kontenFavoritIds: $kontenFavoritIds, aiKeywords: $aiKeywords, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'PasienProfileModel(uid: $uid, dokterId: $dokterId, namaLengkap: $namaLengkap, nomorTelepon: $nomorTelepon, email: $email, fotoProfilUrl: $fotoProfilUrl, noRekamMedis: $noRekamMedis, nik: $nik, tanggalLahir: $tanggalLahir, jenisKelamin: $jenisKelamin, agama: $agama, statusPernikahan: $statusPernikahan, pendidikanTerakhir: $pendidikanTerakhir, pekerjaan: $pekerjaan, alamatLengkap: $alamatLengkap, rt: $rt, rw: $rw, kelurahanDesa: $kelurahanDesa, kecamatan: $kecamatan, kotaKabupaten: $kotaKabupaten, provinsi: $provinsi, tempatLahir: $tempatLahir, jenisOperasi: $jenisOperasi, jenisAnestesi: $jenisAnestesi, klasifikasiAsa: $klasifikasiAsa, tinggiBadan: $tinggiBadan, beratBadan: $beratBadan, namaWali: $namaWali, hubunganWali: $hubunganWali, nomorHpWali: $nomorHpWali, alamatWali: $alamatWali, kontenFavoritIds: $kontenFavoritIds, aiKeywords: $aiKeywords, assessmentCompleted: $assessmentCompleted, preOperativeAssessment: $preOperativeAssessment, preOperativeAssessmentUpdatedAt: $preOperativeAssessmentUpdatedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -869,6 +957,14 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
                 .equals(other._kontenFavoritIds, _kontenFavoritIds) &&
             const DeepCollectionEquality()
                 .equals(other._aiKeywords, _aiKeywords) &&
+            (identical(other.assessmentCompleted, assessmentCompleted) ||
+                other.assessmentCompleted == assessmentCompleted) &&
+            const DeepCollectionEquality().equals(
+                other._preOperativeAssessment, _preOperativeAssessment) &&
+            (identical(other.preOperativeAssessmentUpdatedAt,
+                    preOperativeAssessmentUpdatedAt) ||
+                other.preOperativeAssessmentUpdatedAt ==
+                    preOperativeAssessmentUpdatedAt) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -912,6 +1008,9 @@ class _$PasienProfileModelImpl implements _PasienProfileModel {
         alamatWali,
         const DeepCollectionEquality().hash(_kontenFavoritIds),
         const DeepCollectionEquality().hash(_aiKeywords),
+        assessmentCompleted,
+        const DeepCollectionEquality().hash(_preOperativeAssessment),
+        preOperativeAssessmentUpdatedAt,
         createdAt,
         updatedAt
       ]);
@@ -972,6 +1071,14 @@ abstract class _PasienProfileModel implements PasienProfileModel {
       @JsonKey(name: "alamatWali") final String? alamatWali,
       @JsonKey(name: "kontenFavoritIds") final List<String>? kontenFavoritIds,
       @JsonKey(name: "aiKeywords") final List<String>? aiKeywords,
+      @JsonKey(name: "assessmentCompleted") final bool assessmentCompleted,
+      @JsonKey(name: "preOperativeAssessment")
+      final Map<String, dynamic>? preOperativeAssessment,
+      @JsonKey(
+          name: "preOperativeAssessmentUpdatedAt",
+          fromJson: timestampFromJson,
+          toJson: timestampToJson)
+      final Timestamp? preOperativeAssessmentUpdatedAt,
       @JsonKey(
           name: "createdAt",
           fromJson: timestampFromJson,
@@ -1087,7 +1194,20 @@ abstract class _PasienProfileModel implements PasienProfileModel {
   List<String>? get kontenFavoritIds;
   @override
   @JsonKey(name: "aiKeywords")
-  List<String>? get aiKeywords; // 🔹 Gunakan converter juga di timestamp lain
+  List<String>? get aiKeywords;
+  @override
+  @JsonKey(name: "assessmentCompleted")
+  bool get assessmentCompleted;
+  @override
+  @JsonKey(name: "preOperativeAssessment")
+  Map<String, dynamic>? get preOperativeAssessment;
+  @override
+  @JsonKey(
+      name: "preOperativeAssessmentUpdatedAt",
+      fromJson: timestampFromJson,
+      toJson: timestampToJson)
+  Timestamp?
+      get preOperativeAssessmentUpdatedAt; // 🔹 Gunakan converter juga di timestamp lain
   @override
   @JsonKey(
       name: "createdAt", fromJson: timestampFromJson, toJson: timestampToJson)

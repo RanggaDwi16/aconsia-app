@@ -125,7 +125,7 @@ export function DoctorDashboard() {
               Export Laporan PDF
             </Button>
             <Button 
-              onClick={() => navigate('/doctor/approval')} 
+              onClick={() => navigate('/doctor/patients')} 
               className="bg-orange-600 hover:bg-orange-700"
             >
               <Users className="w-4 h-4 mr-2" />

@@ -34,6 +34,16 @@ const DoctorMonitoring = lazy(() =>
     default: m.DoctorMonitoring,
   })),
 );
+const DoctorChatRoom = lazy(() =>
+  import("../pages/doctor/DoctorChatRoom").then((m) => ({
+    default: m.DoctorChatRoom,
+  })),
+);
+const DoctorChats = lazy(() =>
+  import("../pages/doctor/DoctorChats").then((m) => ({
+    default: m.DoctorChats,
+  })),
+);
 
 function doctorOnly(element: ReactElement) {
   return <RequireRole allowedRoles={["doctor", "admin"]}>{element}</RequireRole>;
@@ -71,10 +81,18 @@ export const doctorRoutes: RouteObject[] = [
   },
   {
     path: "doctor/approval-old",
-    element: <Navigate to="/doctor/approval" replace />,
+    element: <Navigate to="/doctor/patients" replace />,
   },
   {
     path: "doctor/monitoring",
     element: doctorOnly(withSuspense(<DoctorMonitoring />)),
+  },
+  {
+    path: "doctor/chat/:pasienId",
+    element: doctorOnly(withSuspense(<DoctorChatRoom />)),
+  },
+  {
+    path: "doctor/chats",
+    element: doctorOnly(withSuspense(<DoctorChats />)),
   },
 ];

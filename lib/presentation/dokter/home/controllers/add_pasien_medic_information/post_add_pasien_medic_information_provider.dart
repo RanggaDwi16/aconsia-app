@@ -15,6 +15,9 @@ class PostAddPasienMedicInformation extends _$PostAddPasienMedicInformation {
   Future<void> postAddPasienMedicInformation({
     required String pasienId,
     required PasienProfileModel profile,
+    required String diagnosis,
+    required DokterApprovalDecision decision,
+    String? rejectionReason,
     required Function(String message) onSuccess,
     required Function(String error) onError,
   }) async {
@@ -27,6 +30,9 @@ class PostAddPasienMedicInformation extends _$PostAddPasienMedicInformation {
       AddPasienMedicInformationParams(
         pasienId: pasienId,
         profile: profile,
+        diagnosis: diagnosis,
+        decision: decision,
+        rejectionReason: rejectionReason,
       ),
     );
 

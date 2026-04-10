@@ -48,6 +48,17 @@ class PasienProfileModel with _$PasienProfileModel {
     @JsonKey(name: "alamatWali") String? alamatWali,
     @JsonKey(name: "kontenFavoritIds") List<String>? kontenFavoritIds,
     @JsonKey(name: "aiKeywords") List<String>? aiKeywords,
+    @JsonKey(name: "assessmentCompleted")
+    @Default(false)
+    bool assessmentCompleted,
+    @JsonKey(name: "preOperativeAssessment")
+    Map<String, dynamic>? preOperativeAssessment,
+    @JsonKey(
+      name: "preOperativeAssessmentUpdatedAt",
+      fromJson: timestampFromJson,
+      toJson: timestampToJson,
+    )
+    Timestamp? preOperativeAssessmentUpdatedAt,
 
     // 🔹 Gunakan converter juga di timestamp lain
     @JsonKey(

@@ -13,7 +13,12 @@ import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ListActivePasienPage extends HookConsumerWidget {
-  const ListActivePasienPage({super.key});
+  final bool embeddedInMainNav;
+
+  const ListActivePasienPage({
+    super.key,
+    this.embeddedInMainNav = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,10 +44,13 @@ class ListActivePasienPage extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AconsiaTopActionRow(
-                  title: 'Review Pasien',
-                  subtitle:
-                      'Pantau pasien aktif, lakukan review data medis, dan lanjutkan edukasi.',
-                  onBack: () => Navigator.of(context).pop(),
+                  title: embeddedInMainNav ? 'Pasien Saya' : 'Review Pasien',
+                  subtitle: embeddedInMainNav
+                      ? 'Kelola daftar pasien yang terhubung dengan akun Anda.'
+                      : 'Pantau pasien aktif, lakukan review data medis, dan lanjutkan edukasi.',
+                  onBack: embeddedInMainNav
+                      ? null
+                      : () => Navigator.of(context).pop(),
                 ),
                 const Gap(UiSpacing.sm),
                 const Gap(UiSpacing.md),
@@ -147,12 +155,16 @@ class ListActivePasienPage extends HookConsumerWidget {
                           rm.contains(searchQuery.value);
                     }).toList();
                     final filteredByMode = filteredData.where((pasien) {
-                      final ready = _isMedicalReady(pasien);
+                      final status = _resolveReviewStatus(pasien);
+                      final ready = status == 'ready' ||
+                          status == 'approved' ||
+                          status == 'in_progress' ||
+                          status == 'completed';
                       switch (filterMode.value) {
                         case _ReviewFilter.all:
-                          return true;
+                          return status != 'rejected';
                         case _ReviewFilter.pending:
-                          return !ready;
+                          return status == 'pending';
                         case _ReviewFilter.ready:
                           return ready;
                       }
@@ -240,11 +252,25 @@ class ListActivePasienPage extends HookConsumerWidget {
     );
   }
 
-  bool _isMedicalReady(PasienProfileModel pasien) {
+  String _resolveReviewStatus(PasienProfileModel pasien) {
+    final preOp = pasien.preOperativeAssessment ?? const <String, dynamic>{};
+    final rawStatus = (preOp['status'] as String? ?? '').trim().toLowerCase();
+    if (rawStatus == 'rejected') return 'rejected';
+    if (rawStatus == 'pending') return 'pending';
+    if (rawStatus == 'approved' ||
+        rawStatus == 'in_progress' ||
+        rawStatus == 'ready' ||
+        rawStatus == 'completed') {
+      return rawStatus;
+    }
+
     final operasi = (pasien.jenisOperasi ?? '').trim();
     final anestesi = (pasien.jenisAnestesi ?? '').trim();
     final asa = (pasien.klasifikasiAsa ?? '').trim();
-    return operasi.isNotEmpty && anestesi.isNotEmpty && asa.isNotEmpty;
+    final medicalReady =
+        operasi.isNotEmpty && anestesi.isNotEmpty && asa.isNotEmpty;
+    if (!medicalReady) return 'pending';
+    return 'approved';
   }
 }
 

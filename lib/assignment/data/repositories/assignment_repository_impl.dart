@@ -124,4 +124,63 @@ class AssignmentRepositoryImpl implements AssignmentRepository {
       return Left(e.toString());
     }
   }
+
+  @override
+  Future<Either<String, List<KontenAssignmentModel>>> getAssignmentsByDokterAndKonten({
+    required String dokterId,
+    required String kontenId,
+  }) async {
+    try {
+      final result = await remoteDataSource.getAssignmentsByDokterAndKonten(
+        dokterId: dokterId,
+        kontenId: kontenId,
+      );
+      return result.fold(
+        (failure) => Left(failure),
+        (assignments) => Right(assignments),
+      );
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, String>> cancelAssignments({
+    required String dokterId,
+    required String kontenId,
+    required List<String> pasienIds,
+  }) async {
+    try {
+      final result = await remoteDataSource.cancelAssignments(
+        dokterId: dokterId,
+        kontenId: kontenId,
+        pasienIds: pasienIds,
+      );
+      return result.fold(
+        (failure) => Left(failure),
+        (message) => Right(message),
+      );
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, String>> cancelAllAssignmentsByKonten({
+    required String dokterId,
+    required String kontenId,
+  }) async {
+    try {
+      final result = await remoteDataSource.cancelAllAssignmentsByKonten(
+        dokterId: dokterId,
+        kontenId: kontenId,
+      );
+      return result.fold(
+        (failure) => Left(failure),
+        (message) => Right(message),
+      );
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
 }

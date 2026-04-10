@@ -18,16 +18,30 @@ class ListPasienWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isReadyForEducation = _isMedicalReady(pasien);
-    final statusText = isReadyForEducation ? 'Siap Edukasi' : 'Menunggu Review';
-    final statusColor =
-        isReadyForEducation ? const Color(0xFF22C35D) : const Color(0xFFF59E0B);
+    final reviewStatus = _resolveReviewStatus(pasien);
+    final statusText = switch (reviewStatus) {
+      'pending' => 'Menunggu Review',
+      'rejected' => 'Ditolak',
+      'ready' => 'Siap Edukasi',
+      'in_progress' => 'Proses Edukasi',
+      _ => 'Sudah Disetujui',
+    };
+    final statusColor = switch (reviewStatus) {
+      'pending' => const Color(0xFFF59E0B),
+      'rejected' => UiPalette.red600,
+      'ready' => const Color(0xFF16A34A),
+      'in_progress' => UiPalette.blue600,
+      _ => const Color(0xFF22C35D),
+    };
+    final pasienUid = (pasien.uid ?? '').trim();
 
     return InkWell(
-      onTap: () => context.pushNamed(
-        RouteName.detailPasien,
-        extra: pasien.uid,
-      ),
+      onTap: pasienUid.isEmpty
+          ? null
+          : () => context.pushNamed(
+                RouteName.detailPasien,
+                extra: pasienUid,
+              ),
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.all(UiSpacing.md),
@@ -140,10 +154,23 @@ class ListPasienWidget extends StatelessWidget {
     );
   }
 
-  bool _isMedicalReady(PasienProfileModel pasien) {
+  String _resolveReviewStatus(PasienProfileModel pasien) {
+    final preOp = pasien.preOperativeAssessment ?? const <String, dynamic>{};
+    final rawStatus = (preOp['status'] as String? ?? '').trim().toLowerCase();
+    if (rawStatus == 'pending' ||
+        rawStatus == 'approved' ||
+        rawStatus == 'in_progress' ||
+        rawStatus == 'ready' ||
+        rawStatus == 'completed' ||
+        rawStatus == 'rejected') {
+      return rawStatus;
+    }
+
     final operasi = (pasien.jenisOperasi ?? '').trim();
     final anestesi = (pasien.jenisAnestesi ?? '').trim();
     final asa = (pasien.klasifikasiAsa ?? '').trim();
-    return operasi.isNotEmpty && anestesi.isNotEmpty && asa.isNotEmpty;
+    final isMedicalReady =
+        operasi.isNotEmpty && anestesi.isNotEmpty && asa.isNotEmpty;
+    return isMedicalReady ? 'approved' : 'pending';
   }
 }

@@ -47,12 +47,14 @@ class AconsiaTopActionRow extends StatelessWidget {
     super.key,
     required this.title,
     this.onBack,
+    this.leading,
     this.trailing,
     this.subtitle,
   });
 
   final String title;
   final VoidCallback? onBack;
+  final Widget? leading;
   final Widget? trailing;
   final String? subtitle;
 
@@ -61,7 +63,10 @@ class AconsiaTopActionRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (onBack != null)
+        if (leading != null) ...[
+          leading!,
+          const Gap(UiSpacing.xs),
+        ] else if (onBack != null) ...[
           IconButton(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_rounded),
@@ -69,7 +74,8 @@ class AconsiaTopActionRow extends StatelessWidget {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
-        if (onBack != null) const Gap(UiSpacing.xs),
+          const Gap(UiSpacing.xs),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

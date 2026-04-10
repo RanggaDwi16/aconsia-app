@@ -1,6 +1,7 @@
 import 'package:aconsia_app/core/utils/assets.gen.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/presentation/dokter/home/pages/home_page.dart';
+import 'package:aconsia_app/presentation/dokter/home/pages/list_active_pasien_page.dart';
 import 'package:aconsia_app/presentation/dokter/konten/pages/konten_page.dart';
 import 'package:aconsia_app/presentation/dokter/main/controllers/selected_index_provider.dart';
 import 'package:aconsia_app/presentation/dokter/profile/pages/profile_page.dart';
@@ -17,20 +18,23 @@ class MainDokterPage extends ConsumerWidget {
 
     final List<Widget> pages = [
       HomePage(),
-      KontenPage(),
       ProfilePage(),
+      ListActivePasienPage(embeddedInMainNav: true),
+      KontenPage(),
     ];
 
     final icons = [
       [Assets.icons.icHome, Assets.icons.icHome],
-      [Assets.icons.icKonten, Assets.icons.icKonten],
       [Assets.icons.icPerson, Assets.icons.icPerson],
+      [Assets.icons.icPeoples, Assets.icons.icPeoples],
+      [Assets.icons.icKonten, Assets.icons.icKonten],
     ];
 
     final labels = [
       'Dashboard',
-      'Konten',
-      'Profil',
+      'Profil Saya',
+      'Pasien Saya',
+      'Konten Edukasi',
     ];
 
     return Scaffold(
@@ -50,11 +54,11 @@ class MainDokterPage extends ConsumerWidget {
           unselectedItemColor: UiPalette.slate400,
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 10.5,
           ),
           unselectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w500,
-            fontSize: 12,
+            fontSize: 10.5,
           ),
           onTap: (index) {
             ref.read(selectedIndexProvider.notifier).state = index;
@@ -66,9 +70,7 @@ class MainDokterPage extends ConsumerWidget {
                 isSelected ? icons[index][1].path : icons[index][0].path,
                 width: 24,
                 height: 24,
-                color: isSelected
-                    ? UiPalette.blue600
-                    : UiPalette.slate400,
+                color: isSelected ? UiPalette.blue600 : UiPalette.slate400,
               ),
               label: labels[index],
             );

@@ -46,6 +46,11 @@ _$PasienProfileModelImpl _$$PasienProfileModelImplFromJson(
       aiKeywords: (json['aiKeywords'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      assessmentCompleted: json['assessmentCompleted'] as bool? ?? false,
+      preOperativeAssessment:
+          json['preOperativeAssessment'] as Map<String, dynamic>?,
+      preOperativeAssessmentUpdatedAt:
+          timestampFromJson(json['preOperativeAssessmentUpdatedAt']),
       createdAt: timestampFromJson(json['createdAt']),
       updatedAt: timestampFromJson(json['updatedAt']),
     );
@@ -86,6 +91,10 @@ Map<String, dynamic> _$$PasienProfileModelImplToJson(
       'alamatWali': instance.alamatWali,
       'kontenFavoritIds': instance.kontenFavoritIds,
       'aiKeywords': instance.aiKeywords,
+      'assessmentCompleted': instance.assessmentCompleted,
+      'preOperativeAssessment': instance.preOperativeAssessment,
+      'preOperativeAssessmentUpdatedAt':
+          timestampToJson(instance.preOperativeAssessmentUpdatedAt),
       'createdAt': timestampToJson(instance.createdAt),
       'updatedAt': timestampToJson(instance.updatedAt),
     };

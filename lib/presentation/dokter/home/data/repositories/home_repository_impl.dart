@@ -1,6 +1,7 @@
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
 import 'package:aconsia_app/presentation/dokter/home/data/datasources/home_remote_data_source.dart';
 import 'package:aconsia_app/presentation/dokter/home/domain/repository/home_repository.dart';
+import 'package:aconsia_app/presentation/dokter/home/domain/usecases/add_pasien_medic_information.dart';
 import 'package:dartz/dartz.dart';
 
 class HomeRepositoryImpl implements HomeRepository {
@@ -26,11 +27,18 @@ class HomeRepositoryImpl implements HomeRepository {
 
   @override
   Future<Either<String, String>> addPasienMedicInformation(
-      {required String pasienId, required PasienProfileModel profile}) async {
+      {required String pasienId,
+      required PasienProfileModel profile,
+      required String diagnosis,
+      required DokterApprovalDecision decision,
+      String? rejectionReason}) async {
     try {
       final result = await remoteDataSource.addPasienMedicInformation(
         pasienId: pasienId,
         profile: profile,
+        diagnosis: diagnosis,
+        decision: decision,
+        rejectionReason: rejectionReason,
       );
       return result.fold(
         (failure) => Left(failure),

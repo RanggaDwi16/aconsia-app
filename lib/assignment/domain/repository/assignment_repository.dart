@@ -39,4 +39,20 @@ abstract class AssignmentRepository {
   Future<Either<String, double>> getCompletionPercentage({
     required String pasienId,
   });
+
+  Future<Either<String, List<KontenAssignmentModel>>> getAssignmentsByDokterAndKonten({
+    required String dokterId,
+    required String kontenId,
+  });
+
+  Future<Either<String, String>> cancelAssignments({
+    required String dokterId,
+    required String kontenId,
+    required List<String> pasienIds,
+  });
+
+  Future<Either<String, String>> cancelAllAssignmentsByKonten({
+    required String dokterId,
+    required String kontenId,
+  });
 }

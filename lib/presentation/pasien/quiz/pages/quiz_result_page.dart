@@ -11,6 +11,7 @@ import 'package:aconsia_app/core/main/data/models/konten_model.dart';
 import 'package:aconsia_app/core/main/data/models/quiz_result_model.dart';
 import 'package:aconsia_app/presentation/dokter/home/controllers/reading_session_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/ai_recommendation_provider.dart';
+import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -159,7 +160,14 @@ class QuizResultPage extends HookConsumerWidget {
                     AconsiaTopActionRow(
                       title: 'Ringkasan Sesi AI',
                       subtitle: 'Ringkasan pemahaman setelah sesi pembelajaran',
-                      onBack: () => context.pop(),
+                      onBack: () {
+                        if (GoRouter.of(context).canPop()) {
+                          context.pop();
+                          return;
+                        }
+                        ref.read(selectedIndexPasienProvider.notifier).state = 0;
+                        context.goNamed(RouteName.mainPasien);
+                      },
                     ),
                     const Gap(UiSpacing.sm),
                     _buildScoreCard(summary.value!),

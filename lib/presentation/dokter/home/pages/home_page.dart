@@ -1,3 +1,4 @@
+import 'package:aconsia_app/core/helpers/formatters/date_formatter.dart';
 import 'package:aconsia_app/core/main/data/models/pasien_profile_model.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
 import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
@@ -13,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -21,7 +21,6 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-
     final activeReaderCount = ref.watch(activeReadersCountProvider(uid ?? ''));
     final profileDokter = ref.watch(fetchDokterProfileProvider(uid: uid ?? ''));
     final totalPasien =
@@ -31,167 +30,327 @@ class HomePage extends ConsumerWidget {
 
     final dokterName = (profileDokter.value?.namaLengkap ?? 'Dokter').trim();
     final pasienItems = pasienList.valueOrNull ?? <PasienProfileModel>[];
-    final totalPasienCount = totalPasien.valueOrNull ?? pasienItems.length;
-    final pendingPatients = pasienItems.where((p) => !_isMedicalReady(p)).toList();
-    final approvedPatients = pasienItems.where(_isMedicalReady).toList();
-    final needsAnesthesia = pasienItems
-        .where((p) => (p.jenisAnestesi ?? '').trim().isEmpty)
+    final mappedPatients = pasienItems.map(_mapToDashboardPatient).toList();
+
+    final pendingPatients =
+        mappedPatients.where((p) => p.status == 'pending').toList();
+    final rejectedPatients =
+        mappedPatients.where((p) => p.status == 'rejected').toList();
+    final approvedPatients = mappedPatients
+        .where(
+          (p) =>
+              p.status == 'approved' ||
+              p.status == 'in_progress' ||
+              p.status == 'ready' ||
+              p.status == 'completed',
+        )
         .toList();
-    final comprehensionRate = 0;
+    final patientsNeedAnesthesia = mappedPatients
+        .where((p) => p.status == 'approved' && p.anesthesiaType.isEmpty)
+        .toList();
+
+    final totalCount = totalPasien.valueOrNull ?? mappedPatients.length;
+    final reviewCount = pendingPatients.length;
+    final approvedCount = approvedPatients.length;
+    final completionRate = approvedPatients.isEmpty
+        ? 0
+        : ((approvedPatients.where((p) => p.score >= 80).length /
+                    approvedPatients.length) *
+                100)
+            .round();
 
     return Scaffold(
       body: SafeArea(
         child: AconsiaPageBackground(
-        colors: const [Color(0xFFF8FAFC), UiPalette.white],
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(fetchDokterProfileProvider);
-            ref.invalidate(fetchPasienCountByDokterIdProvider);
-            ref.invalidate(fetchPasienListByDokterIdProvider);
-            ref.invalidate(activeReadersCountProvider(uid ?? ''));
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(UiSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Dashboard Dokter Anestesi',
-                  style: UiTypography.h1,
-                ),
-                const Gap(UiSpacing.xs),
-                Text(
-                  'Selamat datang, $dokterName',
-                  style: UiTypography.bodySmall,
-                ),
-                const Gap(UiSpacing.lg),
-                AconsiaInfoBanner(
-                  icon: Icons.bolt_rounded,
-                  message: activeReaderCount > 0
-                      ? '$activeReaderCount pasien sedang membaca materi saat ini'
-                      : 'Belum ada pasien yang sedang membaca materi',
-                  backgroundColor: UiPalette.blue50,
-                  borderColor: UiPalette.blue100,
-                  iconColor: UiPalette.blue600,
-                  textColor: const Color(0xFF23415F),
-                ),
-                const Gap(UiSpacing.md),
-                _quickActionCard(
-                  icon: Icons.monitor_outlined,
-                  title: 'Real-Time Monitoring',
-                  subtitle: 'Pantau progress edukasi pasien secara real-time',
-                  gradientColors: const [
-                    Color(0xFFEFF6FF),
-                    Color(0xFFE0F2FE),
-                  ],
-                  borderColor: const Color(0xFF93C5FD),
-                  iconBackgroundColor: const Color(0xFF2563EB),
-                  onTap: () => context.pushNamed(RouteName.listActivePasien),
-                ),
-                const Gap(UiSpacing.sm),
-                _quickActionCard(
-                  icon: Icons.fact_check_outlined,
-                  title: 'Review Pasien Baru',
-                  subtitle: 'Approve dan tentukan jenis anestesi pasien',
-                  trailingBadge:
-                      pendingPatients.isNotEmpty ? '${pendingPatients.length}' : null,
-                  gradientColors: const [
-                    Color(0xFFF5F3FF),
-                    Color(0xFFFCE7F3),
-                  ],
-                  borderColor: const Color(0xFFD8B4FE),
-                  iconBackgroundColor: const Color(0xFF7C3AED),
-                  onTap: () => context.pushNamed(RouteName.listActivePasien),
-                ),
-                const Gap(UiSpacing.md),
-                _buildStatsGrid(
-                  totalPasienCount: totalPasienCount,
-                  pendingCount: pendingPatients.length,
-                  approvedCount: approvedPatients.length,
-                  comprehensionRate: comprehensionRate,
-                ),
-                const Gap(UiSpacing.lg),
-                if (pendingPatients.isNotEmpty)
-                  _patientSectionCard(
-                    title:
-                        'Pasien Menunggu Review (${pendingPatients.length})',
-                    icon: Icons.schedule,
+          colors: const [Color(0xFFF8FAFC), UiPalette.white],
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(fetchDokterProfileProvider);
+              ref.invalidate(fetchPasienCountByDokterIdProvider);
+              ref.invalidate(fetchPasienListByDokterIdProvider);
+              ref.invalidate(activeReadersCountProvider(uid ?? ''));
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(UiSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dashboard Dokter Anestesi',
+                    style: UiTypography.h1.copyWith(height: 1.15),
+                  ),
+                  const Gap(UiSpacing.xxs),
+                  Text(
+                    'Selamat datang, ${dokterName.isEmpty ? 'Dokter' : dokterName}',
+                    style: UiTypography.bodySmall,
+                  ),
+                  const Gap(UiSpacing.md),
+                  _QuickActionCard(
+                    icon: Icons.monitor_outlined,
+                    title: 'Real-Time Monitoring',
+                    subtitle: activeReaderCount > 0
+                        ? '$activeReaderCount pasien sedang membaca materi'
+                        : 'Pantau progress edukasi pasien secara real-time',
+                    borderColor: const Color(0xFF93C5FD),
+                    backgroundColor: const Color(0xFFEFF6FF),
+                    iconBgColor: UiPalette.blue600,
+                    onTap: () => context.pushNamed(RouteName.listActivePasien),
+                  ),
+                  const Gap(UiSpacing.sm),
+                  _QuickActionCard(
+                    icon: Icons.fact_check_outlined,
+                    title: 'Review Pasien Baru',
+                    subtitle: 'Approve & tentukan jenis anestesi',
+                    borderColor: const Color(0xFFD8B4FE),
+                    backgroundColor: const Color(0xFFFAF5FF),
+                    iconBgColor: const Color(0xFF7E22CE),
+                    trailingBadge: reviewCount > 0 ? '$reviewCount' : null,
+                    onTap: () {
+                      final firstPending = pendingPatients.firstOrNull;
+                      if (firstPending?.uid?.isNotEmpty == true) {
+                        context.pushNamed(
+                          RouteName.detailPasien,
+                          extra: firstPending!.uid,
+                        );
+                        return;
+                      }
+                      context.pushNamed(RouteName.listActivePasien);
+                    },
+                  ),
+                  const Gap(UiSpacing.md),
+                  _StatsGrid(
+                    total: totalCount,
+                    pending: reviewCount,
+                    approved: approvedCount,
+                    completion: completionRate,
+                  ),
+                  const Gap(UiSpacing.md),
+                  _SectionCard(
+                    icon: Icons.schedule_outlined,
+                    iconColor: const Color(0xFFB45309),
+                    title: 'Pasien Menunggu Review ($reviewCount)',
                     titleColor: const Color(0xFF9A3412),
-                    cardBg: const Color(0xFFFFF7ED),
-                    cardBorder: const Color(0xFFFED7AA),
-                    patients: pendingPatients,
-                    type: _PatientSectionType.pending,
+                    borderColor: const Color(0xFFFED7AA),
+                    backgroundColor: const Color(0xFFFFF7ED),
+                    emptyLabel: 'Belum ada pasien menunggu review.',
+                    children: pendingPatients
+                        .map(
+                          (patient) => _PatientCard(
+                            patient: patient,
+                            variant: _PatientCardVariant.pending,
+                            onTapAction: () {
+                              if ((patient.uid ?? '').isEmpty) return;
+                              context.pushNamed(
+                                RouteName.detailPasien,
+                                extra: patient.uid,
+                              );
+                            },
+                          ),
+                        )
+                        .toList(),
                   ),
-                if (pendingPatients.isNotEmpty) const Gap(UiSpacing.md),
-                _patientSectionCard(
-                  title:
-                      'Pasien yang Sudah Disetujui (${approvedPatients.length})',
-                  icon: Icons.verified_outlined,
-                  titleColor: const Color(0xFF166534),
-                  cardBg: UiPalette.white,
-                  cardBorder: const Color(0xFFE2E8F0),
-                  patients: approvedPatients,
-                  type: _PatientSectionType.approved,
-                ),
-                if (needsAnesthesia.isNotEmpty) const Gap(UiSpacing.md),
-                if (needsAnesthesia.isNotEmpty)
-                  _patientSectionCard(
-                    title:
-                        'Pasien yang Membutuhkan Anestesi (${needsAnesthesia.length})',
+                  if (rejectedPatients.isNotEmpty) ...[
+                    const Gap(UiSpacing.md),
+                    _SectionCard(
+                      icon: Icons.cancel_outlined,
+                      iconColor: UiPalette.red600,
+                      title: 'Pasien Ditolak (${rejectedPatients.length})',
+                      titleColor: UiPalette.red600,
+                      borderColor: const Color(0xFFFECACA),
+                      backgroundColor: const Color(0xFFFEF2F2),
+                      emptyLabel: 'Belum ada pasien ditolak.',
+                      children: rejectedPatients
+                          .map(
+                            (patient) => _PatientCard(
+                              patient: patient,
+                              variant: _PatientCardVariant.rejected,
+                              onTapAction: () {
+                                if ((patient.uid ?? '').isEmpty) return;
+                                context.pushNamed(
+                                  RouteName.detailPasien,
+                                  extra: patient.uid,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                  const Gap(UiSpacing.md),
+                  _SectionCard(
+                    icon: Icons.verified_outlined,
+                    iconColor: const Color(0xFF166534),
+                    title: 'Pasien yang Sudah Disetujui ($approvedCount)',
+                    titleColor: const Color(0xFF166534),
+                    borderColor: const Color(0xFFD1FAE5),
+                    backgroundColor: UiPalette.white,
+                    emptyLabel: 'Belum ada data pasien untuk kategori ini.',
+                    children: approvedPatients
+                        .map(
+                          (patient) => _PatientCard(
+                            patient: patient,
+                            variant: _PatientCardVariant.approved,
+                            onTapAction: () {
+                              if ((patient.uid ?? '').isEmpty) return;
+                              context.pushNamed(
+                                RouteName.detailPasien,
+                                extra: patient.uid,
+                              );
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const Gap(UiSpacing.md),
+                  _SectionCard(
                     icon: Icons.warning_amber_rounded,
-                    titleColor: const Color(0xFF1D4ED8),
-                    cardBg: const Color(0xFFEFF6FF),
-                    cardBorder: const Color(0xFFBFDBFE),
-                    patients: needsAnesthesia,
-                    type: _PatientSectionType.needAnesthesia,
+                    iconColor: UiPalette.blue600,
+                    title:
+                        'Pasien yang Membutuhkan Anestesi (${patientsNeedAnesthesia.length})',
+                    titleColor: UiPalette.blue600,
+                    borderColor: const Color(0xFFBFDBFE),
+                    backgroundColor: const Color(0xFFEFF6FF),
+                    emptyLabel: 'Semua pasien sudah memiliki jenis anestesi.',
+                    children: patientsNeedAnesthesia
+                        .map(
+                          (patient) => _PatientCard(
+                            patient: patient,
+                            variant: _PatientCardVariant.needAnesthesia,
+                            onTapAction: () {
+                              if ((patient.uid ?? '').isEmpty) return;
+                              context.pushNamed(
+                                RouteName.detailPasien,
+                                extra: patient.uid,
+                              );
+                            },
+                          ),
+                        )
+                        .toList(),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
   }
 
-  Widget _quickActionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required List<Color> gradientColors,
-    required Color borderColor,
-    required Color iconBackgroundColor,
-    required VoidCallback onTap,
-    String? trailingBadge,
-  }) {
+  _DoctorDashboardPatient _mapToDashboardPatient(PasienProfileModel pasien) {
+    final preOp = pasien.preOperativeAssessment ?? const <String, dynamic>{};
+    final rawStatus = (preOp['status'] as String? ?? '').trim().toLowerCase();
+    final comprehension = (preOp['comprehensionScore'] is num)
+        ? (preOp['comprehensionScore'] as num).toInt().clamp(0, 100)
+        : _estimatedComprehension(pasien);
+
+    final status = _normalizeStatus(rawStatus, pasien, comprehension);
+
+    return _DoctorDashboardPatient(
+      uid: pasien.uid,
+      name: (pasien.namaLengkap ?? 'Pasien').trim().isEmpty
+          ? 'Pasien'
+          : pasien.namaLengkap!.trim(),
+      mrn: (pasien.noRekamMedis ?? '-').trim().isEmpty
+          ? '-'
+          : pasien.noRekamMedis!.trim(),
+      nik: (pasien.nik ?? '-').trim().isEmpty ? '-' : pasien.nik!.trim(),
+      phone: (pasien.nomorTelepon ?? '-').trim().isEmpty
+          ? '-'
+          : pasien.nomorTelepon!.trim(),
+      diagnosis: (pasien.jenisOperasi ?? '-').trim().isEmpty
+          ? '-'
+          : pasien.jenisOperasi!.trim(),
+      surgeryDate: _formatTanggalLahir(pasien),
+      anesthesiaType: (pasien.jenisAnestesi ?? '').trim(),
+      score: comprehension,
+      status: status,
+    );
+  }
+
+  String _normalizeStatus(
+    String rawStatus,
+    PasienProfileModel pasien,
+    int comprehension,
+  ) {
+    const allowed = {
+      'pending',
+      'approved',
+      'in_progress',
+      'ready',
+      'completed',
+      'rejected',
+    };
+    if (allowed.contains(rawStatus)) return rawStatus;
+
+    final hasOperation = (pasien.jenisOperasi ?? '').trim().isNotEmpty;
+    if (!hasOperation) return 'pending';
+    if (comprehension >= 80) return 'ready';
+    if (comprehension > 0) return 'in_progress';
+    return 'approved';
+  }
+
+  String _formatTanggalLahir(PasienProfileModel pasien) {
+    final ts = pasien.tanggalLahir;
+    if (ts == null) return '-';
+    return DateFormatter.formatDate(ts.toDate());
+  }
+
+  int _estimatedComprehension(PasienProfileModel pasien) {
+    final hasOperation = (pasien.jenisOperasi ?? '').trim().isNotEmpty;
+    final hasAnesthesia = (pasien.jenisAnestesi ?? '').trim().isNotEmpty;
+    if (hasOperation && hasAnesthesia) return 85;
+    if (hasOperation) return 60;
+    return 0;
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.borderColor,
+    required this.backgroundColor,
+    required this.iconBgColor,
+    required this.onTap,
+    this.trailingBadge,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color borderColor;
+  final Color backgroundColor;
+  final Color iconBgColor;
+  final VoidCallback onTap;
+  final String? trailingBadge;
+
+  @override
+  Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Ink(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(UiSpacing.md),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradientColors,
-          ),
-          borderRadius: BorderRadius.circular(12),
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor),
         ),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
-                color: iconBackgroundColor,
-                borderRadius: BorderRadius.circular(8),
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icon, color: UiPalette.white, size: 24),
+              child: Icon(icon, color: UiPalette.white, size: 28),
             ),
-            const Gap(UiSpacing.md),
+            const Gap(UiSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,12 +358,11 @@ class HomePage extends ConsumerWidget {
                   Text(
                     title,
                     style: UiTypography.label.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
                       color: UiPalette.slate900,
                     ),
                   ),
-                  const Gap(UiSpacing.xxs),
+                  const Gap(2),
                   Text(
                     subtitle,
                     style: UiTypography.bodySmall.copyWith(
@@ -221,360 +379,507 @@ class HomePage extends ConsumerWidget {
                   vertical: UiSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEA580C),
-                  borderRadius: BorderRadius.circular(999),
+                  color: const Color(0xFFF97316),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  trailingBadge,
-                  style: UiTypography.caption.copyWith(
+                  trailingBadge!,
+                  style: const TextStyle(
                     color: UiPalette.white,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-            const Gap(UiSpacing.xs),
-            const Icon(Icons.chevron_right_rounded, color: UiPalette.slate400),
+              )
+            else
+              const Icon(Icons.show_chart, color: UiPalette.blue600),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildStatsGrid({
-    required int totalPasienCount,
-    required int pendingCount,
-    required int approvedCount,
-    required int comprehensionRate,
-  }) {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: UiSpacing.md,
-      mainAxisSpacing: UiSpacing.md,
-      childAspectRatio: 1.25,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+class _StatsGrid extends StatelessWidget {
+  const _StatsGrid({
+    required this.total,
+    required this.pending,
+    required this.approved,
+    required this.completion,
+  });
+
+  final int total;
+  final int pending;
+  final int approved;
+  final int completion;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final cardWidth = (width - (UiSpacing.md * 2) - UiSpacing.sm) / 2;
+
+    return Wrap(
+      spacing: UiSpacing.sm,
+      runSpacing: UiSpacing.sm,
       children: [
-        _dashboardStatCard(
+        _StatCard(
+          width: cardWidth,
           title: 'Total Pasien',
-          value: '$totalPasienCount',
+          value: '$total',
           valueColor: UiPalette.slate900,
-          icon: Icons.group_outlined,
-          iconBg: UiPalette.blue50,
+          icon: Icons.groups_2_outlined,
+          iconBg: const Color(0xFFDBEAFE),
           iconColor: UiPalette.blue600,
         ),
-        _dashboardStatCard(
-          title: 'Menunggu Review',
-          value: '$pendingCount',
-          valueColor: const Color(0xFFEA580C),
-          icon: Icons.pending_actions_outlined,
+        _StatCard(
+          width: cardWidth,
+          title: 'Menunggu\nReview',
+          value: '$pending',
+          valueColor: const Color(0xFFF97316),
+          icon: Icons.schedule_outlined,
           iconBg: const Color(0xFFFFEDD5),
-          iconColor: const Color(0xFFEA580C),
+          iconColor: const Color(0xFFF97316),
         ),
-        _dashboardStatCard(
-          title: 'Sudah Disetujui',
-          value: '$approvedCount',
+        _StatCard(
+          width: cardWidth,
+          title: 'Sudah\nDisetujui',
+          value: '$approved',
           valueColor: const Color(0xFF16A34A),
           icon: Icons.verified_outlined,
           iconBg: const Color(0xFFDCFCE7),
           iconColor: const Color(0xFF16A34A),
         ),
-        _dashboardStatCard(
-          title: 'Tingkat Pemahaman',
-          value: '$comprehensionRate%',
-          valueColor: const Color(0xFF0891B2),
-          icon: Icons.trending_up_rounded,
-          iconBg: const Color(0xFFCFFAFE),
-          iconColor: const Color(0xFF0891B2),
+        _StatCard(
+          width: cardWidth,
+          title: 'Tingkat\nPemahaman',
+          value: '$completion%',
+          valueColor: UiPalette.blue600,
+          icon: Icons.trending_up,
+          iconBg: const Color(0xFFE0F2FE),
+          iconColor: UiPalette.blue600,
         ),
       ],
     );
   }
+}
 
-  Widget _dashboardStatCard({
-    required String title,
-    required String value,
-    required Color valueColor,
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-  }) {
-    return AconsiaCardSurface(
-      borderColor: const Color(0xFFE2E8F0),
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.width,
+    required this.title,
+    required this.value,
+    required this.valueColor,
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+  });
+
+  final double width;
+  final String title;
+  final String value;
+  final Color valueColor;
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(UiSpacing.md),
+      decoration: BoxDecoration(
+        color: UiPalette.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: UiTypography.bodySmall.copyWith(
+                    color: UiPalette.slate600,
+                  ),
+                ),
+                const Gap(UiSpacing.xs),
+                Text(
+                  value,
+                  style: UiTypography.h1.copyWith(
+                    fontSize: 21,
+                    color: valueColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: iconColor),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.titleColor,
+    required this.borderColor,
+    required this.backgroundColor,
+    required this.emptyLabel,
+    required this.children,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final Color titleColor;
+  final Color borderColor;
+  final Color backgroundColor;
+  final String emptyLabel;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(UiSpacing.md),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Icon(icon, color: iconColor, size: 22),
+              const Gap(UiSpacing.xs),
               Expanded(
                 child: Text(
                   title,
-                  style: UiTypography.caption,
+                  style: UiTypography.title.copyWith(
+                    fontSize: 18,
+                    color: titleColor,
+                  ),
                 ),
-              ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: iconColor, size: 20),
               ),
             ],
           ),
           const Gap(UiSpacing.sm),
-          Text(
-            value,
-            style: UiTypography.h1.copyWith(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: valueColor,
+          if (children.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: UiSpacing.sm),
+              child: Text(
+                emptyLabel,
+                style: UiTypography.body.copyWith(color: UiPalette.slate500),
+              ),
+            )
+          else
+            ...children.map(
+              (widget) => Padding(
+                padding: const EdgeInsets.only(bottom: UiSpacing.sm),
+                child: widget,
+              ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _PatientCardVariant { pending, approved, needAnesthesia, rejected }
+
+class _PatientCard extends StatelessWidget {
+  const _PatientCard({
+    required this.patient,
+    required this.variant,
+    required this.onTapAction,
+  });
+
+  final _DoctorDashboardPatient patient;
+  final _PatientCardVariant variant;
+  final VoidCallback onTapAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = _resolveUi();
+    final ctaLabel = _resolveActionLabel();
+    final badgeLabel = _resolveBadgeLabel();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(UiSpacing.md),
+      decoration: BoxDecoration(
+        color: UiPalette.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: ui.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: ui.avatarBg,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.person_outline,
+                  color: ui.avatarColor,
+                  size: 24,
+                ),
+              ),
+              const Gap(UiSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      patient.name,
+                      style: UiTypography.title.copyWith(fontSize: 17),
+                    ),
+                    const Gap(2),
+                    Wrap(
+                      spacing: UiSpacing.xs,
+                      runSpacing: 2,
+                      children: [
+                        Text('No. RM: ${patient.mrn}',
+                            style: UiTypography.caption),
+                        Text('• ${patient.diagnosis}',
+                            style: UiTypography.caption),
+                        Text('• ${patient.surgeryDate}',
+                            style: UiTypography.caption),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (variant == _PatientCardVariant.approved)
+                _ScorePill(score: patient.score),
+            ],
+          ),
+          const Gap(UiSpacing.sm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 340;
+              final badge = Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: UiSpacing.sm,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: ui.badgeBg,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badgeLabel,
+                  style: UiTypography.caption.copyWith(
+                    color: ui.badgeText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              );
+
+              final cta = SizedBox(
+                height: 36,
+                child: TextButton(
+                  onPressed: onTapAction,
+                  style: TextButton.styleFrom(
+                    foregroundColor: ui.actionColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: UiSpacing.sm,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    minimumSize: const Size(0, 36),
+                  ),
+                  child: Text(
+                    ctaLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    badge,
+                    const Gap(UiSpacing.xs),
+                    cta,
+                  ],
+                );
+              }
+
+              return Wrap(
+                spacing: UiSpacing.xs,
+                runSpacing: UiSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [badge, cta],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _patientSectionCard({
-    required String title,
-    required IconData icon,
-    required Color titleColor,
-    required Color cardBg,
-    required Color cardBorder,
-    required List<PasienProfileModel> patients,
-    required _PatientSectionType type,
-  }) {
-    return AconsiaCardSurface(
-      borderColor: cardBorder,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.all(UiSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: titleColor),
-                const Gap(UiSpacing.xs),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: UiTypography.label.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: titleColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(UiSpacing.sm),
-            if (patients.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: UiSpacing.sm),
-                child: Text(
-                  'Belum ada data pasien untuk kategori ini.',
-                  style: UiTypography.bodySmall,
-                ),
-              ),
-            ...patients.take(8).map((p) => _patientRow(p, type)),
-          ],
+  _PatientCardUi _resolveUi() {
+    switch (variant) {
+      case _PatientCardVariant.pending:
+        return const _PatientCardUi(
+          border: Color(0xFFFED7AA),
+          avatarBg: Color(0xFFFFEDD5),
+          avatarColor: Color(0xFFEA580C),
+          badgeBg: Color(0xFFFFEDD5),
+          badgeText: Color(0xFF9A3412),
+          actionColor: Color(0xFFEA580C),
+        );
+      case _PatientCardVariant.needAnesthesia:
+        return const _PatientCardUi(
+          border: Color(0xFFBFDBFE),
+          avatarBg: Color(0xFFDBEAFE),
+          avatarColor: UiPalette.blue600,
+          badgeBg: Color(0xFFDBEAFE),
+          badgeText: Color(0xFF1D4ED8),
+          actionColor: UiPalette.blue600,
+        );
+      case _PatientCardVariant.approved:
+        return const _PatientCardUi(
+          border: Color(0xFFE2E8F0),
+          avatarBg: Color(0xFFDCFCE7),
+          avatarColor: Color(0xFF16A34A),
+          badgeBg: Color(0xFFDCFCE7),
+          badgeText: Color(0xFF166534),
+          actionColor: Color(0xFF16A34A),
+        );
+      case _PatientCardVariant.rejected:
+        return const _PatientCardUi(
+          border: Color(0xFFFECACA),
+          avatarBg: Color(0xFFFEE2E2),
+          avatarColor: UiPalette.red600,
+          badgeBg: Color(0xFFFEE2E2),
+          badgeText: UiPalette.red600,
+          actionColor: UiPalette.red600,
+        );
+    }
+  }
+
+  String _resolveActionLabel() {
+    switch (variant) {
+      case _PatientCardVariant.pending:
+        return 'Review Sekarang';
+      case _PatientCardVariant.needAnesthesia:
+        return 'Assign Anestesi';
+      case _PatientCardVariant.approved:
+        return 'Lihat Detail';
+      case _PatientCardVariant.rejected:
+        return 'Lihat Alasan';
+    }
+  }
+
+  String _resolveBadgeLabel() {
+    if (variant == _PatientCardVariant.pending) return 'Menunggu Review';
+    if (variant == _PatientCardVariant.needAnesthesia) {
+      return 'Membutuhkan Anestesi';
+    }
+    if (variant == _PatientCardVariant.rejected) return 'Ditolak';
+    if (patient.score >= 80) return 'Siap TTD';
+    return 'Belajar';
+  }
+}
+
+class _PatientCardUi {
+  const _PatientCardUi({
+    required this.border,
+    required this.avatarBg,
+    required this.avatarColor,
+    required this.badgeBg,
+    required this.badgeText,
+    required this.actionColor,
+  });
+
+  final Color border;
+  final Color avatarBg;
+  final Color avatarColor;
+  final Color badgeBg;
+  final Color badgeText;
+  final Color actionColor;
+}
+
+class _ScorePill extends StatelessWidget {
+  const _ScorePill({required this.score});
+
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    final isGood = score >= 80;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isGood ? const Color(0xFFDCFCE7) : const Color(0xFFDBEAFE),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$score%',
+        style: UiTypography.caption.copyWith(
+          fontWeight: FontWeight.w700,
+          color: isGood ? const Color(0xFF166534) : const Color(0xFF1D4ED8),
         ),
       ),
     );
   }
-
-  Widget _patientRow(PasienProfileModel pasien, _PatientSectionType type) {
-    return Builder(
-      builder: (context) {
-        final nama = (pasien.namaLengkap ?? 'Pasien').trim();
-        final noRm = (pasien.noRekamMedis ?? '-').trim();
-        final nik = (pasien.nik ?? '-').trim();
-        final phone = (pasien.nomorTelepon ?? '-').trim();
-        final operasi = (pasien.jenisOperasi ?? '-').trim();
-        final tgl = _formatTanggalLahir(pasien);
-        final isPending = type == _PatientSectionType.pending;
-        final isNeedAnes = type == _PatientSectionType.needAnesthesia;
-        final comprehension = _estimatedComprehension(pasien);
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: UiSpacing.sm),
-          padding: const EdgeInsets.all(UiSpacing.sm),
-          decoration: BoxDecoration(
-            color: UiPalette.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isPending
-                  ? const Color(0xFFFED7AA)
-                  : isNeedAnes
-                      ? const Color(0xFFBFDBFE)
-                      : const Color(0xFFE2E8F0),
-            ),
-          ),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isPending
-                          ? const Color(0xFFFFEDD5)
-                          : isNeedAnes
-                              ? const Color(0xFFE0F2FE)
-                              : const Color(0xFFDCFCE7),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Icon(
-                      Icons.person_outline,
-                      color: isPending
-                          ? const Color(0xFFEA580C)
-                          : isNeedAnes
-                              ? const Color(0xFF2563EB)
-                              : const Color(0xFF16A34A),
-                    ),
-                  ),
-                  const Gap(UiSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nama.isEmpty ? 'Pasien' : nama,
-                          style: UiTypography.label.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: UiPalette.slate900,
-                          ),
-                        ),
-                        const Gap(UiSpacing.xxs),
-                        Text(
-                          isPending
-                              ? 'No. RM: $noRm • NIK: $nik • $phone'
-                              : 'No. RM: $noRm • $operasi • $tgl',
-                          style: UiTypography.caption,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!isPending && !isNeedAnes)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '$comprehension%',
-                          style: UiTypography.title.copyWith(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: UiPalette.blue600,
-                          ),
-                        ),
-                        const Gap(UiSpacing.xxs),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: UiSpacing.xs,
-                            vertical: UiSpacing.xxs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: comprehension >= 80
-                                ? const Color(0xFFDCFCE7)
-                                : const Color(0xFFDBEAFE),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            comprehension >= 80 ? 'Siap TTD' : 'Belajar',
-                            style: UiTypography.caption.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: comprehension >= 80
-                                  ? const Color(0xFF166534)
-                                  : const Color(0xFF1D4ED8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-              if (isPending || isNeedAnes) ...[
-                const Gap(UiSpacing.sm),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: UiSpacing.xs,
-                        vertical: UiSpacing.xxs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isPending
-                            ? const Color(0xFFFFEDD5)
-                            : const Color(0xFFDBEAFE),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        isPending
-                            ? 'Menunggu Review'
-                            : 'Membutuhkan Anestesi',
-                        style: UiTypography.caption.copyWith(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isPending
-                              ? const Color(0xFF9A3412)
-                              : const Color(0xFF1D4ED8),
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => context.pushNamed(
-                        RouteName.detailPasien,
-                        extra: pasien.uid,
-                      ),
-                      child: Text(
-                        isPending ? 'Review Sekarang' : 'Assign Anestesi',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _formatTanggalLahir(PasienProfileModel pasien) {
-    final ts = pasien.tanggalLahir;
-    if (ts == null) return '-';
-    return DateFormat('dd MMM yyyy', 'id_ID').format(ts.toDate());
-  }
-
-  int _estimatedComprehension(PasienProfileModel pasien) {
-    final hasCore = _isMedicalReady(pasien);
-    final hasPhone = (pasien.nomorTelepon ?? '').trim().isNotEmpty;
-    if (hasCore && hasPhone) return 85;
-    if (hasCore) return 70;
-    return 0;
-  }
-
-  bool _isMedicalReady(PasienProfileModel pasien) {
-    final operasi = (pasien.jenisOperasi ?? '').trim();
-    final anestesi = (pasien.jenisAnestesi ?? '').trim();
-    final asa = (pasien.klasifikasiAsa ?? '').trim();
-    return operasi.isNotEmpty && anestesi.isNotEmpty && asa.isNotEmpty;
-  }
 }
 
-enum _PatientSectionType {
-  pending,
-  approved,
-  needAnesthesia,
+class _DoctorDashboardPatient {
+  const _DoctorDashboardPatient({
+    required this.uid,
+    required this.name,
+    required this.mrn,
+    required this.nik,
+    required this.phone,
+    required this.diagnosis,
+    required this.surgeryDate,
+    required this.anesthesiaType,
+    required this.score,
+    required this.status,
+  });
+
+  final String? uid;
+  final String name;
+  final String mrn;
+  final String nik;
+  final String phone;
+  final String diagnosis;
+  final String surgeryDate;
+  final String anesthesiaType;
+  final int score;
+  final String status;
+}
+
+extension<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }

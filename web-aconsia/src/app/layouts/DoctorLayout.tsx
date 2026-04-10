@@ -1,6 +1,13 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { LayoutDashboard, User, Users, FileText, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  User,
+  Users,
+  FileText,
+  MessageCircle,
+  LogOut,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { signOutDesktop } from "../../core/auth/service";
 import { getDesktopSession } from "../../core/auth/session";
@@ -52,9 +59,22 @@ export function DoctorLayout({ children }: DoctorLayoutProps) {
       label: "Konten Edukasi",
       path: "/doctor/content",
     },
+    {
+      icon: MessageCircle,
+      label: "Chat Pasien",
+      path: "/doctor/chats",
+    },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === "/doctor/chats") {
+      return (
+        location.pathname === "/doctor/chats" ||
+        location.pathname.startsWith("/doctor/chat/")
+      );
+    }
+    return location.pathname === path;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

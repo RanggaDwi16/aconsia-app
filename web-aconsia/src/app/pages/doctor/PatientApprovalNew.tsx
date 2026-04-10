@@ -36,6 +36,32 @@ export function PatientApprovalNew() {
     surgeryType: "",
     anesthesiaType: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toSafeText = (value: unknown): string => {
+    if (typeof value !== "string") return "-";
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : "-";
+  };
+
+  const formatDateSafe = (value: unknown): string => {
+    if (!value) return "-";
+    const date = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const goBackToDoctorContext = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate("/doctor/dashboard");
+  };
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -77,12 +103,14 @@ export function PatientApprovalNew() {
   };
 
   const handleApprove = async () => {
+    if (!patient?.id || isSubmitting) return;
     if (!medicalData.diagnosis || !medicalData.surgeryType || !medicalData.anesthesiaType) {
       alert("Mohon lengkapi semua data medis!");
       return;
     }
 
     try {
+      setIsSubmitting(true);
       await approvePatient({
         pasienId: patient.id,
         diagnosis: medicalData.diagnosis,
@@ -92,7 +120,7 @@ export function PatientApprovalNew() {
 
       alert(
         `✅ PASIEN BERHASIL DISETUJUI!\n\n` +
-          `Nama: ${patient.fullName}\n` +
+          `Nama: ${toSafeText(patient.fullName)}\n` +
           `Diagnosis: ${medicalData.diagnosis}\n` +
           `Jenis Anestesi: ${medicalData.anesthesiaType}`,
       );
@@ -102,13 +130,17 @@ export function PatientApprovalNew() {
       console.error("[PatientApproval] Approve failed", error);
       alert(userMessages.patientApproval.approveError);
       return;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleReject = async () => {
+    if (!patient?.id || isSubmitting) return;
     if (!confirm("Yakin ingin menolak pasien ini?")) return;
 
     try {
+      setIsSubmitting(true);
       await rejectPatient({ pasienId: patient.id });
 
       alert("Pasien ditolak.");
@@ -118,6 +150,8 @@ export function PatientApprovalNew() {
       console.error("[PatientApproval] Reject failed", error);
       alert(userMessages.patientApproval.rejectError);
       return;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -136,17 +170,28 @@ export function PatientApprovalNew() {
   }
 
   if (loadError) {
+    const isMissingPatientId = !patientId;
     return (
       <DoctorLayout>
         <div className="p-8">
           <Card className="border-red-200">
             <CardContent className="p-8 text-center">
               <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2 text-red-700">Gagal Memuat Data</h3>
+              <h3 className="text-xl font-bold mb-2 text-red-700">
+                {isMissingPatientId ? "Pilih Pasien Untuk Direview" : "Gagal Memuat Data"}
+              </h3>
               <p className="text-gray-600 mb-4">{loadError}</p>
-              <Button onClick={() => navigate("/doctor/dashboard")}>
-                Kembali ke Dashboard
-              </Button>
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/doctor/patients")}
+                >
+                  Lihat Daftar Pasien
+                </Button>
+                <Button onClick={() => navigate("/doctor/dashboard")}>
+                  Kembali ke Dashboard
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -179,7 +224,7 @@ export function PatientApprovalNew() {
         <div className="mb-6 flex items-center gap-4">
           <Button
             variant="outline"
-            onClick={() => navigate("/doctor/dashboard")}
+            onClick={goBackToDoctorContext}
             className="border-gray-300"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -207,43 +252,43 @@ export function PatientApprovalNew() {
               <CardContent className="pt-4 space-y-3">
                 <div>
                   <p className="text-xs text-gray-500">Nama Lengkap</p>
-                  <p className="font-semibold text-gray-900">{patient.fullName}</p>
+                  <p className="font-semibold text-gray-900">{toSafeText(patient.fullName)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">No. Rekam Medis</p>
-                  <p className="font-semibold text-blue-600">{patient.mrn}</p>
+                  <p className="font-semibold text-blue-600">{toSafeText(patient.mrn)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">NIK</p>
-                  <p className="font-medium text-gray-900">{patient.nik}</p>
+                  <p className="font-medium text-gray-900">{toSafeText(patient.nik)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Tanggal Lahir</p>
-                  <p className="font-medium text-gray-900">
-                    {new Date(patient.dateOfBirth).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </p>
+                  <p className="font-medium text-gray-900">{formatDateSafe(patient.dateOfBirth)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Umur</p>
-                  <p className="font-medium text-gray-900">{patient.age} tahun</p>
+                  <p className="font-medium text-gray-900">
+                    {typeof patient.age === "number" ? `${patient.age} tahun` : "-"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Jenis Kelamin</p>
                   <p className="font-medium text-gray-900">
-                    {patient.gender === "male" ? "Laki-laki" : "Perempuan"}
+                    {patient.gender === "male"
+                      ? "Laki-laki"
+                      : patient.gender === "female"
+                        ? "Perempuan"
+                        : "-"}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">No. Telepon</p>
-                  <p className="font-medium text-gray-900">{patient.phone}</p>
+                  <p className="font-medium text-gray-900">{toSafeText(patient.phone)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Alamat</p>
-                  <p className="text-sm text-gray-900">{patient.address}</p>
+                  <p className="text-sm text-gray-900">{toSafeText(patient.address)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -260,38 +305,36 @@ export function PatientApprovalNew() {
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <p className="text-xs text-gray-500">Tinggi</p>
-                    <p className="font-semibold text-gray-900">{patient.height} cm</p>
+                    <p className="font-semibold text-gray-900">
+                      {typeof patient.height === "number" ? `${patient.height} cm` : "-"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Berat</p>
-                    <p className="font-semibold text-gray-900">{patient.weight} kg</p>
+                    <p className="font-semibold text-gray-900">
+                      {typeof patient.weight === "number" ? `${patient.weight} kg` : "-"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Gol. Darah</p>
-                    <Badge className="bg-red-100 text-red-800">{patient.bloodType}</Badge>
+                    <Badge className="bg-red-100 text-red-800">{toSafeText(patient.bloodType)}</Badge>
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Alergi</p>
-                  <p className="text-sm text-gray-900">{patient.allergies || "Tidak ada"}</p>
+                  <p className="text-sm text-gray-900">{toSafeText(patient.allergies)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Riwayat Penyakit</p>
-                  <p className="text-sm text-gray-900">
-                    {patient.medicalHistory || "Tidak ada"}
-                  </p>
+                  <p className="text-sm text-gray-900">{toSafeText(patient.medicalHistory)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Obat Saat Ini</p>
-                  <p className="text-sm text-gray-900">
-                    {patient.currentMedications || "Tidak ada"}
-                  </p>
+                  <p className="text-sm text-gray-900">{toSafeText(patient.currentMedications)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Riwayat Anestesi</p>
-                  <p className="text-sm text-gray-900">
-                    {patient.previousAnesthesia || "Belum pernah"}
-                  </p>
+                  <p className="text-sm text-gray-900">{toSafeText(patient.previousAnesthesia)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -422,14 +465,16 @@ export function PatientApprovalNew() {
                   <div className="flex gap-4 pt-6 border-t">
                     <Button
                       onClick={handleApprove}
+                      disabled={isSubmitting}
                       className="flex-1 bg-green-600 hover:bg-green-700 h-12 text-base"
                     >
                       <CheckCircle className="w-5 h-5 mr-2" />
-                      Setujui & Aktifkan Edukasi
+                      {isSubmitting ? "Memproses..." : "Setujui & Aktifkan Edukasi"}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={handleReject}
+                      disabled={isSubmitting}
                       className="border-red-300 text-red-600 hover:bg-red-50 h-12 text-base"
                     >
                       Tolak

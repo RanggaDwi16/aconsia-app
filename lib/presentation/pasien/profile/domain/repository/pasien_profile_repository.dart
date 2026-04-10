@@ -46,4 +46,10 @@ abstract class PasienProfileRepository {
   Future<Either<String, bool>> checkProfileExists({required String uid});
 
   Future<Either<String, List<DokterProfileModel>>> getAllDokterOptions();
+
+  Future<Either<String, String>> submitPreOperativeAssessment({
+    required String uid,
+    required String asaStatusSnapshot,
+    required Map<String, dynamic> assessmentData,
+  });
 }

@@ -8,9 +8,7 @@ part 'fetch_sections_by_konten_id_provider.g.dart';
 @riverpod
 class FetchSectionsByKontenId extends _$FetchSectionsByKontenId {
   @override
-  FutureOr<List<KontenSectionModel>?> build({required String kontenId}) async {
-    state = const AsyncLoading();
-
+  FutureOr<List<KontenSectionModel>> build({required String kontenId}) async {
     GetSectionsByKontenId getSectionsByKontenId =
         ref.read(getSectionsByKontenIdProvider);
 
@@ -19,14 +17,8 @@ class FetchSectionsByKontenId extends _$FetchSectionsByKontenId {
     );
 
     return result.fold(
-      (failure) {
-        state = AsyncError(failure, StackTrace.current);
-        return null;
-      },
-      (sections) {
-        state = AsyncData(sections);
-        return sections;
-      },
+      (failure) => throw Exception(failure),
+      (sections) => sections,
     );
   }
 }

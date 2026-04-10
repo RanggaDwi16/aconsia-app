@@ -6,7 +6,7 @@ import 'package:aconsia_app/presentation/dokter/main/controllers/selected_index_
 import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toastification/toastification.dart';
 
 extension BuildContextExt on BuildContext {
@@ -184,11 +184,14 @@ extension BuildContextExt on BuildContext {
     );
   }
 
-  Future<bool?> showLogoutDialog(WidgetRef ref) {
+  Future<bool?> showLogoutDialog() {
+    final rootContext = this;
     return showDialog<bool>(
-      context: this,
+      context: rootContext,
       barrierDismissible: true,
-      builder: (context) {
+      builder: (dialogContext) {
+        bool isSubmitting = false;
+
         return Dialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -216,63 +219,115 @@ extension BuildContextExt on BuildContext {
                   style: TextStyle(fontSize: 14, color: Colors.black54),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: const Color(
-                              0xFF5A6A78), // dark gray-like background
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                StatefulBuilder(
+                  builder: (context, setDialogState) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.of(dialogContext).pop(false),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: const Color(
+                                  0xFF5A6A78), // dark gray-like background
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
                         ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w600),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    setDialogState(() {
+                                      isSubmitting = true;
+                                    });
+
+                                    final container = ProviderScope.containerOf(
+                                      dialogContext,
+                                      listen: false,
+                                    );
+
+                                    await container
+                                        .read(authenticationProvider.notifier)
+                                        .logout(
+                                      onSuccess: (_) async {
+                                        final tokenManager = await container
+                                            .read(tokenManagerProvider.future);
+                                        await tokenManager.clearUserSession();
+                                        container
+                                            .read(
+                                                selectedIndexProvider.notifier)
+                                            .state = 0;
+                                        container
+                                            .read(selectedIndexPasienProvider
+                                                .notifier)
+                                            .state = 0;
+
+                                        if (dialogContext.mounted &&
+                                            Navigator.of(dialogContext)
+                                                .canPop()) {
+                                          Navigator.of(dialogContext).pop(true);
+                                        }
+
+                                        if (!rootContext.mounted) return;
+                                        rootContext.goNamed(RouteName.welcome);
+                                        rootContext.showSuccessDialog(
+                                          rootContext,
+                                          'Berhasil Logout',
+                                        );
+                                      },
+                                      onError: (error) {
+                                        if (!rootContext.mounted) return;
+                                        rootContext.showErrorSnackbar(
+                                          rootContext,
+                                          'Gagal Logout: $error',
+                                        );
+                                      },
+                                    );
+
+                                    if (dialogContext.mounted) {
+                                      setDialogState(() {
+                                        isSubmitting = false;
+                                      });
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.primaryRed,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Yes, Log Out',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          ref.read(authenticationProvider.notifier).logout(
-                            onSuccess: (message) async {
-                              final tokenManager =
-                                  await ref.read(tokenManagerProvider.future);
-                              await tokenManager.clearUserSession();
-                              ref.read(selectedIndexProvider.notifier).state =
-                                  0;
-                              ref
-                                  .read(selectedIndexPasienProvider.notifier)
-                                  .state = 0;
-                              context.goNamed(RouteName.welcome);
-                              context.showSuccessDialog(
-                                  context, 'Berhasil Logout');
-                            },
-                            onError: (error) {
-                              context.showErrorSnackbar(
-                                  context, 'Gagal Logout: $error');
-                            },
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColor.primaryRed,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          'Yes, Log Out',
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -281,7 +336,6 @@ extension BuildContextExt on BuildContext {
       },
     );
   }
-
 
   Future<void> showSuccessEditDialog({
     String title = 'Profile Berhasil Di Update',

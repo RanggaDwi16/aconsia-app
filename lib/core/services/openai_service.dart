@@ -1,25 +1,75 @@
+import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'openai_service.g.dart';
 
 /// OpenAI Service using free tier gpt-4o-mini
 /// Handles quiz generation, chat, and comprehension analysis
+class AiUnavailableError implements Exception {
+  final String userMessage;
+  final int? statusCode;
+  final String reason;
+
+  const AiUnavailableError({
+    required this.userMessage,
+    required this.reason,
+    this.statusCode,
+  });
+
+  @override
+  String toString() => userMessage;
+}
+
 class OpenAIService {
-  static const String _baseUrl = 'https://api.openai.com/v1/chat/completions';
-  final String _apiKey;
-  final bool _useMockMode;
+  final String _aiProvider;
+  final bool _mockOnlyActive;
 
   OpenAIService()
-      : _apiKey = dotenv.env['OPENAI_API_KEY'] ?? '',
-        _useMockMode = dotenv.env['USE_MOCK_AI'] == 'true' {
-    // Debug logging
-    print(
-        '🔑 OpenAI API Key loaded: ${_apiKey.isNotEmpty ? "YES (${_apiKey.substring(0, 10)}...)" : "NO"}');
-    print('🤖 Mock Mode: $_useMockMode');
-    print('📝 USE_MOCK_AI env value: ${dotenv.env['USE_MOCK_AI']}');
+      : _aiProvider = (dotenv.env['AI_PROVIDER'] ?? 'mock_local').trim(),
+        _mockOnlyActive = true {
+    debugPrint(
+      '[AI] OpenAIService initialized | mockModeActive=$_mockOnlyActive | provider=${(dotenv.env['AI_PROVIDER'] ?? 'mock_local')}',
+    );
+  }
+
+  Map<String, dynamic> diagnostics() {
+    return {
+      'mockModeActive': _mockOnlyActive,
+      'source': 'mock_local',
+      'provider': _aiProvider.isEmpty ? 'mock_local' : _aiProvider,
+      'apiKeyPresent': false,
+      'openAiReady': false,
+    };
+  }
+
+  void _trackEvent(
+    String event, {
+    Map<String, dynamic>? metadata,
+  }) {
+    final safeMeta = metadata ?? const <String, dynamic>{};
+    debugPrint('[AI_EVENT] $event | meta=$safeMeta');
+  }
+
+  Future<String> _callGatewayChat({
+    required String action,
+    required List<Map<String, String>> messages,
+    String model = 'gpt-4o-mini',
+    int maxTokens = 500,
+    double temperature = 0.7,
+    bool jsonMode = false,
+  }) async {
+    _trackEvent(
+      'chat_fallback_used',
+      metadata: {'mode': 'mock', 'reason': 'mock_mode_active'},
+    );
+    throw const AiUnavailableError(
+      userMessage:
+          'Mode AI saat ini dikunci ke mock lokal (gratis penuh), tidak ada panggilan jaringan.',
+      reason: 'mock_mode_active',
+    );
   }
 
   /// Generate quiz questions based on konten sections
@@ -31,7 +81,7 @@ class OpenAIService {
     int questionCount = 5,
   }) async {
     // Mock mode for development without OpenAI API
-    if (_useMockMode) {
+    if (_mockOnlyActive) {
       return _generateMockQuestions(
         kontenTitle,
         questionCount,
@@ -85,7 +135,7 @@ Format response JSON:
     } catch (e) {
       // If API error, return mock data instead of crashing
       if (e.toString().contains('quota') || e.toString().contains('401')) {
-        print('⚠️ OpenAI API quota exceeded, using mock data');
+        debugPrint('⚠️ OpenAI API quota exceeded, using mock data');
         return _generateMockQuestions(
           kontenTitle,
           questionCount,
@@ -105,7 +155,7 @@ Format response JSON:
     required List<String> keyPoints,
   }) async {
     // Mock mode for development
-    if (_useMockMode) {
+    if (_mockOnlyActive) {
       return _generateMockEvaluation(userAnswer);
     }
 
@@ -153,7 +203,7 @@ Format response JSON (PENTING: score harus number, bukan string):
     } catch (e) {
       // If API error, return mock evaluation
       if (e.toString().contains('quota') || e.toString().contains('401')) {
-        print('⚠️ OpenAI API quota exceeded, using mock evaluation');
+        debugPrint('⚠️ OpenAI API quota exceeded, using mock evaluation');
         return _generateMockEvaluation(userAnswer);
       }
       throw Exception('Gagal evaluate answer: $e');
@@ -167,7 +217,7 @@ Format response JSON (PENTING: score harus number, bukan string):
     required List<Map<String, dynamic>> quizResults,
   }) async {
     // Mock mode for development
-    if (_useMockMode) {
+    if (_mockOnlyActive) {
       return _generateMockSummary(kontenTitle, quizResults);
     }
 
@@ -241,8 +291,16 @@ Format response JSON:
     required List<Map<String, String>> conversationHistory,
   }) async {
     // Mock mode for development
-    if (_useMockMode) {
-      return _generateMockChatResponse(message, sectionTitles);
+    if (_mockOnlyActive) {
+      _trackEvent(
+        'chat_fallback_used',
+        metadata: {'mode': 'mock', 'reason': 'mock_mode_active'},
+      );
+      return _generateMockChatResponse(
+        message,
+        sectionTitles,
+        conversationHistory,
+      );
     }
 
     try {
@@ -346,59 +404,35 @@ Ingat: Kamu GURU yang MENGETES, bukan asisten yang menunggu! Aktif quiz pasien t
         {'role': 'user', 'content': message},
       ];
 
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
-        },
-        body: json.encode({
-          'model': 'gpt-4o-mini',
-          'messages': messages,
-          'max_tokens': 200, // Reduced drastically to force short responses
-          'temperature':
-              0.9, // Higher for more natural, conversational responses
-        }),
+      return await _callGatewayChat(
+        action: 'send_free_chat_message',
+        messages: messages,
+        model: 'gpt-4o-mini',
+        maxTokens: 200,
+        temperature: 0.9,
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['choices'][0]['message']['content'];
-      } else if (response.statusCode == 429) {
-        // Rate limit hit - wait and retry once
-        print('⚠️ Rate limit hit, waiting 3 seconds and retrying...');
-        await Future.delayed(Duration(seconds: 3));
-
-        // Retry once
-        final retryResponse = await http.post(
-          Uri.parse(_baseUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $_apiKey',
-          },
-          body: json.encode({
-            'model': 'gpt-3.5-turbo',
-            'messages': messages,
-            'max_tokens': 200,
-            'temperature': 0.9,
-          }),
-        );
-
-        if (retryResponse.statusCode == 200) {
-          final data = json.decode(retryResponse.body);
-          return data['choices'][0]['message']['content'];
-        } else {
-          throw Exception(
-              'Rate limit masih aktif. Tunggu 1 menit lalu coba lagi.');
-        }
-      } else {
-        throw Exception('OpenAI API error: ${response.statusCode}');
-      }
+    } on AiUnavailableError {
+      rethrow;
+    } on TimeoutException {
+      _trackEvent(
+        'chat_send_failed',
+        metadata: {'reason': 'timeout'},
+      );
+      throw const AiUnavailableError(
+        userMessage:
+            'Permintaan ke AI timeout. Periksa koneksi internet lalu coba lagi.',
+        reason: 'timeout',
+      );
     } catch (e) {
-      // If API error, throw exception instead of returning mock
-      print('❌ OpenAI API Error: $e');
-      throw Exception(
-          'Gagal menghubungi AI. Cek koneksi internet dan coba lagi.');
+      _trackEvent(
+        'chat_send_failed',
+        metadata: {'reason': 'gateway_or_unknown'},
+      );
+      throw const AiUnavailableError(
+        userMessage:
+            'Gagal menghubungi AI. Periksa koneksi internet dan coba lagi.',
+        reason: 'service_unavailable',
+      );
     }
   }
 
@@ -409,7 +443,7 @@ Ingat: Kamu GURU yang MENGETES, bukan asisten yang menunggu! Aktif quiz pasien t
     required List<Map<String, String>> conversationHistory,
   }) async {
     // Mock mode for development
-    if (_useMockMode) {
+    if (_mockOnlyActive) {
       return _generateMockChatSummary(kontenTitle, conversationHistory);
     }
 
@@ -467,13 +501,19 @@ Format response JSON:
       if (e.toString().contains('Rate limit') ||
           e.toString().contains('429') ||
           e.toString().contains('quota')) {
-        print('⚠️ OpenAI API rate limit reached, generating local summary');
+        _trackEvent(
+          'chat_fallback_used',
+          metadata: {'mode': 'summary', 'reason': 'rate_limit'},
+        );
         // Return local summary based on conversation data
         return _generateMockChatSummary(kontenTitle, conversationHistory);
       }
 
       // For other errors, still try to generate local summary
-      print('⚠️ OpenAI API error, using local summary: $e');
+      _trackEvent(
+        'chat_fallback_used',
+        metadata: {'mode': 'summary', 'reason': 'api_or_network_error'},
+      );
       return _generateMockChatSummary(kontenTitle, conversationHistory);
     }
   }
@@ -484,6 +524,18 @@ Format response JSON:
     required String message,
     required List<Map<String, String>> conversationHistory,
   }) async {
+    if (_mockOnlyActive) {
+      _trackEvent(
+        'chat_fallback_used',
+        metadata: {'mode': 'mock', 'reason': 'mock_mode_active_general_chat'},
+      );
+      return _generateMockChatResponse(
+        message,
+        const ['dukungan anestesi'],
+        conversationHistory,
+      );
+    }
+
     try {
       final messages = [
         {
@@ -507,61 +559,57 @@ PENTING:
         {'role': 'user', 'content': message},
       ];
 
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
-        },
-        body: json.encode({
-          'model': 'gpt-4o-mini',
-          'messages': messages,
-          'max_tokens': 500,
-          'temperature': 0.7,
-        }),
+      return await _callGatewayChat(
+        action: 'send_general_chat_message',
+        messages: messages,
+        model: 'gpt-4o-mini',
+        maxTokens: 500,
+        temperature: 0.7,
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['choices'][0]['message']['content'];
-      } else {
-        throw Exception('OpenAI API error: ${response.statusCode}');
-      }
+    } on AiUnavailableError {
+      rethrow;
+    } on TimeoutException {
+      _trackEvent(
+        'chat_send_failed',
+        metadata: {'reason': 'timeout'},
+      );
+      throw const AiUnavailableError(
+        userMessage:
+            'Permintaan ke AI timeout. Periksa koneksi internet lalu coba lagi.',
+        reason: 'timeout',
+      );
     } catch (e) {
-      throw Exception('Gagal kirim chat message: $e');
+      _trackEvent(
+        'chat_send_failed',
+        metadata: {'reason': 'gateway_or_unknown'},
+      );
+      throw const AiUnavailableError(
+        userMessage:
+            'Gagal menghubungi AI. Periksa koneksi internet dan coba lagi.',
+        reason: 'service_unavailable',
+      );
     }
   }
 
   /// Private helper to send chat completion request
   Future<Map<String, dynamic>> _sendChatRequest(String prompt) async {
-    if (_apiKey.isEmpty) {
-      throw Exception('OpenAI API Key tidak ditemukan. Periksa file .env');
-    }
-
-    final response = await http.post(
-      Uri.parse(_baseUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_apiKey',
-      },
-      body: json.encode({
-        'model': 'gpt-4o-mini',
-        'messages': [
-          {'role': 'user', 'content': prompt}
-        ],
-        'max_tokens': 1000,
-        'temperature': 0.3, // Lower temperature for more consistent responses
-        'response_format': {'type': 'json_object'}, // Force JSON response
-      }),
+    final content = await _callGatewayChat(
+      action: 'send_json_chat_request',
+      messages: [
+        {'role': 'user', 'content': prompt}
+      ],
+      model: 'gpt-4o-mini',
+      maxTokens: 1000,
+      temperature: 0.3,
+      jsonMode: true,
     );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final content = data['choices'][0]['message']['content'];
-      return json.decode(content);
-    } else {
-      final error = json.decode(response.body);
-      throw Exception('OpenAI API Error: ${error['error']['message']}');
+    try {
+      return json.decode(content) as Map<String, dynamic>;
+    } catch (_) {
+      final cleaned =
+          content.replaceAll('```json', '').replaceAll('```', '').trim();
+      return json.decode(cleaned) as Map<String, dynamic>;
     }
   }
 
@@ -676,11 +724,21 @@ PENTING:
   }
 
   /// Mock chat response for free chat mode
-  String _generateMockChatResponse(String message, List<String> sectionTitles) {
-    // REMOVED: No more default/template responses
-    // If this is called, it means API failed - throw error instead of returning template
-    throw Exception(
-        'OpenAI API tidak tersedia. Pastikan koneksi internet dan API key valid.');
+  String _generateMockChatResponse(
+    String message,
+    List<String> sectionTitles,
+    List<Map<String, String>> conversationHistory,
+  ) {
+    final topik = sectionTitles.isNotEmpty ? sectionTitles.first : 'anestesi';
+    final isGreeting =
+        conversationHistory.where((m) => m['role'] == 'user').isEmpty;
+
+    if (isGreeting || message.toUpperCase().contains('SYSTEM:')) {
+      return 'Halo, saya AI Aconsia (mode lokal). Kita bahas $topik dulu ya. Menurut Anda, apa poin paling penting dari materi yang sudah dibaca?';
+    }
+
+    final sanitizedMessage = message.trim();
+    return 'Terima kasih, saya tangkap pertanyaan Anda tentang "$sanitizedMessage". Secara ringkas, ini terkait konsep dasar $topik. Coba jelaskan lagi dengan kata-kata Anda sendiri supaya saya bisa cek pemahaman Anda.';
   }
 
   /// Mock chat summary from conversation history

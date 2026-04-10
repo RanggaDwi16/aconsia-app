@@ -6,7 +6,7 @@ part of 'fetch_konten_by_id_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$fetchKontenByIdHash() => r'59406e3c0f86b4ff294075d7b7b77a2e235be3b9';
+String _$fetchKontenByIdHash() => r'5649b2e8561b36ee8c98885dd27079dbdab5379c';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,10 +30,10 @@ class _SystemHash {
 }
 
 abstract class _$FetchKontenById
-    extends BuildlessAutoDisposeAsyncNotifier<KontenModel?> {
+    extends BuildlessAutoDisposeAsyncNotifier<KontenModel> {
   late final String kontenId;
 
-  FutureOr<KontenModel?> build({
+  FutureOr<KontenModel> build({
     required String kontenId,
   });
 }
@@ -43,7 +43,7 @@ abstract class _$FetchKontenById
 const fetchKontenByIdProvider = FetchKontenByIdFamily();
 
 /// See also [FetchKontenById].
-class FetchKontenByIdFamily extends Family<AsyncValue<KontenModel?>> {
+class FetchKontenByIdFamily extends Family<AsyncValue<KontenModel>> {
   /// See also [FetchKontenById].
   const FetchKontenByIdFamily();
 
@@ -81,8 +81,8 @@ class FetchKontenByIdFamily extends Family<AsyncValue<KontenModel?>> {
 }
 
 /// See also [FetchKontenById].
-class FetchKontenByIdProvider extends AutoDisposeAsyncNotifierProviderImpl<
-    FetchKontenById, KontenModel?> {
+class FetchKontenByIdProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<FetchKontenById, KontenModel> {
   /// See also [FetchKontenById].
   FetchKontenByIdProvider({
     required String kontenId,
@@ -113,7 +113,7 @@ class FetchKontenByIdProvider extends AutoDisposeAsyncNotifierProviderImpl<
   final String kontenId;
 
   @override
-  FutureOr<KontenModel?> runNotifierBuild(
+  FutureOr<KontenModel> runNotifierBuild(
     covariant FetchKontenById notifier,
   ) {
     return notifier.build(
@@ -138,7 +138,7 @@ class FetchKontenByIdProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<FetchKontenById, KontenModel?>
+  AutoDisposeAsyncNotifierProviderElement<FetchKontenById, KontenModel>
       createElement() {
     return _FetchKontenByIdProviderElement(this);
   }
@@ -159,14 +159,14 @@ class FetchKontenByIdProvider extends AutoDisposeAsyncNotifierProviderImpl<
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin FetchKontenByIdRef on AutoDisposeAsyncNotifierProviderRef<KontenModel?> {
+mixin FetchKontenByIdRef on AutoDisposeAsyncNotifierProviderRef<KontenModel> {
   /// The parameter `kontenId` of this provider.
   String get kontenId;
 }
 
 class _FetchKontenByIdProviderElement
     extends AutoDisposeAsyncNotifierProviderElement<FetchKontenById,
-        KontenModel?> with FetchKontenByIdRef {
+        KontenModel> with FetchKontenByIdRef {
   _FetchKontenByIdProviderElement(super.provider);
 
   @override

@@ -9,6 +9,7 @@ import 'package:aconsia_app/presentation/auth/pages/register_dokter_page.dart';
 import 'package:aconsia_app/presentation/auth/pages/register_pasien_page.dart';
 import 'package:aconsia_app/presentation/auth/pages/splash_page.dart';
 import 'package:aconsia_app/presentation/auth/pages/welcome_page.dart';
+import 'package:aconsia_app/presentation/chat/pages/dokter_pasien_chat_page.dart';
 import 'package:aconsia_app/presentation/dokter/home/pages/add_pasien_medic_information_page.dart';
 import 'package:aconsia_app/presentation/dokter/home/pages/detail_pasien_page.dart';
 import 'package:aconsia_app/presentation/dokter/home/pages/list_active_pasien_page.dart';
@@ -17,12 +18,14 @@ import 'package:aconsia_app/presentation/dokter/konten/pages/edit_konten_page.da
 import 'package:aconsia_app/presentation/dokter/main/pages/main_dokter_page.dart';
 import 'package:aconsia_app/presentation/dokter/profile/pages/edit_profile_page.dart';
 import 'package:aconsia_app/presentation/pasien/home/pages/all_recommendations_page.dart';
+import 'package:aconsia_app/presentation/pasien/assessment/pages/pre_operative_assessment_page.dart';
 import 'package:aconsia_app/presentation/pasien/konten/pages/chat_ai_page.dart';
 import 'package:aconsia_app/presentation/pasien/konten/pages/detail_konten_page.dart';
 import 'package:aconsia_app/presentation/pasien/quiz/pages/quiz_result_page.dart';
 import 'package:aconsia_app/presentation/pasien/main/pages/main_pasien_page.dart';
 import 'package:aconsia_app/presentation/pasien/profile/pages/edit_profile_pasien_page.dart';
 import 'package:aconsia_app/presentation/pasien/profile/pages/profile_pasien_page.dart';
+import 'package:aconsia_app/presentation/pasien/schedule/pages/schedule_signature_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -69,6 +72,9 @@ Raw<GoRouter> router(Ref ref) {
         RouteName.chatAi,
         RouteName.quizResult,
         RouteName.allRecommendations,
+        RouteName.asesmenPraOperasi,
+        RouteName.hubungiDokterPasien,
+        RouteName.jadwalTandaTangan,
       };
 
       const sharedProtectedPaths = <String>{
@@ -87,8 +93,9 @@ Raw<GoRouter> router(Ref ref) {
         return RouteName.welcome;
       }
 
-      final homePath =
-          normalizedRole == 'dokter' ? RouteName.mainDokter : RouteName.mainPasien;
+      final homePath = normalizedRole == 'dokter'
+          ? RouteName.mainDokter
+          : RouteName.mainPasien;
       final profilePath = normalizedRole == 'dokter'
           ? RouteName.editProfile
           : RouteName.editProfilePasien;
@@ -169,8 +176,11 @@ Raw<GoRouter> router(Ref ref) {
           path: '/add-pasien-medic-information',
           name: RouteName.addPasienMedicInformation,
           builder: (context, state) {
-            final pasienId = state.extra as String?;
-            return AddPasienMedicInformationPage(pasienId: pasienId);
+            final rawExtra = state.extra;
+            final pasienId = rawExtra is String ? rawExtra.trim() : '';
+            return AddPasienMedicInformationPage(
+              pasienId: pasienId.isEmpty ? null : pasienId,
+            );
           }),
       GoRoute(
         path: '/main-pasien',
@@ -181,8 +191,11 @@ Raw<GoRouter> router(Ref ref) {
         path: '/detail-pasien',
         name: RouteName.detailPasien,
         builder: (context, state) {
-          final pasienId = state.extra as String?;
-          return DetailPasienPage(pasienId: pasienId);
+          final rawExtra = state.extra;
+          final pasienId = rawExtra is String ? rawExtra.trim() : '';
+          return DetailPasienPage(
+            pasienId: pasienId.isEmpty ? null : pasienId,
+          );
         },
       ),
       GoRoute(
@@ -273,6 +286,47 @@ Raw<GoRouter> router(Ref ref) {
         path: '/all-recommendations',
         name: RouteName.allRecommendations,
         builder: (context, state) => const AllRecommendationsPage(),
+      ),
+      GoRoute(
+        path: '/asesmen-pra-operasi',
+        name: RouteName.asesmenPraOperasi,
+        builder: (context, state) =>
+            const PreOperativeAssessmentPage(embeddedInMainShell: false),
+      ),
+      GoRoute(
+        path: '/hubungi-dokter-pasien',
+        name: RouteName.hubungiDokterPasien,
+        builder: (context, state) => const DokterPasienChatPage(
+          role: 'pasien',
+          embeddedInMainShell: false,
+        ),
+      ),
+      GoRoute(
+        path: '/chat-room',
+        name: RouteName.chatRoom,
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            return DokterPasienChatPage(
+              role: (extra['role'] as String? ?? 'dokter').toLowerCase(),
+              pasienId: extra['pasienId'] as String?,
+              dokterId: extra['dokterId'] as String?,
+              title: extra['title'] as String?,
+              embeddedInMainShell:
+                  extra['embeddedInMainShell'] as bool? ?? false,
+            );
+          }
+          return const DokterPasienChatPage(
+            role: 'dokter',
+            embeddedInMainShell: false,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/jadwal-tanda-tangan',
+        name: RouteName.jadwalTandaTangan,
+        builder: (context, state) =>
+            const ScheduleSignaturePage(embeddedInMainShell: false),
       ),
       // Notification routes - Hidden for now (Phase 3)
       // GoRoute(

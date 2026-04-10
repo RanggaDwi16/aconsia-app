@@ -22,12 +22,8 @@ _$KontenModelImpl _$$KontenModelImplFromJson(Map<String, dynamic> json) =>
       aiKeywords: json['aiKeywords'] as String?,
       jumlahBagian: (json['jumlahBagian'] as num?)?.toInt(),
       status: json['status'] as String?,
-      createdAt: json['createdAt'] == null
-          ? null
-          : DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] == null
-          ? null
-          : DateTime.parse(json['updatedAt'] as String),
+      createdAt: dateTimeFromJson(json['createdAt']),
+      updatedAt: dateTimeFromJson(json['updatedAt']),
     );
 
 Map<String, dynamic> _$$KontenModelImplToJson(_$KontenModelImpl instance) =>
@@ -46,6 +42,6 @@ Map<String, dynamic> _$$KontenModelImplToJson(_$KontenModelImpl instance) =>
       'aiKeywords': instance.aiKeywords,
       'jumlahBagian': instance.jumlahBagian,
       'status': instance.status,
-      'createdAt': instance.createdAt?.toIso8601String(),
-      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'createdAt': dateTimeToJson(instance.createdAt),
+      'updatedAt': dateTimeToJson(instance.updatedAt),
     };

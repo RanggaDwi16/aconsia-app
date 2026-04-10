@@ -1,11 +1,12 @@
 import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/routers/router_name.dart';
+import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
 import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
-import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_learning_summary_provider.dart';
+import 'package:aconsia_app/presentation/pasien/main/widgets/pasien_main_shell_scope.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/widgets/pasien_choose_dokter_widget.dart';
 import 'package:aconsia_app/presentation/pasien/profile/widgets/pasien_contact_widget.dart';
@@ -60,6 +61,13 @@ class ProfilePasienPage extends HookConsumerWidget {
     final profilePasien =
         ref.watch(fetchPasienProfileProvider(pasienId: uid)).value;
     final dokterId = profilePasien?.dokterId ?? '';
+    final preOperativeMap =
+        profilePasien?.preOperativeAssessment ?? const <String, dynamic>{};
+    final scheduledDateRaw = preOperativeMap['scheduledSignatureDate'];
+    final scheduledTimeRaw = preOperativeMap['scheduledSignatureTime'];
+    final hasScheduledSignature = scheduledDateRaw != null &&
+        scheduledTimeRaw is String &&
+        scheduledTimeRaw.trim().isNotEmpty;
     final learningSummaryAsync = uid.isNotEmpty && dokterId.isNotEmpty
         ? ref.watch(
             pasienLearningSummaryProvider(
@@ -137,10 +145,34 @@ class ProfilePasienPage extends HookConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  AconsiaTopActionRow(
+                    title: 'Profil Saya',
+                    subtitle: 'Kelola data pribadi dan informasi medis Anda',
+                    leading: IconButton(
+                      onPressed: () => PasienMainShellScope.maybeOf(
+                        context,
+                      )?.openDrawer(),
+                      icon: const Icon(Icons.menu_rounded),
+                      color: UiPalette.slate600,
+                    ),
+                  ),
                   const Gap(UiSpacing.md),
                   _buildHeader(
                     nama: namaController.text,
                     email: emailController.text,
+                    mrn: noRekamMedisController.text,
+                    nik: nikController.text,
+                    assessmentCompleted:
+                        profilePasien?.assessmentCompleted ?? false,
+                  ),
+                  const Gap(UiSpacing.sm),
+                  _buildClinicalSummary(
+                    operasi: jenisOperasiController.text,
+                    anestesi: jenisAnestesiController.text,
+                    asa: klasifikasiasaController.text,
+                    hasScheduledSignature: hasScheduledSignature,
+                    scheduleDateRaw: scheduledDateRaw,
+                    scheduleTimeRaw: scheduledTimeRaw?.toString() ?? '',
                   ),
                   const Gap(UiSpacing.sm),
                   _buildTabSwitcher(
@@ -203,78 +235,200 @@ class ProfilePasienPage extends HookConsumerWidget {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(UiSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Button.filled(
-              onPressed: () => context.pushNamed(RouteName.editProfilePasien),
-              label: 'Edit Data Diri',
-              color: UiPalette.blue600,
-              borderColor: UiPalette.blue600,
-              borderRadius: 12,
-              height: 52,
-            ),
-            const Gap(UiSpacing.sm),
-            Button.outlined(
-              onPressed: () => context.showLogoutDialog(ref),
-              label: 'Keluar',
-              borderColor: UiPalette.red600,
-              textColor: UiPalette.red600,
-            ),
-          ],
+        child: Button.filled(
+          onPressed: () => context.pushNamed(RouteName.editProfilePasien),
+          label: 'Edit Data Diri',
+          color: UiPalette.blue600,
+          borderColor: UiPalette.blue600,
+          borderRadius: 12,
+          height: 52,
         ),
       ),
     );
   }
 
-  Widget _buildHeader({required String nama, required String email}) {
-    return AconsiaCardSurface(
+  Widget _buildHeader({
+    required String nama,
+    required String email,
+    required String mrn,
+    required String nik,
+    required bool assessmentCompleted,
+  }) {
+    return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(UiSpacing.md),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF2563EB),
+            Color(0xFF0891B2),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: const Color(0xFFE6F0FF),
+                child: Text(
+                  (nama.isNotEmpty ? nama : 'Pasien')
+                      .substring(0, 1)
+                      .toUpperCase(),
+                  style: UiTypography.h2.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: UiPalette.blue600,
+                  ),
+                ),
+              ),
+              const Gap(UiSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nama.isEmpty ? 'Pasien' : nama,
+                      style: UiTypography.title.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: UiPalette.white,
+                      ),
+                    ),
+                    const Gap(UiSpacing.xxs),
+                    Text(
+                      email,
+                      style: UiTypography.caption.copyWith(
+                        color: const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: UiPalette.white,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  assessmentCompleted ? 'Asesmen Selesai' : 'Asesmen Pending',
+                  style: UiTypography.caption.copyWith(
+                    color: assessmentCompleted
+                        ? const Color(0xFF166534)
+                        : const Color(0xFF9A3412),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(UiSpacing.sm),
+          Wrap(
+            spacing: UiSpacing.xs,
+            runSpacing: UiSpacing.xs,
+            children: [
+              _headerPill('No. RM: ${mrn.isEmpty ? '-' : mrn}'),
+              _headerPill('NIK: ${nik.isEmpty ? '-' : nik}'),
+              _headerPill('Role: Pasien'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0x33FFFFFF),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x66FFFFFF)),
+      ),
+      child: Text(
+        text,
+        style: UiTypography.caption.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClinicalSummary({
+    required String operasi,
+    required String anestesi,
+    required String asa,
+    required bool hasScheduledSignature,
+    required dynamic scheduleDateRaw,
+    required String scheduleTimeRaw,
+  }) {
+    String scheduleValue = 'Belum dijadwalkan';
+    if (hasScheduledSignature) {
+      DateTime? parsed;
+      if (scheduleDateRaw is String && scheduleDateRaw.trim().isNotEmpty) {
+        parsed = DateTime.tryParse(scheduleDateRaw);
+      }
+      if (parsed != null) {
+        scheduleValue =
+            '${DateFormat('d MMM yyyy', 'id_ID').format(parsed)} • $scheduleTimeRaw';
+      } else {
+        scheduleValue = scheduleTimeRaw;
+      }
+    }
+
+    return AconsiaCardSurface(
       borderColor: const Color(0xFFDCEAFF),
-      radius: 14,
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 38,
-            backgroundColor: const Color(0xFFE6F0FF),
-            child: Text(
-              (nama.isNotEmpty ? nama : 'Pasien').substring(0, 1).toUpperCase(),
-              style: UiTypography.h2.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: UiPalette.blue600,
+          Row(
+            children: [
+              Expanded(
+                child: _metric(
+                  title: 'Jenis Operasi',
+                  value: operasi.trim().isEmpty ? '-' : operasi,
+                  color: const Color(0xFF0284C7),
+                ),
               ),
-            ),
+              const Gap(UiSpacing.xs),
+              Expanded(
+                child: _metric(
+                  title: 'Anestesi',
+                  value: anestesi.trim().isEmpty ? '-' : anestesi,
+                  color: const Color(0xFF7C3AED),
+                ),
+              ),
+            ],
           ),
           const Gap(UiSpacing.xs),
-          Text(
-            nama.isEmpty ? 'Pasien' : nama,
-            style: UiTypography.title.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const Gap(UiSpacing.xxs),
-          Text(
-            email,
-            style: UiTypography.caption,
-            textAlign: TextAlign.center,
-          ),
-          const Gap(UiSpacing.xs),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: UiPalette.blue600,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Role: Pasien',
-              style: UiTypography.caption.copyWith(
-                color: UiPalette.white,
-                fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Expanded(
+                child: _metric(
+                  title: 'ASA',
+                  value: asa.trim().isEmpty ? '-' : asa,
+                  color: const Color(0xFFEA580C),
+                ),
               ),
-            ),
+              const Gap(UiSpacing.xs),
+              Expanded(
+                child: _metric(
+                  title: 'Ttd Consent',
+                  value: scheduleValue,
+                  color: hasScheduledSignature
+                      ? const Color(0xFF16A34A)
+                      : UiPalette.slate600,
+                ),
+              ),
+            ],
           ),
         ],
       ),

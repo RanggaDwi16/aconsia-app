@@ -14,12 +14,8 @@ _$KontenSectionModelImpl _$$KontenSectionModelImplFromJson(
       judulBagian: json['judulBagian'] as String?,
       isiKonten: json['isiKonten'] as String?,
       urutan: (json['urutan'] as num?)?.toInt(),
-      createdAt: json['createdAt'] == null
-          ? null
-          : DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] == null
-          ? null
-          : DateTime.parse(json['updatedAt'] as String),
+      createdAt: dateTimeFromJson(json['createdAt']),
+      updatedAt: dateTimeFromJson(json['updatedAt']),
     );
 
 Map<String, dynamic> _$$KontenSectionModelImplToJson(
@@ -30,6 +26,6 @@ Map<String, dynamic> _$$KontenSectionModelImplToJson(
       'judulBagian': instance.judulBagian,
       'isiKonten': instance.isiKonten,
       'urutan': instance.urutan,
-      'createdAt': instance.createdAt?.toIso8601String(),
-      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'createdAt': dateTimeToJson(instance.createdAt),
+      'updatedAt': dateTimeToJson(instance.updatedAt),
     };

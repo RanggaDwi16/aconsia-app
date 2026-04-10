@@ -8,23 +8,15 @@ part 'fetch_konten_by_dokter_id_provider.g.dart';
 @riverpod
 class FetchKontenByDokterId extends _$FetchKontenByDokterId {
   @override
-  FutureOr<List<KontenModel>?> build({required String dokterId}) async {
-    state = const AsyncLoading();
-
+  FutureOr<List<KontenModel>> build({required String dokterId}) async {
     GetKontenByDokterId getKontenByDokterId =
         ref.read(getKontenByDokterIdProvider);
     final result = await getKontenByDokterId(
       GetKontenByDokterIdParams(dokterId: dokterId),
     );
     return result.fold(
-      (failure) {
-        state = AsyncError(failure, StackTrace.current);
-        return null;
-      },
-      (kontenList) {
-        state = AsyncData(kontenList);
-        return kontenList;
-      },
+      (failure) => throw Exception(failure),
+      (kontenList) => kontenList,
     );
   }
 }

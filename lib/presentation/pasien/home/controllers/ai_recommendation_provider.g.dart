@@ -7,7 +7,7 @@ part of 'ai_recommendation_provider.dart';
 // **************************************************************************
 
 String _$fetchAiRecommendationsHash() =>
-    r'0ffba27bee275c2096bcce8dc5f209f6b156e096';
+    r'65cdb427eeade82e38bfa4950e857f4de017f3a9';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -231,7 +231,7 @@ class _FetchAiRecommendationsProviderElement
 }
 
 String _$fetchAllUnreadKontenHash() =>
-    r'592ba77a664b8ce9426ed818abe5e472a0bae255';
+    r'910eddafa1a8aff87f5e3f1f60949f70031c8237';
 
 abstract class _$FetchAllUnreadKonten
     extends BuildlessAutoDisposeAsyncNotifier<List<RecommendationItem>> {

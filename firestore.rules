@@ -19,6 +19,16 @@ service cloud.firestore {
       return role() == 'pasien';
     }
 
+    function ownerHasStoredPasienRole(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.role in ['pasien', 'patient'];
+    }
+
+    function isPasienLike() {
+      return isPasien()
+        || (isSignedIn() && ownerHasStoredPasienRole(request.auth.uid));
+    }
+
     function isDokter() {
       return role() in ['dokter', 'doctor'];
     }
@@ -61,8 +71,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(uid)).data.role in ['dokter', 'doctor'];
     }
 
+    function ownerHasActiveDokterProfile(uid) {
+      return exists(/databases/$(database)/documents/dokter_profiles/$(uid))
+        && get(/databases/$(database)/documents/dokter_profiles/$(uid)).data.status == 'active';
+    }
+
     function isDokterLike() {
-      return isDokter() || (isSignedIn() && ownerHasStoredDokterRole(request.auth.uid));
+      return isDokter()
+        || (isSignedIn() && ownerHasStoredDokterRole(request.auth.uid))
+        || (isSignedIn() && ownerHasActiveDokterProfile(request.auth.uid));
     }
 
     function doctorUserDocShapeValid(uid) {
@@ -212,6 +229,38 @@ service cloud.firestore {
       return isDokterLike() && (assignData.assignedBy == request.auth.uid || assignData.dokterId == request.auth.uid);
     }
 
+    function kontenOwnerDokterId(data) {
+      return ('dokterId' in data && data.dokterId is string && data.dokterId.size() > 0)
+        ? data.dokterId
+        : (
+          ('doctorId' in data && data.doctorId is string && data.doctorId.size() > 0)
+            ? data.doctorId
+            : null
+        );
+    }
+
+    function kontenIsPublishedById(kontenId) {
+      return exists(/databases/$(database)/documents/konten/$(kontenId))
+        && get(/databases/$(database)/documents/konten/$(kontenId)).data.status == 'published';
+    }
+
+    function assignmentCreateByDokterValid() {
+      return isDokterLike()
+        && request.resource.data.assignedBy == request.auth.uid
+        && request.resource.data.dokterId == request.auth.uid
+        && request.resource.data.pasienId is string
+        && request.resource.data.kontenId is string
+        && exists(/databases/$(database)/documents/konten/$(request.resource.data.kontenId))
+        && kontenIsPublishedById(request.resource.data.kontenId)
+        && kontenOwnerDokterId(
+          get(/databases/$(database)/documents/konten/$(request.resource.data.kontenId)).data
+        ) == request.auth.uid
+        && exists(/databases/$(database)/documents/pasien_profiles/$(request.resource.data.pasienId))
+        && pasienAssignedDokterId(
+          get(/databases/$(database)/documents/pasien_profiles/$(request.resource.data.pasienId)).data
+        ) == request.auth.uid;
+    }
+
     function chatParticipant(sessionData) {
       return isSignedIn() && (sessionData.pasienId == request.auth.uid || sessionData.dokterId == request.auth.uid);
     }
@@ -278,7 +327,16 @@ service cloud.firestore {
           )
         );
 
-      allow read: if isOwner(uid) || isAdminOrSystem();
+      allow read: if
+        isOwner(uid)
+        || isAdminOrSystem()
+        || (
+          isDokterLike()
+          && exists(/databases/$(database)/documents/pasien_profiles/$(uid))
+          && pasienAssignedDokterId(
+            get(/databases/$(database)/documents/pasien_profiles/$(uid)).data
+          ) == request.auth.uid
+        );
 
       allow update: if
         // user update own non-sensitive fields only
@@ -300,16 +358,16 @@ service cloud.firestore {
     // profiles
     // ----------------------
     match /pasien_profiles/{uid} {
-      allow create: if isOwner(uid) && isPasien() || isAdminOrSystem();
+      allow create: if isOwner(uid) && isPasienLike() || isAdminOrSystem();
 
       allow read: if
-        (isOwner(uid) && isPasien())
+        (isOwner(uid) && isPasienLike())
         || isAdminOrSystem()
         || (isDokterLike() && pasienAssignedDokterId(resource.data) == request.auth.uid);
 
       allow update: if
         // pasien update own profile
-        (isOwner(uid) && isPasien())
+        (isOwner(uid) && isPasienLike())
         // dokter update pasien in scope
         || (
           isDokterLike()
@@ -334,7 +392,7 @@ service cloud.firestore {
         (isOwner(uid) && (isDokter() || ownerHasStoredDokterRole(uid)))
         || isAdminOrSystem()
         || (
-          isPasien() &&
+          isPasienLike() &&
           exists(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)) &&
           pasienAssignedDokterId(get(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)).data) == uid
         );
@@ -363,36 +421,33 @@ service cloud.firestore {
       allow read: if
         isAdminOrSystem()
         || isDokterLike()
-        || (
-          isPasien() &&
-          (
-            resource.data.status == 'published'
-            || exists(/databases/$(database)/documents/assignments/$(kontenId + '_' + request.auth.uid))
-          )
-        );
+        || (isPasienLike() && resource.data.status == 'published');
 
       allow update: if
         adminKontenModerationUpdateValid()
         || 
         (isAdminOrSystem() && (isSystem() || kontenModerationFieldsNotChanged()))
-        || (isDokterLike() && resource.data.dokterId == request.auth.uid && kontenModerationFieldsNotChanged());
+        || (isDokterLike() && kontenOwnerDokterId(resource.data) == request.auth.uid && kontenModerationFieldsNotChanged());
 
       allow delete: if
         isAdminOrSystem()
-        || (isDokterLike() && resource.data.dokterId == request.auth.uid);
+        || (isDokterLike() && kontenOwnerDokterId(resource.data) == request.auth.uid);
 
       match /sections/{sectionId} {
         allow read: if
           isAdminOrSystem()
           || isDokterLike()
-          || isPasien();
+          || (
+            isPasienLike()
+            && kontenIsPublishedById(kontenId)
+          );
 
         allow create, update, delete: if
           isAdminOrSystem()
           || (
             isDokterLike()
             && exists(/databases/$(database)/documents/konten/$(kontenId))
-            && get(/databases/$(database)/documents/konten/$(kontenId)).data.dokterId == request.auth.uid
+            && kontenOwnerDokterId(get(/databases/$(database)/documents/konten/$(kontenId)).data) == request.auth.uid
           );
       }
     }
@@ -401,17 +456,18 @@ service cloud.firestore {
     // assignments
     // ----------------------
     match /assignments/{assignmentId} {
-      allow create, delete: if isAdminOrSystem();
+      allow create: if isAdminOrSystem() || assignmentCreateByDokterValid();
+      allow delete: if isAdminOrSystem();
 
       allow read: if
         isAdminOrSystem()
-        || (isPasien() && resource.data.pasienId == request.auth.uid)
+        || (isPasienLike() && resource.data.pasienId == request.auth.uid)
         || assignmentReadableByDokter(resource.data);
 
       allow update: if
         isAdminOrSystem()
         || (
-          isPasien()
+          isPasienLike()
           && resource.data.pasienId == request.auth.uid
           && request.resource.data.pasienId == resource.data.pasienId
           && request.resource.data.assignedBy == resource.data.assignedBy
@@ -426,16 +482,16 @@ service cloud.firestore {
     match /reading_sessions/{sessionId} {
       allow create: if
         isAdminOrSystem()
-        || (isPasien() && request.resource.data.pasienId == request.auth.uid);
+        || (isPasienLike() && request.resource.data.pasienId == request.auth.uid);
 
       allow read: if
         isAdminOrSystem()
-        || (isPasien() && resource.data.pasienId == request.auth.uid)
+        || (isPasienLike() && resource.data.pasienId == request.auth.uid)
         || (isDokterLike() && resource.data.dokterId == request.auth.uid);
 
       allow update: if
         isAdminOrSystem()
-        || (isPasien() && resource.data.pasienId == request.auth.uid);
+        || (isPasienLike() && resource.data.pasienId == request.auth.uid);
 
       allow delete: if isAdminOrSystem();
     }
@@ -446,11 +502,11 @@ service cloud.firestore {
     match /quiz_results/{resultId} {
       allow create: if
         isAdminOrSystem()
-        || (isPasien() && request.resource.data.pasienId == request.auth.uid);
+        || (isPasienLike() && request.resource.data.pasienId == request.auth.uid);
 
       allow read: if
         isAdminOrSystem()
-        || (isPasien() && resource.data.pasienId == request.auth.uid)
+        || (isPasienLike() && resource.data.pasienId == request.auth.uid)
         || (isDokterLike() && resource.data.dokterId == request.auth.uid);
 
       allow update: if isAdminOrSystem();

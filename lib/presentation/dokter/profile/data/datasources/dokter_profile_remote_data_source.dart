@@ -109,14 +109,27 @@ class DokterProfileRemoteDataSourceImpl
     try {
       final profileDoc =
           await firestore.collection('dokter_profiles').doc(uid).get();
-      final userDoc = await firestore.collection('users').doc(uid).get();
 
-      if (!profileDoc.exists && !userDoc.exists) {
+      // Public-safe mode: pasien mungkin tidak diizinkan membaca users/{uid}.
+      // Jadi users doc hanya dipakai sebagai optional enrichment ketika bisa diakses.
+      Map<String, dynamic>? userData;
+      try {
+        final userDoc = await firestore.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          userData = userDoc.data();
+        }
+      } on FirebaseException catch (e) {
+        if (e.code != 'permission-denied') {
+          rethrow;
+        }
+      }
+
+      if (!profileDoc.exists && (userData == null || userData.isEmpty)) {
         return const Left('Profil dokter tidak ditemukan.');
       }
 
       final merged = <String, dynamic>{};
-      if (userDoc.exists) merged.addAll(userDoc.data()!);
+      if (userData != null) merged.addAll(userData);
       if (profileDoc.exists) merged.addAll(profileDoc.data()!);
 
       return Right(_toDokterProfileModel(uid, merged));

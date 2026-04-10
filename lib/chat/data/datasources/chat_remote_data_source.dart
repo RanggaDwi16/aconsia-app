@@ -2,7 +2,6 @@ import 'package:aconsia_app/core/main/data/models/chat_message_model.dart';
 import 'package:aconsia_app/core/main/data/models/chat_session_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 abstract class ChatRemoteDataSource {
   Future<Either<String, ChatSessionModel>> createOrGetSession({
@@ -68,9 +67,20 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
   ChatRemoteDataSourceImpl({required this.firestore});
 
+  CollectionReference<Map<String, dynamic>> _sessionMessagesRef(
+    String sessionId,
+  ) {
+    return firestore
+        .collection('chat_sessions')
+        .doc(sessionId)
+        .collection('messages');
+  }
+
   @override
-  Future<Either<String, ChatSessionModel>> createOrGetSession(
-      {required String pasienId, required String dokterId,}) async {
+  Future<Either<String, ChatSessionModel>> createOrGetSession({
+    required String pasienId,
+    required String dokterId,
+  }) async {
     try {
       // Check if session already exists
       final existingSession = await firestore
@@ -108,8 +118,18 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<Either<String, String>> deleteMessage(
       {required String messageId}) async {
     try {
-      await firestore.collection('chat_messages').doc(messageId).delete();
-      return const Right('Pesan berhasil dihapus');
+      final nestedMatch = await firestore
+          .collectionGroup('messages')
+          .where(FieldPath.documentId, isEqualTo: messageId)
+          .limit(1)
+          .get();
+
+      if (nestedMatch.docs.isNotEmpty) {
+        await nestedMatch.docs.first.reference.delete();
+        return const Right('Pesan berhasil dihapus');
+      }
+
+      return const Left('Pesan tidak ditemukan pada sesi chat aktif.');
     } catch (e) {
       return Left('Gagal menghapus pesan: $e');
     }
@@ -121,9 +141,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       int limit = 50,
       DocumentSnapshot<Object?>? lastDocument}) async {
     try {
-      Query query = firestore
-          .collection('chat_messages')
-          .where('sessionId', isEqualTo: sessionId)
+      Query<Map<String, dynamic>> query = _sessionMessagesRef(sessionId)
           .orderBy('createdAt', descending: true)
           .limit(limit);
 
@@ -146,15 +164,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<Either<String, int>> getUnreadCount(
       {required String sessionId, required String userId}) async {
     try {
-      final snapshot = await firestore
-          .collection('chat_messages')
-          .where('sessionId', isEqualTo: sessionId)
+      final snapshot = await _sessionMessagesRef(sessionId)
           .where('isRead', isEqualTo: false)
-          .where('senderId', isNotEqualTo: userId)
-          .count()
+          .limit(500)
           .get();
-
-      return Right(snapshot.count ?? 0);
+      final unread = snapshot.docs.where((doc) {
+        final senderId = (doc.data()['senderId'] ?? '').toString();
+        return senderId.isNotEmpty && senderId != userId;
+      }).length;
+      return Right(unread);
     } catch (e) {
       return Left('Gagal mengambil jumlah pesan belum dibaca: $e');
     }
@@ -185,15 +203,14 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<Either<String, String>> markAllMessagesAsRead(
       {required String sessionId, required String receiverId}) async {
     try {
-      final unreadMessages = await firestore
-          .collection('chat_messages')
-          .where('sessionId', isEqualTo: sessionId)
+      final unreadMessages = await _sessionMessagesRef(sessionId)
           .where('isRead', isEqualTo: false)
-          .where('senderId', isNotEqualTo: receiverId)
           .get();
 
       final batch = firestore.batch();
       for (var doc in unreadMessages.docs) {
+        final senderId = (doc.data()['senderId'] ?? '').toString();
+        if (senderId == receiverId) continue;
         batch.update(doc.reference, {
           'isRead': true,
           'readAt': FieldValue.serverTimestamp(),
@@ -211,11 +228,21 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<Either<String, String>> markMessageAsRead(
       {required String messageId}) async {
     try {
-      await firestore.collection('chat_messages').doc(messageId).update({
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-      });
-      return const Right('Pesan telah ditandai sebagai dibaca');
+      final nestedMatch = await firestore
+          .collectionGroup('messages')
+          .where(FieldPath.documentId, isEqualTo: messageId)
+          .limit(1)
+          .get();
+
+      if (nestedMatch.docs.isNotEmpty) {
+        await nestedMatch.docs.first.reference.update({
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+        });
+        return const Right('Pesan telah ditandai sebagai dibaca');
+      }
+
+      return const Left('Pesan tidak ditemukan pada sesi chat aktif.');
     } catch (e) {
       return Left('Gagal menandai pesan sebagai dibaca: $e');
     }
@@ -243,7 +270,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       required String senderRole,
       required String message}) async {
     try {
-      final ref = firestore.collection('chat_messages').doc();
+      final ref = _sessionMessagesRef(sessionId).doc();
       final now = DateTime.now();
 
       final chatMessage = ChatMessageModel(
@@ -255,7 +282,10 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         createdAt: now,
       );
 
-      await ref.set(ChatMessageModel.toFirestore(chatMessage));
+      await ref.set({
+        ...ChatMessageModel.toFirestore(chatMessage),
+        'id': chatMessage.id,
+      });
 
       // Update session
       await updateSession(
@@ -272,9 +302,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
   @override
   Stream<List<ChatMessageModel>> streamMessages({required String sessionId}) {
-    return firestore
-        .collection('chat_messages')
-        .where('sessionId', isEqualTo: sessionId)
+    return _sessionMessagesRef(sessionId)
         .orderBy('createdAt', descending: true)
         .limit(100)
         .snapshots()

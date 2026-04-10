@@ -1,3 +1,4 @@
+import 'package:aconsia_app/core/helpers/timestamp/timestamp_convert.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'konten_model.freezed.dart';
@@ -20,8 +21,18 @@ class KontenModel with _$KontenModel {
     @JsonKey(name: "aiKeywords") String? aiKeywords,
     @JsonKey(name: "jumlahBagian") int? jumlahBagian,
     @JsonKey(name: "status") String? status,
-    @JsonKey(name: "createdAt") DateTime? createdAt,
-    @JsonKey(name: "updatedAt") DateTime? updatedAt,
+    @JsonKey(
+      name: "createdAt",
+      fromJson: dateTimeFromJson,
+      toJson: dateTimeToJson,
+    )
+    DateTime? createdAt,
+    @JsonKey(
+      name: "updatedAt",
+      fromJson: dateTimeFromJson,
+      toJson: dateTimeToJson,
+    )
+    DateTime? updatedAt,
   }) = _KontenModel;
 
   factory KontenModel.fromJson(Map<String, dynamic> json) =>

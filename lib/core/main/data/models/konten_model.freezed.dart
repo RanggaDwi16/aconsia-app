@@ -48,9 +48,11 @@ mixin _$KontenModel {
   int? get jumlahBagian => throw _privateConstructorUsedError;
   @JsonKey(name: "status")
   String? get status => throw _privateConstructorUsedError;
-  @JsonKey(name: "createdAt")
+  @JsonKey(
+      name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get createdAt => throw _privateConstructorUsedError;
-  @JsonKey(name: "updatedAt")
+  @JsonKey(
+      name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this KontenModel to a JSON map.
@@ -84,8 +86,12 @@ abstract class $KontenModelCopyWith<$Res> {
       @JsonKey(name: "aiKeywords") String? aiKeywords,
       @JsonKey(name: "jumlahBagian") int? jumlahBagian,
       @JsonKey(name: "status") String? status,
-      @JsonKey(name: "createdAt") DateTime? createdAt,
-      @JsonKey(name: "updatedAt") DateTime? updatedAt});
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -212,8 +218,12 @@ abstract class _$$KontenModelImplCopyWith<$Res>
       @JsonKey(name: "aiKeywords") String? aiKeywords,
       @JsonKey(name: "jumlahBagian") int? jumlahBagian,
       @JsonKey(name: "status") String? status,
-      @JsonKey(name: "createdAt") DateTime? createdAt,
-      @JsonKey(name: "updatedAt") DateTime? updatedAt});
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -333,8 +343,12 @@ class _$KontenModelImpl implements _KontenModel {
       @JsonKey(name: "aiKeywords") this.aiKeywords,
       @JsonKey(name: "jumlahBagian") this.jumlahBagian,
       @JsonKey(name: "status") this.status,
-      @JsonKey(name: "createdAt") this.createdAt,
-      @JsonKey(name: "updatedAt") this.updatedAt});
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      this.createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      this.updatedAt});
 
   factory _$KontenModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$KontenModelImplFromJson(json);
@@ -382,10 +396,12 @@ class _$KontenModelImpl implements _KontenModel {
   @JsonKey(name: "status")
   final String? status;
   @override
-  @JsonKey(name: "createdAt")
+  @JsonKey(
+      name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   final DateTime? createdAt;
   @override
-  @JsonKey(name: "updatedAt")
+  @JsonKey(
+      name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   final DateTime? updatedAt;
 
   @override
@@ -468,23 +484,26 @@ class _$KontenModelImpl implements _KontenModel {
 
 abstract class _KontenModel implements KontenModel {
   const factory _KontenModel(
-          {@JsonKey(name: "id") final String? id,
-          @JsonKey(name: "dokterId") final String? dokterId,
-          @JsonKey(name: "judul") final String? judul,
-          @JsonKey(name: "jenisAnestesi") final String? jenisAnestesi,
-          @JsonKey(name: "tataCara") final String? tataCara,
-          @JsonKey(name: "resikoTindakan") final String? resikoTindakan,
-          @JsonKey(name: "komplikasi") final String? komplikasi,
-          @JsonKey(name: "indikasiTindakan") final String? indikasiTindakan,
-          @JsonKey(name: "prognosis") final String? prognosis,
-          @JsonKey(name: "alternatifLain") final String? alternatifLain,
-          @JsonKey(name: "gambarUrl") final String? gambarUrl,
-          @JsonKey(name: "aiKeywords") final String? aiKeywords,
-          @JsonKey(name: "jumlahBagian") final int? jumlahBagian,
-          @JsonKey(name: "status") final String? status,
-          @JsonKey(name: "createdAt") final DateTime? createdAt,
-          @JsonKey(name: "updatedAt") final DateTime? updatedAt}) =
-      _$KontenModelImpl;
+      {@JsonKey(name: "id") final String? id,
+      @JsonKey(name: "dokterId") final String? dokterId,
+      @JsonKey(name: "judul") final String? judul,
+      @JsonKey(name: "jenisAnestesi") final String? jenisAnestesi,
+      @JsonKey(name: "tataCara") final String? tataCara,
+      @JsonKey(name: "resikoTindakan") final String? resikoTindakan,
+      @JsonKey(name: "komplikasi") final String? komplikasi,
+      @JsonKey(name: "indikasiTindakan") final String? indikasiTindakan,
+      @JsonKey(name: "prognosis") final String? prognosis,
+      @JsonKey(name: "alternatifLain") final String? alternatifLain,
+      @JsonKey(name: "gambarUrl") final String? gambarUrl,
+      @JsonKey(name: "aiKeywords") final String? aiKeywords,
+      @JsonKey(name: "jumlahBagian") final int? jumlahBagian,
+      @JsonKey(name: "status") final String? status,
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      final DateTime? createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      final DateTime? updatedAt}) = _$KontenModelImpl;
 
   factory _KontenModel.fromJson(Map<String, dynamic> json) =
       _$KontenModelImpl.fromJson;
@@ -532,10 +551,12 @@ abstract class _KontenModel implements KontenModel {
   @JsonKey(name: "status")
   String? get status;
   @override
-  @JsonKey(name: "createdAt")
+  @JsonKey(
+      name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get createdAt;
   @override
-  @JsonKey(name: "updatedAt")
+  @JsonKey(
+      name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get updatedAt;
 
   /// Create a copy of KontenModel

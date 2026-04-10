@@ -73,16 +73,25 @@ export async function getDoctorScopedPatients(
   }
 
   const pasienRef = collection(firestore, "pasien_profiles");
-  const pasienQuery = query(
+  const dokterIdQuery = query(
+    pasienRef,
+    where("dokterId", "==", doctorUid),
+  );
+  const assignedDokterIdQuery = query(
     pasienRef,
     where("assignedDokterId", "==", doctorUid),
   );
-  const snapshot = await getDocs(pasienQuery);
+  const [dokterIdSnapshot, assignedSnapshot] = await Promise.all([
+    getDocs(dokterIdQuery),
+    getDocs(assignedDokterIdQuery),
+  ]);
 
-  return snapshot.docs.map((docSnap) => {
+  const merged = new Map<string, DoctorDashboardPatient>();
+  const allDocs = [...dokterIdSnapshot.docs, ...assignedSnapshot.docs];
+
+  for (const docSnap of allDocs) {
     const data = docSnap.data() as Record<string, unknown>;
-
-    return {
+    merged.set(docSnap.id, {
       id: docSnap.id,
       fullName: String(data.namaLengkap || data.fullName || "Pasien"),
       mrn: String(data.noRekamMedis || data.mrn || "-"),
@@ -95,9 +104,13 @@ export async function getDoctorScopedPatients(
         | null,
       status: String(data.status || "approved"),
       comprehensionScore: Number(data.comprehensionScore || 0),
-      assignedDoctorId: String(data.assignedDokterId || doctorUid),
-    };
-  });
+      assignedDoctorId: String(
+        data.dokterId || data.assignedDokterId || doctorUid,
+      ),
+    });
+  }
+
+  return Array.from(merged.values());
 }
 
 export async function assignAnesthesiaToPatient(params: {

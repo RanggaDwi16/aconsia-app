@@ -30,9 +30,11 @@ mixin _$KontenSectionModel {
   String? get isiKonten => throw _privateConstructorUsedError;
   @JsonKey(name: "urutan")
   int? get urutan => throw _privateConstructorUsedError;
-  @JsonKey(name: "createdAt")
+  @JsonKey(
+      name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get createdAt => throw _privateConstructorUsedError;
-  @JsonKey(name: "updatedAt")
+  @JsonKey(
+      name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this KontenSectionModel to a JSON map.
@@ -57,8 +59,12 @@ abstract class $KontenSectionModelCopyWith<$Res> {
       @JsonKey(name: "judulBagian") String? judulBagian,
       @JsonKey(name: "isiKonten") String? isiKonten,
       @JsonKey(name: "urutan") int? urutan,
-      @JsonKey(name: "createdAt") DateTime? createdAt,
-      @JsonKey(name: "updatedAt") DateTime? updatedAt});
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -131,8 +137,12 @@ abstract class _$$KontenSectionModelImplCopyWith<$Res>
       @JsonKey(name: "judulBagian") String? judulBagian,
       @JsonKey(name: "isiKonten") String? isiKonten,
       @JsonKey(name: "urutan") int? urutan,
-      @JsonKey(name: "createdAt") DateTime? createdAt,
-      @JsonKey(name: "updatedAt") DateTime? updatedAt});
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -198,8 +208,12 @@ class _$KontenSectionModelImpl implements _KontenSectionModel {
       @JsonKey(name: "judulBagian") this.judulBagian,
       @JsonKey(name: "isiKonten") this.isiKonten,
       @JsonKey(name: "urutan") this.urutan,
-      @JsonKey(name: "createdAt") this.createdAt,
-      @JsonKey(name: "updatedAt") this.updatedAt});
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      this.createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      this.updatedAt});
 
   factory _$KontenSectionModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$KontenSectionModelImplFromJson(json);
@@ -220,10 +234,12 @@ class _$KontenSectionModelImpl implements _KontenSectionModel {
   @JsonKey(name: "urutan")
   final int? urutan;
   @override
-  @JsonKey(name: "createdAt")
+  @JsonKey(
+      name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   final DateTime? createdAt;
   @override
-  @JsonKey(name: "updatedAt")
+  @JsonKey(
+      name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   final DateTime? updatedAt;
 
   @override
@@ -274,14 +290,17 @@ class _$KontenSectionModelImpl implements _KontenSectionModel {
 
 abstract class _KontenSectionModel implements KontenSectionModel {
   const factory _KontenSectionModel(
-          {@JsonKey(name: "id") final String? id,
-          @JsonKey(name: "kontenId") final String? kontenId,
-          @JsonKey(name: "judulBagian") final String? judulBagian,
-          @JsonKey(name: "isiKonten") final String? isiKonten,
-          @JsonKey(name: "urutan") final int? urutan,
-          @JsonKey(name: "createdAt") final DateTime? createdAt,
-          @JsonKey(name: "updatedAt") final DateTime? updatedAt}) =
-      _$KontenSectionModelImpl;
+      {@JsonKey(name: "id") final String? id,
+      @JsonKey(name: "kontenId") final String? kontenId,
+      @JsonKey(name: "judulBagian") final String? judulBagian,
+      @JsonKey(name: "isiKonten") final String? isiKonten,
+      @JsonKey(name: "urutan") final int? urutan,
+      @JsonKey(
+          name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      final DateTime? createdAt,
+      @JsonKey(
+          name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+      final DateTime? updatedAt}) = _$KontenSectionModelImpl;
 
   factory _KontenSectionModel.fromJson(Map<String, dynamic> json) =
       _$KontenSectionModelImpl.fromJson;
@@ -302,10 +321,12 @@ abstract class _KontenSectionModel implements KontenSectionModel {
   @JsonKey(name: "urutan")
   int? get urutan;
   @override
-  @JsonKey(name: "createdAt")
+  @JsonKey(
+      name: "createdAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get createdAt;
   @override
-  @JsonKey(name: "updatedAt")
+  @JsonKey(
+      name: "updatedAt", fromJson: dateTimeFromJson, toJson: dateTimeToJson)
   DateTime? get updatedAt;
 
   /// Create a copy of KontenSectionModel

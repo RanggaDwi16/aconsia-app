@@ -7,23 +7,15 @@ part 'fetch_konten_count_by_dokter_id_provider.g.dart';
 @riverpod
 class FetchKontenCountByDokterId extends _$FetchKontenCountByDokterId {
   @override
-  FutureOr<int?> build({required String dokterId}) async {
-    state = const AsyncLoading();
-
+  FutureOr<int> build({required String dokterId}) async {
     GetKontenCountByDokterId getKontenCountByDokterId =
         ref.read(getKontenCountByDokterIdProvider);
     final result = await getKontenCountByDokterId(
       GetKontenCountByDokterIdParams(dokterId: dokterId),
     );
     return result.fold(
-      (failure) {
-        state = AsyncError(failure, StackTrace.current);
-        return null;
-      },
-      (count) {
-        state = AsyncData(count);
-        return count;
-      },
+      (failure) => throw Exception(failure),
+      (count) => count,
     );
   }
 }
