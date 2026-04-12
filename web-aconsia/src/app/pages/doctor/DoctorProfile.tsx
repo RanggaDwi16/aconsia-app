@@ -331,7 +331,9 @@ export function DoctorProfile() {
                   <CardContent className="p-6">
                     <p className="text-sm text-gray-600">Rata-rata Pemahaman</p>
                     <p className="text-3xl font-bold mt-2">{performance.avgComprehension}%</p>
-                    <p className="text-xs text-gray-500 mt-1">Skor edukasi pasien</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Rata-rata skor sesi AI terakhir pasien
+                    </p>
                   </CardContent>
                 </Card>
               </div>

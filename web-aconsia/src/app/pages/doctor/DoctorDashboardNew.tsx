@@ -344,6 +344,9 @@ export function DoctorDashboardNew() {
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Tingkat Pemahaman</p>
                   <p className="text-3xl font-bold text-cyan-600">{completionRate}%</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Berdasarkan skor sesi AI terakhir pasien
+                  </p>
                 </div>
                 <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-cyan-600" />
@@ -441,13 +444,11 @@ export function DoctorDashboardNew() {
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
                             <span>No. RM: {patient.mrn}</span>
                             <span>•</span>
-                            <span className="truncate">{patient.diagnosis || "-"}</span>
+                            <span className="truncate">{patient.diagnosis}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {patient.surgeryDate
-                                ? new Date(patient.surgeryDate).toLocaleDateString("id-ID")
-                                : "-"}
+                              {patient.scheduleText}
                             </span>
                           </div>
                         </div>

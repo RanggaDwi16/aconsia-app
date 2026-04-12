@@ -11,6 +11,17 @@ import {
   firebaseFunctions,
   firestore,
 } from "../../../core/firebase/client";
+import {
+  getLatestQuizScoreForDoctor,
+  resolveComprehensionScoreFromProfile,
+} from "./doctorComprehension";
+import {
+  collectPasienIdentifiers,
+  mergePatientRowsByCanonicalUid,
+  normalizeDoctorPatientDisplay,
+  readNonEmptyText,
+  resolveOperationalStatus,
+} from "./patientDataNormalizer";
 
 const assignAnesthesiaCallable = httpsCallable(
   firebaseFunctions,
@@ -19,17 +30,44 @@ const assignAnesthesiaCallable = httpsCallable(
 
 export type DoctorDashboardPatient = {
   id: string;
+  pasienUid: string;
   fullName: string;
   mrn: string;
   nik?: string;
   phone?: string;
-  diagnosis?: string;
-  surgeryDate?: string;
+  diagnosis: string;
+  scheduleText: string;
+  scheduleDateRaw: string;
+  scheduleTimeRaw: string;
   anesthesiaType?: string | null;
   status?: string;
   comprehensionScore?: number;
   assignedDoctorId?: string;
 };
+
+function resolveAssignedDoctorId(data: Record<string, unknown>, doctorUid: string): string {
+  return (
+    readNonEmptyText(data.dokterId) ||
+    readNonEmptyText(data.assignedDokterId) ||
+    doctorUid
+  );
+}
+
+function resolvePatientName(data: Record<string, unknown>): string {
+  return (
+    readNonEmptyText(data.namaLengkap) ||
+    readNonEmptyText(data.fullName) ||
+    readNonEmptyText(data.name) ||
+    "Pasien"
+  );
+}
+
+function resolveAnesthesiaType(data: Record<string, unknown>): string | null {
+  const value =
+    readNonEmptyText(data.jenisAnestesi) ||
+    readNonEmptyText(data.anesthesiaType);
+  return value || null;
+}
 
 async function waitForAuthenticatedUser(timeoutMs = 2000): Promise<User | null> {
   if (firebaseAuth.currentUser) {
@@ -86,31 +124,58 @@ export async function getDoctorScopedPatients(
     getDocs(assignedDokterIdQuery),
   ]);
 
-  const merged = new Map<string, DoctorDashboardPatient>();
-  const allDocs = [...dokterIdSnapshot.docs, ...assignedSnapshot.docs];
+  const groupedRows = mergePatientRowsByCanonicalUid(
+    [...dokterIdSnapshot.docs, ...assignedSnapshot.docs].map((docSnap) => ({
+      docId: docSnap.id,
+      data: docSnap.data() as Record<string, unknown>,
+    })),
+  );
 
-  for (const docSnap of allDocs) {
-    const data = docSnap.data() as Record<string, unknown>;
-    merged.set(docSnap.id, {
-      id: docSnap.id,
-      fullName: String(data.namaLengkap || data.fullName || "Pasien"),
-      mrn: String(data.noRekamMedis || data.mrn || "-"),
-      nik: String(data.nik || ""),
-      phone: String(data.nomorTelepon || data.phone || ""),
-      diagnosis: String(data.diagnosis || ""),
-      surgeryDate: String(data.surgeryDate || ""),
-      anesthesiaType: (data.jenisAnestesi || data.anesthesiaType || null) as
-        | string
-        | null,
-      status: String(data.status || "approved"),
-      comprehensionScore: Number(data.comprehensionScore || 0),
-      assignedDoctorId: String(
-        data.dokterId || data.assignedDokterId || doctorUid,
-      ),
-    });
-  }
+  const patients: DoctorDashboardPatient[] = groupedRows.map((row) => {
+    const display = normalizeDoctorPatientDisplay(row.data);
+    return {
+      id: row.primaryDocId,
+      pasienUid: row.canonicalUid,
+      fullName: resolvePatientName(row.data),
+      mrn: display.mrnText,
+      nik: readNonEmptyText(row.data.nik),
+      phone: readNonEmptyText(row.data.nomorTelepon) || readNonEmptyText(row.data.phone),
+      diagnosis: display.diagnosisText,
+      scheduleText: display.scheduleText,
+      scheduleDateRaw: display.scheduleDateRaw,
+      scheduleTimeRaw: display.scheduleTimeRaw,
+      anesthesiaType: resolveAnesthesiaType(row.data),
+      status: resolveOperationalStatus(row.data),
+      comprehensionScore: resolveComprehensionScoreFromProfile(row.data),
+      assignedDoctorId: resolveAssignedDoctorId(row.data, doctorUid),
+    };
+  });
 
-  return Array.from(merged.values());
+  await Promise.all(
+    patients.map(async (patient) => {
+      try {
+        const latestScore = await getLatestQuizScoreForDoctor({
+          candidateIds: collectPasienIdentifiers(patient.id, {
+            pasienId: patient.pasienUid,
+          }),
+          doctorUid,
+        });
+        if (latestScore !== null) {
+          patient.comprehensionScore = latestScore;
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn("[doctorDashboardService] latest quiz fallback failed", {
+            pasienId: patient.id,
+            doctorUid,
+            error,
+          });
+        }
+      }
+    }),
+  );
+
+  return patients;
 }
 
 export async function assignAnesthesiaToPatient(params: {

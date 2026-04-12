@@ -6,6 +6,7 @@ import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_learning_summary_provider.dart';
+import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
 import 'package:aconsia_app/presentation/pasien/main/widgets/pasien_main_shell_scope.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/widgets/pasien_choose_dokter_widget.dart';
@@ -225,7 +226,7 @@ class ProfilePasienPage extends HookConsumerWidget {
                       alamatController: alamatController,
                     ),
                   ] else ...[
-                    _buildPerformaTab(context, learningSummaryAsync),
+                    _buildPerformaTab(context, ref, learningSummaryAsync),
                   ],
                 ],
               ),
@@ -481,6 +482,7 @@ class ProfilePasienPage extends HookConsumerWidget {
 
   Widget _buildPerformaTab(
     BuildContext context,
+    WidgetRef ref,
     AsyncValue<PasienLearningSummary> summaryAsync,
   ) {
     return AconsiaCardSurface(
@@ -543,10 +545,8 @@ class ProfilePasienPage extends HookConsumerWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
-                  onPressed: () => context.pushNamed(
-                    RouteName.chatAi,
-                    extra: const {'source': 'profile_performa'},
-                  ),
+                  onPressed: () =>
+                      ref.read(selectedIndexPasienProvider.notifier).state = 4,
                   icon: const Icon(Icons.smart_toy_outlined),
                   label: const Text('Diskusi dengan AI'),
                 ),

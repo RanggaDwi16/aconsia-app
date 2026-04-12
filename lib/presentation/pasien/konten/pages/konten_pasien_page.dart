@@ -109,7 +109,7 @@ class KontenPasienPage extends HookConsumerWidget {
                           const AconsiaInfoBanner(
                             icon: Icons.lightbulb_outline,
                             message:
-                                'Baca konten dari dokter sampai selesai, lalu lanjutkan sesi AI untuk cek pemahaman.',
+                                'Fokus selesaikan bacaan materi terlebih dahulu. Untuk evaluasi pemahaman, gunakan menu Chat AI Assistant.',
                             backgroundColor: Color(0xFFEFF6FF),
                             borderColor: Color(0xFFDCEAFF),
                             iconColor: UiPalette.blue600,

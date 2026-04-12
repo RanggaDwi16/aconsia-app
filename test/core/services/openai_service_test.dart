@@ -43,60 +43,52 @@ void main() {
       expect(response.trim(), isNotEmpty);
     });
 
-    test('mock mode false tetap fallback ke mock lokal (locked mode)',
-        () async {
-      dotenv.testLoad(
-        mergeWith: {
-          'USE_MOCK_AI': 'false',
-          'AI_PROVIDER': 'mock_local',
-        },
-      );
-
-      final service = OpenAIService();
-      final response = await service.sendFreeChatMessage(
-        message: 'tes',
-        kontenTitle: 'Materi A',
-        sectionContents: const ['Materi anestesi dasar'],
-        sectionTitles: const ['Dasar Anestesi'],
-        conversationHistory: const [],
-      );
-
-      expect(response.trim(), isNotEmpty);
-    });
-
     test(
-        'general chat dengan USE_MOCK_AI=false tetap menggunakan mock lokal',
+        'mock mode false + direct provider tanpa API key harus gagal dengan missing_config',
         () async {
       dotenv.testLoad(
         mergeWith: {
           'USE_MOCK_AI': 'false',
-          'AI_PROVIDER': 'mock_local',
+          'AI_PROVIDER': 'openai_direct',
+          'OPENAI_API_KEY': '',
         },
       );
 
       final service = OpenAIService();
-      final response = await service.sendChatMessage(
-        message: 'tes',
-        conversationHistory: const [],
+      await expectLater(
+        () => service.sendFreeChatMessage(
+          message: 'tes',
+          kontenTitle: 'Materi A',
+          sectionContents: const ['Materi anestesi dasar'],
+          sectionTitles: const ['Dasar Anestesi'],
+          conversationHistory: const [],
+        ),
+        throwsA(
+          isA<AiUnavailableError>().having(
+            (e) => e.reason,
+            'reason',
+            'ai_not_ready_missing_key',
+          ),
+        ),
       );
-
-      expect(response.trim(), isNotEmpty);
     });
 
-    test('diagnostics should reflect mock-only contract', () {
+    test('diagnostics should reflect direct mode with missing config', () {
       dotenv.testLoad(
         mergeWith: {
           'USE_MOCK_AI': 'false',
-          'AI_PROVIDER': 'mock_local',
+          'AI_PROVIDER': 'openai_direct',
+          'OPENAI_API_KEY': '',
         },
       );
 
       final service = OpenAIService();
       final d = service.diagnostics();
 
-      expect(d['mockModeActive'], isTrue);
-      expect(d['source'], 'mock_local');
+      expect(d['mockModeActive'], isFalse);
+      expect(d['source'], 'openai_direct');
       expect(d['openAiReady'], isFalse);
+      expect(d['apiKeyPresent'], isFalse);
     });
   });
 }

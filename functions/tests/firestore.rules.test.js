@@ -642,3 +642,89 @@ test("dokter tidak bisa create assignment untuk pasien di luar scope", async () 
     }),
   );
 });
+
+test("dokter bisa baca quiz_results milik pasien dalam scope saat dokterId cocok", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, "quiz_results", "quiz-scope-001"), {
+      pasienId: "pasien-scope-quiz-001",
+      dokterId: "dokter-001",
+      overallScore: 100,
+      completedAt: "server-time",
+    });
+  });
+
+  const dokterDb = testEnv.authenticatedContext("dokter-001", {
+    role: "dokter",
+  }).firestore();
+
+  await assertSucceeds(getDoc(doc(dokterDb, "quiz_results", "quiz-scope-001")));
+});
+
+test("dokter tidak bisa baca quiz_results dokter lain", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, "quiz_results", "quiz-other-doctor-001"), {
+      pasienId: "pasien-scope-quiz-002",
+      dokterId: "dokter-999",
+      overallScore: 85,
+      completedAt: "server-time",
+    });
+  });
+
+  const dokterDb = testEnv.authenticatedContext("dokter-001", {
+    role: "dokter",
+  }).firestore();
+
+  await assertFails(getDoc(doc(dokterDb, "quiz_results", "quiz-other-doctor-001")));
+});
+
+test("pasien bisa create quiz_results jika dokterId sesuai assigned dokter", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, "pasien_profiles", "pasien-quiz-create-001"), {
+      uid: "pasien-quiz-create-001",
+      dokterId: "dokter-001",
+      assignedDokterId: "dokter-001",
+      namaLengkap: "Pasien Quiz Create",
+    });
+  });
+
+  const pasienDb = testEnv.authenticatedContext("pasien-quiz-create-001", {
+    role: "pasien",
+  }).firestore();
+
+  await assertSucceeds(
+    setDoc(doc(pasienDb, "quiz_results", "quiz-create-allowed-001"), {
+      pasienId: "pasien-quiz-create-001",
+      dokterId: "dokter-001",
+      overallScore: 92,
+      completedAt: "server-time",
+    }),
+  );
+});
+
+test("pasien tidak bisa create quiz_results jika dokterId tidak sesuai assigned dokter", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, "pasien_profiles", "pasien-quiz-create-002"), {
+      uid: "pasien-quiz-create-002",
+      dokterId: "dokter-001",
+      assignedDokterId: "dokter-001",
+      namaLengkap: "Pasien Quiz Create Mismatch",
+    });
+  });
+
+  const pasienDb = testEnv.authenticatedContext("pasien-quiz-create-002", {
+    role: "pasien",
+  }).firestore();
+
+  await assertFails(
+    setDoc(doc(pasienDb, "quiz_results", "quiz-create-blocked-001"), {
+      pasienId: "pasien-quiz-create-002",
+      dokterId: "dokter-999",
+      overallScore: 75,
+      completedAt: "server-time",
+    }),
+  );
+});

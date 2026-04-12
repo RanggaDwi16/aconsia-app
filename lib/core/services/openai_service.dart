@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'openai_service.g.dart';
@@ -23,26 +24,101 @@ class AiUnavailableError implements Exception {
   String toString() => userMessage;
 }
 
+class AiRuntimeStatus {
+  const AiRuntimeStatus({
+    required this.mockModeActive,
+    required this.provider,
+    required this.apiKeyPresent,
+    required this.openAiReady,
+    required this.reason,
+  });
+
+  factory AiRuntimeStatus.fromEnv(Map<String, String> env) {
+    final mockModeActive = (env['USE_MOCK_AI'] ?? 'true').toLowerCase() == 'true';
+    final provider = (env['AI_PROVIDER'] ?? 'mock_local').trim().isEmpty
+        ? 'mock_local'
+        : (env['AI_PROVIDER'] ?? 'mock_local').trim();
+    final apiKeyPresent = (env['OPENAI_API_KEY'] ?? '').trim().isNotEmpty;
+
+    if (mockModeActive) {
+      return const AiRuntimeStatus(
+        mockModeActive: true,
+        provider: 'mock_local',
+        apiKeyPresent: false,
+        openAiReady: false,
+        reason: 'ai_not_ready_mock_enabled',
+      );
+    }
+
+    if (provider != 'openai_direct') {
+      return AiRuntimeStatus(
+        mockModeActive: false,
+        provider: provider,
+        apiKeyPresent: apiKeyPresent,
+        openAiReady: false,
+        reason: 'ai_not_ready_provider_mismatch',
+      );
+    }
+
+    if (!apiKeyPresent) {
+      return const AiRuntimeStatus(
+        mockModeActive: false,
+        provider: 'openai_direct',
+        apiKeyPresent: false,
+        openAiReady: false,
+        reason: 'ai_not_ready_missing_key',
+      );
+    }
+
+    return const AiRuntimeStatus(
+      mockModeActive: false,
+      provider: 'openai_direct',
+      apiKeyPresent: true,
+      openAiReady: true,
+      reason: 'ready',
+    );
+  }
+
+  final bool mockModeActive;
+  final String provider;
+  final bool apiKeyPresent;
+  final bool openAiReady;
+  final String reason;
+
+  String get source => mockModeActive ? 'mock_local' : provider;
+
+  Map<String, dynamic> toMap() => {
+        'mockModeActive': mockModeActive,
+        'source': source,
+        'provider': provider,
+        'apiKeyPresent': apiKeyPresent,
+        'openAiReady': openAiReady,
+        'reason': reason,
+      };
+}
+
 class OpenAIService {
+  static AiRuntimeStatus _runtimeFromEnv() => AiRuntimeStatus.fromEnv(dotenv.env);
+
+  final AiRuntimeStatus _runtimeStatus;
   final String _aiProvider;
   final bool _mockOnlyActive;
+  final String _openAiApiKey;
+  final bool _openAiReady;
 
   OpenAIService()
-      : _aiProvider = (dotenv.env['AI_PROVIDER'] ?? 'mock_local').trim(),
-        _mockOnlyActive = true {
+      : _runtimeStatus = _runtimeFromEnv(),
+        _aiProvider = _runtimeFromEnv().provider,
+        _mockOnlyActive = _runtimeFromEnv().mockModeActive,
+        _openAiApiKey = (dotenv.env['OPENAI_API_KEY'] ?? '').trim(),
+        _openAiReady = _runtimeFromEnv().openAiReady {
     debugPrint(
-      '[AI] OpenAIService initialized | mockModeActive=$_mockOnlyActive | provider=${(dotenv.env['AI_PROVIDER'] ?? 'mock_local')}',
+      '[AI] OpenAIService initialized | mockModeActive=$_mockOnlyActive | provider=$_aiProvider | apiKeyPresent=${_runtimeStatus.apiKeyPresent} | openAiReady=$_openAiReady | reason=${_runtimeStatus.reason}',
     );
   }
 
   Map<String, dynamic> diagnostics() {
-    return {
-      'mockModeActive': _mockOnlyActive,
-      'source': 'mock_local',
-      'provider': _aiProvider.isEmpty ? 'mock_local' : _aiProvider,
-      'apiKeyPresent': false,
-      'openAiReady': false,
-    };
+    return _runtimeStatus.toMap();
   }
 
   void _trackEvent(
@@ -61,15 +137,171 @@ class OpenAIService {
     double temperature = 0.7,
     bool jsonMode = false,
   }) async {
+    if (_mockOnlyActive) {
+      _trackEvent(
+        'chat_fallback_used',
+        metadata: {'mode': 'mock', 'reason': 'ai_not_ready_mock_enabled'},
+      );
+      throw const AiUnavailableError(
+        userMessage:
+            'Mode AI saat ini dikunci ke mock lokal (gratis penuh), tidak ada panggilan jaringan.',
+        reason: 'ai_not_ready_mock_enabled',
+      );
+    }
+
+    if (!_openAiReady) {
+      throw const AiUnavailableError(
+        userMessage:
+            'OPENAI_API_KEY belum diisi. Isi .env terlebih dahulu untuk memakai AI online.',
+        reason: 'ai_not_ready_missing_key',
+      );
+    }
+
+    if (_aiProvider != 'openai_direct') {
+      throw AiUnavailableError(
+        userMessage:
+            'AI_PROVIDER "$_aiProvider" belum didukung. Gunakan "openai_direct" atau "mock_local".',
+        reason: 'ai_not_ready_provider_mismatch',
+      );
+    }
+
+    return _callOpenAiChatCompletion(
+      messages: messages,
+      model: model,
+      maxTokens: maxTokens,
+      temperature: temperature,
+      jsonMode: jsonMode,
+      action: action,
+    );
+  }
+
+  Future<String> _callOpenAiChatCompletion({
+    required List<Map<String, String>> messages,
+    required String model,
+    required int maxTokens,
+    required double temperature,
+    required bool jsonMode,
+    required String action,
+  }) async {
     _trackEvent(
-      'chat_fallback_used',
-      metadata: {'mode': 'mock', 'reason': 'mock_mode_active'},
+      'chat_request_started',
+      metadata: {'action': action, 'provider': 'openai_direct'},
     );
-    throw const AiUnavailableError(
-      userMessage:
-          'Mode AI saat ini dikunci ke mock lokal (gratis penuh), tidak ada panggilan jaringan.',
-      reason: 'mock_mode_active',
-    );
+
+    try {
+      final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+      final payload = <String, dynamic>{
+        'model': model,
+        'messages': messages
+            .map(
+              (m) => <String, String>{
+                'role': (m['role'] ?? 'user').trim(),
+                'content': (m['content'] ?? '').trim(),
+              },
+            )
+            .where((m) => m['content']!.isNotEmpty)
+            .toList(growable: false),
+        'temperature': temperature,
+        'max_tokens': maxTokens,
+      };
+
+      if (jsonMode) {
+        payload['response_format'] = {'type': 'json_object'};
+      }
+
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $_openAiApiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 45));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        String upstreamMessage = 'OpenAI request failed';
+        try {
+          final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+          final err = decoded['error'];
+          if (err is Map<String, dynamic>) {
+            final msg = (err['message'] as String?)?.trim();
+            if (msg != null && msg.isNotEmpty) {
+              upstreamMessage = msg;
+            }
+          }
+        } catch (_) {}
+
+        _trackEvent(
+          'chat_request_failed',
+          metadata: {
+            'action': action,
+            'provider': 'openai_direct',
+            'statusCode': response.statusCode,
+          },
+        );
+        throw AiUnavailableError(
+          userMessage:
+              'OpenAI error (${response.statusCode}): $upstreamMessage',
+          reason: 'ai_request_failed_upstream',
+          statusCode: response.statusCode,
+        );
+      }
+
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final choices = decoded['choices'];
+      if (choices is! List || choices.isEmpty) {
+        throw const AiUnavailableError(
+          userMessage: 'Respons OpenAI kosong (choices tidak tersedia).',
+          reason: 'ai_request_failed_upstream',
+        );
+      }
+
+      final first = choices.first;
+      if (first is! Map<String, dynamic>) {
+        throw const AiUnavailableError(
+          userMessage: 'Respons OpenAI tidak valid.',
+          reason: 'ai_request_failed_upstream',
+        );
+      }
+
+      final message = first['message'];
+      if (message is! Map<String, dynamic>) {
+        throw const AiUnavailableError(
+          userMessage: 'Respons OpenAI tidak memiliki message.',
+          reason: 'ai_request_failed_upstream',
+        );
+      }
+
+      final content = (message['content'] as String?)?.trim() ?? '';
+      if (content.isEmpty) {
+        throw const AiUnavailableError(
+          userMessage: 'Respons OpenAI kosong (content tidak tersedia).',
+          reason: 'ai_request_failed_upstream',
+        );
+      }
+
+      _trackEvent(
+        'chat_request_succeeded',
+        metadata: {'action': action, 'provider': 'openai_direct'},
+      );
+      return content;
+    } on TimeoutException {
+      _trackEvent(
+        'chat_request_failed',
+        metadata: {
+          'action': action,
+          'provider': 'openai_direct',
+          'reason': 'ai_request_failed_timeout'
+        },
+      );
+      throw const AiUnavailableError(
+        userMessage:
+            'Permintaan ke AI timeout. Periksa koneksi internet lalu coba lagi.',
+        reason: 'ai_request_failed_timeout',
+      );
+    }
   }
 
   /// Generate quiz questions based on konten sections
@@ -201,12 +433,33 @@ Format response JSON (PENTING: score harus number, bukan string):
 
       return response;
     } catch (e) {
-      // If API error, return mock evaluation
-      if (e.toString().contains('quota') || e.toString().contains('401')) {
-        debugPrint('⚠️ OpenAI API quota exceeded, using mock evaluation');
-        return _generateMockEvaluation(userAnswer);
+      final raw = e.toString().toLowerCase();
+      final isRateLimited =
+          raw.contains('quota') || raw.contains('rate limit') || raw.contains('429');
+      final isUnauthorized = raw.contains('401') || raw.contains('unauthorized');
+
+      if (isRateLimited) {
+        throw const AiUnavailableError(
+          userMessage:
+              'OpenAI sedang rate limit / quota habis. Sistem akan memakai evaluasi lokal.',
+          reason: 'rate_limit',
+          statusCode: 429,
+        );
       }
-      throw Exception('Gagal evaluate answer: $e');
+
+      if (isUnauthorized) {
+        throw const AiUnavailableError(
+          userMessage:
+              'Konfigurasi API key tidak valid (401). Sistem akan memakai evaluasi lokal.',
+          reason: 'unauthorized',
+          statusCode: 401,
+        );
+      }
+
+      throw const AiUnavailableError(
+        userMessage: 'Evaluasi AI sedang bermasalah. Sistem akan memakai evaluasi lokal.',
+        reason: 'ai_request_failed_upstream',
+      );
     }
   }
 
@@ -294,7 +547,7 @@ Format response JSON:
     if (_mockOnlyActive) {
       _trackEvent(
         'chat_fallback_used',
-        metadata: {'mode': 'mock', 'reason': 'mock_mode_active'},
+        metadata: {'mode': 'mock', 'reason': 'ai_not_ready_mock_enabled'},
       );
       return _generateMockChatResponse(
         message,
@@ -413,25 +666,15 @@ Ingat: Kamu GURU yang MENGETES, bukan asisten yang menunggu! Aktif quiz pasien t
       );
     } on AiUnavailableError {
       rethrow;
-    } on TimeoutException {
-      _trackEvent(
-        'chat_send_failed',
-        metadata: {'reason': 'timeout'},
-      );
-      throw const AiUnavailableError(
-        userMessage:
-            'Permintaan ke AI timeout. Periksa koneksi internet lalu coba lagi.',
-        reason: 'timeout',
-      );
     } catch (e) {
       _trackEvent(
         'chat_send_failed',
-        metadata: {'reason': 'gateway_or_unknown'},
+        metadata: {'reason': 'ai_request_failed_upstream'},
       );
       throw const AiUnavailableError(
         userMessage:
             'Gagal menghubungi AI. Periksa koneksi internet dan coba lagi.',
-        reason: 'service_unavailable',
+        reason: 'ai_request_failed_upstream',
       );
     }
   }
@@ -527,7 +770,7 @@ Format response JSON:
     if (_mockOnlyActive) {
       _trackEvent(
         'chat_fallback_used',
-        metadata: {'mode': 'mock', 'reason': 'mock_mode_active_general_chat'},
+        metadata: {'mode': 'mock', 'reason': 'ai_not_ready_mock_enabled'},
       );
       return _generateMockChatResponse(
         message,
@@ -568,25 +811,15 @@ PENTING:
       );
     } on AiUnavailableError {
       rethrow;
-    } on TimeoutException {
-      _trackEvent(
-        'chat_send_failed',
-        metadata: {'reason': 'timeout'},
-      );
-      throw const AiUnavailableError(
-        userMessage:
-            'Permintaan ke AI timeout. Periksa koneksi internet lalu coba lagi.',
-        reason: 'timeout',
-      );
     } catch (e) {
       _trackEvent(
         'chat_send_failed',
-        metadata: {'reason': 'gateway_or_unknown'},
+        metadata: {'reason': 'ai_request_failed_upstream'},
       );
       throw const AiUnavailableError(
         userMessage:
             'Gagal menghubungi AI. Periksa koneksi internet dan coba lagi.',
-        reason: 'service_unavailable',
+        reason: 'ai_request_failed_upstream',
       );
     }
   }
@@ -783,6 +1016,11 @@ PENTING:
     };
   }
 }
+
+/// Riverpod Provider
+final aiRuntimeStatusProvider = Provider<AiRuntimeStatus>(
+  (ref) => AiRuntimeStatus.fromEnv(dotenv.env),
+);
 
 /// Riverpod Provider
 @riverpod

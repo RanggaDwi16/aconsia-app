@@ -3,7 +3,8 @@ import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
-import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_learning_summary_provider.dart';
+import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
+import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_comprehension_score_provider.dart';
 import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -54,20 +55,10 @@ class _ScheduleSignaturePageState extends ConsumerState<ScheduleSignaturePage> {
               );
             }
 
-            final dokterId = _safeText(profile.dokterId);
-            final summaryAsync = uid.isNotEmpty && dokterId != '-'
-                ? ref.watch(
-                    pasienLearningSummaryProvider(
-                      PasienLearningSummaryParams(
-                        pasienId: uid,
-                        dokterId: dokterId,
-                      ),
-                    ),
-                  )
-                : const AsyncValue.data(PasienLearningSummary.empty());
-            final completionRate =
-                summaryAsync.valueOrNull?.completionRate ?? 0;
-            final canSchedule = completionRate >= 80;
+            final comprehensionAsync =
+                ref.watch(pasienComprehensionScoreProvider(uid));
+            final comprehensionScore = comprehensionAsync.valueOrNull?.score ?? 0;
+            final canSchedule = comprehensionScore >= 80;
 
             final preOp =
                 profile.preOperativeAssessment ?? const <String, dynamic>{};
@@ -79,7 +70,7 @@ class _ScheduleSignaturePageState extends ConsumerState<ScheduleSignaturePage> {
 
             if (!canSchedule) {
               return _BlockedState(
-                completionRate: completionRate,
+                comprehensionScore: comprehensionScore.toDouble(),
                 onBackToDashboard: _onBack,
               );
             }
@@ -100,7 +91,9 @@ class _ScheduleSignaturePageState extends ConsumerState<ScheduleSignaturePage> {
                         onBack: _onBack,
                       ),
                       const Gap(UiSpacing.md),
-                      _SuccessStateBanner(completionRate: completionRate),
+                      _SuccessStateBanner(
+                        comprehensionScore: comprehensionScore.toDouble(),
+                      ),
                       const Gap(UiSpacing.md),
                       const AconsiaInfoBanner(
                         icon: Icons.info_outline_rounded,
@@ -359,9 +352,7 @@ class _ScheduleSignaturePageState extends ConsumerState<ScheduleSignaturePage> {
 
   Future<void> _saveSchedule(String uid) async {
     if (_selectedDate == null || _selectedTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mohon pilih tanggal dan waktu')),
-      );
+      context.showErrorSnackbar(context, 'Mohon pilih tanggal dan waktu');
       return;
     }
 
@@ -399,17 +390,14 @@ class _ScheduleSignaturePageState extends ConsumerState<ScheduleSignaturePage> {
 
       ref.invalidate(fetchPasienProfileProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Jadwal tanda tangan berhasil disimpan!'),
-          ),
+        context.showSuccessDialog(
+          context,
+          'Jadwal tanda tangan berhasil disimpan!',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan jadwal: $e')),
-        );
+        context.showErrorSnackbar(context, 'Gagal menyimpan jadwal: $e');
       }
     } finally {
       if (mounted) {
@@ -455,11 +443,11 @@ class _Header extends StatelessWidget {
 
 class _BlockedState extends StatelessWidget {
   const _BlockedState({
-    required this.completionRate,
+    required this.comprehensionScore,
     required this.onBackToDashboard,
   });
 
-  final double completionRate;
+  final double comprehensionScore;
   final VoidCallback onBackToDashboard;
 
   @override
@@ -494,7 +482,7 @@ class _BlockedState extends StatelessWidget {
                 ),
                 const Gap(UiSpacing.xs),
                 Text(
-                  'Anda perlu mencapai pemahaman minimal 80% sebelum dapat menjadwalkan tanda tangan. Saat ini: ${completionRate.toStringAsFixed(0)}%',
+                  'Anda perlu mencapai pemahaman AI minimal 80% sebelum dapat menjadwalkan tanda tangan. Saat ini: ${comprehensionScore.toStringAsFixed(0)}%',
                   textAlign: TextAlign.center,
                   style: UiTypography.body.copyWith(color: UiPalette.slate600),
                 ),
@@ -517,10 +505,10 @@ class _BlockedState extends StatelessWidget {
 
 class _SuccessStateBanner extends StatelessWidget {
   const _SuccessStateBanner({
-    required this.completionRate,
+    required this.comprehensionScore,
   });
 
-  final double completionRate;
+  final double comprehensionScore;
 
   @override
   Widget build(BuildContext context) {
@@ -548,7 +536,7 @@ class _SuccessStateBanner extends StatelessWidget {
           ),
           const Gap(UiSpacing.xs),
           Text(
-            'Pemahaman Anda: ${completionRate.toStringAsFixed(0)}%',
+            'Pemahaman AI Anda: ${comprehensionScore.toStringAsFixed(0)}%',
             style: UiTypography.body.copyWith(
               color: const Color(0xFF16A34A),
               fontWeight: FontWeight.w700,

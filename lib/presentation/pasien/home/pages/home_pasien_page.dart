@@ -8,6 +8,7 @@ import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_sections_by_konten_id/fetch_sections_by_konten_id_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_accessible_konten_provider.dart';
+import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_comprehension_score_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_learning_summary_provider.dart';
 import 'package:aconsia_app/presentation/pasien/konten/controllers/material_read_progress_provider.dart';
 import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
@@ -39,6 +40,10 @@ class HomePasienPage extends ConsumerWidget {
             ),
           )
         : const AsyncValue.data(PasienLearningSummary.empty());
+    final comprehensionAsync = (uid ?? '').isNotEmpty
+        ? ref.watch(pasienComprehensionScoreProvider(uid!))
+        : const AsyncValue.data(PasienComprehensionState.empty());
+    final comprehensionScore = comprehensionAsync.valueOrNull?.score ?? 0;
 
     return Scaffold(
       body: AconsiaPageBackground(
@@ -60,6 +65,9 @@ class HomePasienPage extends ConsumerWidget {
                   ),
                 ),
               );
+            }
+            if ((uid ?? '').isNotEmpty) {
+              ref.invalidate(pasienComprehensionScoreProvider(uid!));
             }
             await Future.delayed(const Duration(milliseconds: 350));
           },
@@ -96,6 +104,7 @@ class HomePasienPage extends ConsumerWidget {
                 _buildAksiUtamaCards(
                   ref: ref,
                   summaryAsync: learningSummaryAsync,
+                  comprehensionScore: comprehensionScore,
                   profilePasien: profilePasien,
                 ),
                 const Gap(UiSpacing.md),
@@ -241,10 +250,11 @@ class HomePasienPage extends ConsumerWidget {
   Widget _buildAksiUtamaCards({
     required WidgetRef ref,
     required AsyncValue<PasienLearningSummary> summaryAsync,
+    required int comprehensionScore,
     required PasienProfileModel? profilePasien,
   }) {
-    final progress = summaryAsync.valueOrNull?.completionRate ?? 0;
-    final jadwalTersedia = progress >= 80;
+    final progressMateri = summaryAsync.valueOrNull?.completionRate ?? 0;
+    final jadwalTersedia = comprehensionScore >= 80;
     final assessmentDone = profilePasien?.assessmentCompleted ?? false;
     final scheduleDateRaw =
         profilePasien?.preOperativeAssessment?['scheduledSignatureDate'];
@@ -283,7 +293,7 @@ class HomePasienPage extends ConsumerWidget {
               ? 'Ubah Jadwal'
               : (jadwalTersedia
                   ? 'Atur Jadwal'
-                  : 'Locked (<${progress.toStringAsFixed(0)}%)'),
+                  : 'Locked (<$comprehensionScore%)'),
           actionColor:
               jadwalTersedia ? const Color(0xFF16A34A) : UiPalette.slate400,
           onTap: jadwalTersedia
@@ -291,7 +301,7 @@ class HomePasienPage extends ConsumerWidget {
               : null,
           trailingStatus: hasSignatureSchedule
               ? 'Terjadwal ${scheduleTimeRaw is String && scheduleTimeRaw.trim().isNotEmpty ? scheduleTimeRaw : ''}'
-              : null,
+              : 'Progress Materi ${progressMateri.toStringAsFixed(0)}%',
         ),
       ],
     );

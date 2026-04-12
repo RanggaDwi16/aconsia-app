@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router";
 import { DoctorLayout } from "../../layouts/DoctorLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
@@ -11,28 +10,35 @@ import { Progress } from "../../components/ui/progress";
 import { Button } from "../../components/ui/button";
 import { Search, MessageCircle, TrendingUp, AlertCircle } from "lucide-react";
 import { getDesktopSession } from "../../../core/auth/session";
-import { firestore } from "../../../core/firebase/client";
 import { userMessages } from "../../copy/userMessages";
+import {
+  getDoctorScopedPatients,
+  type DoctorDashboardPatient,
+} from "../../../modules/doctor/services/doctorDashboardService";
 
 type DoctorPatient = {
   id: string;
+  uid: string;
   name: string;
   mrn: string;
   surgery: string;
   anesthesia: string;
   comprehension: number;
   status: string;
-  scheduledDate: string;
+  scheduledConsentDateText: string;
+  scheduledConsentDateRaw: string;
+  scheduledConsentTimeRaw: string;
   educationProgress: number;
 };
 
 function normalizeStatus(status: string): string {
-  const s = status.toLowerCase();
+  const s = status.toLowerCase().trim();
+  if (!s) return "Pending";
   if (s === "ready" || s === "completed") return "Siap";
   if (s === "in_progress" || s === "approved") return "Edukasi";
   if (s === "pending") return "Pending";
   if (s === "rejected") return "Ditolak";
-  return s || "Unknown";
+  return "Pending";
 }
 
 function getProgressFromStatus(status: string, score: number): number {
@@ -44,20 +50,23 @@ function getProgressFromStatus(status: string, score: number): number {
   return Math.max(0, Math.min(100, score));
 }
 
-function mapPatient(docId: string, data: Record<string, unknown>): DoctorPatient {
-  const rawStatus = String(data.status || "pending");
-  const comprehension = Number(data.comprehensionScore || 0);
-
+function mapScopedPatient(patient: DoctorDashboardPatient): DoctorPatient {
+  const rawStatus = patient.status ?? "pending";
+  const comprehension = Number(patient.comprehensionScore || 0);
+  const normalizedStatus = normalizeStatus(rawStatus);
   return {
-    id: docId,
-    name: String(data.namaLengkap || data.fullName || "Pasien"),
-    mrn: String(data.noRekamMedis || data.mrn || "-"),
-    surgery: String(data.jenisOperasi || data.surgeryType || "-"),
-    anesthesia: String(data.jenisAnestesi || data.anesthesiaType || "-"),
+    id: patient.id,
+    uid: patient.pasienUid || patient.id,
+    name: patient.fullName || "Pasien",
+    mrn: patient.mrn || "Belum diisi",
+    surgery: patient.diagnosis || "Belum diisi",
+    anesthesia: patient.anesthesiaType || "Belum ditentukan",
     comprehension: Number.isFinite(comprehension) ? comprehension : 0,
-    status: normalizeStatus(rawStatus),
-    scheduledDate: String(data.surgeryDate || data.tanggalOperasi || "-"),
-    educationProgress: getProgressFromStatus(rawStatus, comprehension),
+    status: normalizedStatus,
+    scheduledConsentDateText: patient.scheduleText || "Belum dijadwalkan",
+    scheduledConsentDateRaw: patient.scheduleDateRaw || "",
+    scheduledConsentTimeRaw: patient.scheduleTimeRaw || "",
+    educationProgress: getProgressFromStatus(normalizedStatus.toLowerCase(), comprehension),
   };
 }
 
@@ -79,35 +88,13 @@ export function DoctorPatients() {
       }
 
       try {
-        const dokterIdQuery = query(
-          collection(firestore, "pasien_profiles"),
-          where("dokterId", "==", session.uid),
-        );
-        const assignedDokterIdQuery = query(
-          collection(firestore, "pasien_profiles"),
-          where("assignedDokterId", "==", session.uid),
-        );
-        const [dokterIdSnapshot, assignedSnapshot] = await Promise.all([
-          getDocs(dokterIdQuery),
-          getDocs(assignedDokterIdQuery),
-        ]);
-
-        const mergedDocs = new Map<string, Record<string, unknown>>();
-        for (const docSnap of [...dokterIdSnapshot.docs, ...assignedSnapshot.docs]) {
-          mergedDocs.set(docSnap.id, docSnap.data() as Record<string, unknown>);
-        }
-
-        const mapped = Array.from(mergedDocs.entries()).map(([docId, data]) =>
-          mapPatient(docId, data),
-        );
+        const scopedPatients = await getDoctorScopedPatients(session.uid);
+        const mapped = scopedPatients.map(mapScopedPatient);
 
         console.info("[DoctorPatients] load summary", {
           doctor_uid: session.uid,
-          dokterIdCount: dokterIdSnapshot.size,
-          assignedDokterIdCount: assignedSnapshot.size,
           mergedCount: mapped.length,
         });
-
         setPatients(mapped);
         setLoadError("");
       } catch (error) {
@@ -143,7 +130,7 @@ export function DoctorPatients() {
   const anesthesiaOptions = useMemo(() => {
     const types = new Set<string>();
     for (const patient of patients) {
-      if (patient.anesthesia !== "-") {
+      if (patient.anesthesia !== "Belum ditentukan") {
         types.add(patient.anesthesia);
       }
     }
@@ -236,7 +223,10 @@ export function DoctorPatients() {
             <Card>
               <CardHeader>
                 <CardTitle>Daftar Pasien</CardTitle>
-                <CardDescription>Total {filteredPatients.length} pasien</CardDescription>
+                <CardDescription>
+                  Total {filteredPatients.length} pasien. Pemahaman = skor sesi AI terakhir
+                  yang tersimpan.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -265,7 +255,7 @@ export function DoctorPatients() {
                         <TableCell>
                           <Badge variant="outline">{patient.anesthesia}</Badge>
                         </TableCell>
-                        <TableCell className="text-sm">{patient.scheduledDate}</TableCell>
+                        <TableCell className="text-sm">{patient.scheduledConsentDateText}</TableCell>
                         <TableCell>
                           <div className="space-y-1 min-w-[120px]">
                             <div className="flex items-center justify-between text-xs">

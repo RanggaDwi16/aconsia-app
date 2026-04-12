@@ -1,5 +1,9 @@
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../../core/firebase/client";
+import {
+  resolveComprehensionScoreFromProfile,
+  resolveQuizScoreValue,
+} from "./doctorComprehension";
 
 export type MonitoringQuiz = {
   section: string;
@@ -110,7 +114,7 @@ export async function getDoctorMonitoringPatients(doctorUid: string): Promise<Mo
     if (!pasienId) continue;
 
     const sectionIndex = toNumber(data.section || data.sectionNumber || 0);
-    const score = toNumber(data.score || data.finalScore || data.comprehensionScore || 0);
+    const score = resolveQuizScoreValue(data);
     const attempts = Math.max(1, toNumber(data.attempts || 1));
 
     const prev = quizMap.get(pasienId) || { items: [], avgScore: 0 };
@@ -133,7 +137,7 @@ export async function getDoctorMonitoringPatients(doctorUid: string): Promise<Mo
   return pasienSnap.docs.map((docSnap) => {
     const data = docSnap.data() as Record<string, unknown>;
     const patientStatus = String(data.status || "pending");
-    const comprehensionScore = toNumber(data.comprehensionScore || 0);
+    const comprehensionScore = resolveComprehensionScoreFromProfile(data);
     const sessionAgg = sessionMap.get(docSnap.id);
     const quizAgg = quizMap.get(docSnap.id);
 

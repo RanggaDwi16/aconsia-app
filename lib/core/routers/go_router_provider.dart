@@ -21,7 +21,6 @@ import 'package:aconsia_app/presentation/pasien/home/pages/all_recommendations_p
 import 'package:aconsia_app/presentation/pasien/assessment/pages/pre_operative_assessment_page.dart';
 import 'package:aconsia_app/presentation/pasien/konten/pages/chat_ai_page.dart';
 import 'package:aconsia_app/presentation/pasien/konten/pages/detail_konten_page.dart';
-import 'package:aconsia_app/presentation/pasien/quiz/pages/quiz_result_page.dart';
 import 'package:aconsia_app/presentation/pasien/main/pages/main_pasien_page.dart';
 import 'package:aconsia_app/presentation/pasien/profile/pages/edit_profile_pasien_page.dart';
 import 'package:aconsia_app/presentation/pasien/profile/pages/profile_pasien_page.dart';
@@ -70,7 +69,6 @@ Raw<GoRouter> router(Ref ref) {
         RouteName.profilePasien,
         RouteName.editProfilePasien,
         RouteName.chatAi,
-        RouteName.quizResult,
         RouteName.allRecommendations,
         RouteName.asesmenPraOperasi,
         RouteName.hubungiDokterPasien,
@@ -248,38 +246,10 @@ Raw<GoRouter> router(Ref ref) {
             return ChatAiPage(
               kontenId: extra['kontenId'] as String?,
               sourceScreen: extra['source'] as String?,
+              sessionId: extra['sessionId'] as String?,
             );
           }
           return const ChatAiPage();
-        },
-      ),
-      GoRoute(
-        path: '/quiz-result',
-        name: RouteName.quizResult,
-        builder: (context, state) {
-          final data = state.extra as Map<String, dynamic>;
-
-          // Safe casting for quizResults
-          final quizResultsRaw = data['quizResults'];
-          final List<Map<String, dynamic>> quizResults;
-
-          if (quizResultsRaw is List) {
-            quizResults = quizResultsRaw
-                .map((e) => e is Map<String, dynamic>
-                    ? e
-                    : (e as Map).cast<String, dynamic>())
-                .toList();
-          } else {
-            quizResults = [];
-          }
-
-          return QuizResultPage(
-            konten: data['konten'],
-            sessionId: data['sessionId'],
-            quizResults: quizResults,
-            preGeneratedSummary: data['summary'], // For free chat mode
-            source: data['source'] as String?,
-          );
         },
       ),
       GoRoute(

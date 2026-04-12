@@ -2,6 +2,7 @@ import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_spacing.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/core/utils/extensions/build_context_ext.dart';
+import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_comprehension_score_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/controllers/pasien_learning_summary_provider.dart';
 import 'package:aconsia_app/presentation/pasien/main/controllers/selected_index_provider.dart';
 import 'package:aconsia_app/presentation/pasien/profile/controllers/get_pasien_profile/fetch_pasien_profile_provider.dart';
@@ -24,7 +25,10 @@ class PasienSidebarDrawer extends ConsumerWidget {
     final profile = ref.watch(fetchPasienProfileProvider(pasienId: uid)).value;
     final dokterId = profile?.dokterId ?? '';
 
-    final progress = uid.isNotEmpty && dokterId.isNotEmpty
+    final comprehensionScore = uid.isNotEmpty
+        ? ref.watch(pasienComprehensionScoreProvider(uid)).valueOrNull?.score ?? 0
+        : 0;
+    final progressMateri = uid.isNotEmpty && dokterId.isNotEmpty
         ? ref
                 .watch(
                   pasienLearningSummaryProvider(
@@ -172,7 +176,10 @@ class PasienSidebarDrawer extends ConsumerWidget {
                       runSpacing: UiSpacing.xs,
                       children: [
                         _HeaderChip(
-                          label: 'Pemahaman: ${progress.toStringAsFixed(0)}%',
+                          label: 'Pemahaman AI: $comprehensionScore%',
+                        ),
+                        _HeaderChip(
+                          label: 'Progress Materi: ${progressMateri.toStringAsFixed(0)}%',
                         ),
                         _HeaderChip(label: displayAnestesi),
                       ],

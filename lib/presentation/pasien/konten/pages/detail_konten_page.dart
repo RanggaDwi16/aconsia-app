@@ -2,7 +2,6 @@ import 'package:aconsia_app/core/helpers/widgets/buttons.dart';
 import 'package:aconsia_app/core/main/data/models/konten_model.dart';
 import 'package:aconsia_app/core/main/data/models/konten_section_model.dart';
 import 'package:aconsia_app/core/providers/token_manager_provider.dart';
-import 'package:aconsia_app/core/routers/router_name.dart';
 import 'package:aconsia_app/core/ui/components/aconsia_screen_shell.dart';
 import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
@@ -11,7 +10,6 @@ import 'package:aconsia_app/core/ui/tokens/ui_typography.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_konten_by_id/fetch_konten_by_id_provider.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_sections_by_konten_id/fetch_sections_by_konten_id_provider.dart';
 import 'package:aconsia_app/presentation/pasien/konten/controllers/material_read_progress_provider.dart';
-import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -133,7 +131,7 @@ class DetailKontenPage extends HookConsumerWidget {
                 final unlockedIndex = sections.isEmpty
                     ? 0
                     : completedIds.length.clamp(0, sections.length - 1);
-                final canOpenAi = progress.isCompleted;
+                final hasReadCompleted = progress.isCompleted;
 
                 Future<void> saveProgress(MaterialReadProgress next) async {
                   if (uid.isEmpty) return;
@@ -241,7 +239,7 @@ class DetailKontenPage extends HookConsumerWidget {
                       const AconsiaInfoBanner(
                         icon: Icons.school_outlined,
                         message:
-                            'Pelajari setiap bagian secara berurutan sampai selesai. Sesi AI terbuka setelah semua bagian selesai dibaca.',
+                            'Pelajari setiap bagian secara berurutan sampai selesai. Setelah itu, evaluasi pemahaman Anda melalui menu Chat AI Assistant.',
                         backgroundColor: UiPalette.blue50,
                         borderColor: UiPalette.blue100,
                         iconColor: UiPalette.blue600,
@@ -314,12 +312,12 @@ class DetailKontenPage extends HookConsumerWidget {
                           onMarkDone: markCurrentSectionDone,
                         ),
                       ],
-                      if (canOpenAi) ...[
+                      if (hasReadCompleted) ...[
                         const Gap(UiSpacing.md),
                         const AconsiaInfoBanner(
                           icon: Icons.check_circle_outline_rounded,
                           message:
-                              'Semua bagian selesai dibaca. Anda dapat melanjutkan ke sesi AI pembelajaran.',
+                              'Semua bagian selesai dibaca. Lanjutkan evaluasi lewat menu Chat AI Assistant pada navigasi utama.',
                           backgroundColor: Color(0xFFECFDF3),
                           borderColor: Color(0xFF86EFAC),
                           iconColor: Color(0xFF16A34A),
@@ -342,84 +340,7 @@ class DetailKontenPage extends HookConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: finalIsPasien
-          ? Padding(
-              padding: const EdgeInsets.fromLTRB(
-                UiSpacing.md,
-                UiSpacing.xs,
-                UiSpacing.md,
-                UiSpacing.md,
-              ),
-              child: sectionsAsync.when(
-                data: (sections) {
-                  if (sections.isEmpty) return const SizedBox.shrink();
-
-                  final progressAsync = ref.watch(
-                    materialReadProgressProvider(
-                      MaterialReadProgressParams(
-                        pasienId: uid,
-                        kontenId: kontenId!,
-                        totalSections: sections.length,
-                      ),
-                    ),
-                  );
-                  final progress = progressAsync.valueOrNull ??
-                      MaterialReadProgress(
-                        kontenId: kontenId!,
-                        totalSections: sections.length,
-                        completedSectionIds: const <String>[],
-                        currentSectionIndex: 0,
-                      );
-                  final hasReadCompleted = progress.isCompleted;
-
-                  final quizResultAsync = ref.watch(
-                    fetchQuizResultByKontenProvider(
-                      pasienId: uid,
-                      kontenId: kontenId ?? '',
-                    ),
-                  );
-                  final hasCompletedQuiz = quizResultAsync.valueOrNull != null;
-
-                  return Button.filled(
-                    onPressed: () {
-                      if (!hasReadCompleted) return;
-
-                      if (hasCompletedQuiz && quizResultAsync.value != null) {
-                        context.pushNamed(
-                          RouteName.quizResult,
-                          extra: {
-                            'konten': kontenAsync.value,
-                            'sessionId': quizResultAsync.value!.sessionId,
-                            'quizResults':
-                                quizResultAsync.value!.questionResults,
-                          },
-                        );
-                        return;
-                      }
-
-                      context.pushNamed(
-                        RouteName.chatAi,
-                        extra: {
-                          'kontenId': kontenId,
-                          'source': 'detail_konten',
-                        },
-                      );
-                    },
-                    label: hasReadCompleted
-                        ? (hasCompletedQuiz
-                            ? 'Lihat Ringkasan Pembelajaran'
-                            : 'Mulai Sesi AI Pembelajaran')
-                        : 'Selesaikan Bacaan Dulu',
-                    height: 48,
-                    borderRadius: 12,
-                    disabled: !hasReadCompleted,
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            )
-          : null,
+      bottomNavigationBar: null,
     );
   }
 

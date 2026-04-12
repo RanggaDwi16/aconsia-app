@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   collection,
   doc,
   getDoc,
   onSnapshot,
-  orderBy,
   query,
   where,
   type Timestamp,
@@ -15,7 +14,10 @@ import { DoctorLayout } from "../../layouts/DoctorLayout";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { getDesktopSession } from "../../../core/auth/session";
+import {
+  getDesktopSession,
+  resolveDesktopSession,
+} from "../../../core/auth/session";
 import { firebaseAuth, firestore } from "../../../core/firebase/client";
 import { userMessages } from "../../copy/userMessages";
 
@@ -32,12 +34,75 @@ type PatientMeta = {
   mrn: string;
 };
 
+type DoctorChatLoadErrorCode =
+  | "permission-denied"
+  | "unauthenticated"
+  | "auth-mismatch"
+  | "failed-precondition"
+  | "unavailable"
+  | "unknown";
+
 function toDateSafe(input: unknown): Date | undefined {
   if (!input) return undefined;
   if (typeof input === "object" && input !== null && "toDate" in input) {
     return (input as Timestamp).toDate();
   }
   return undefined;
+}
+
+function parseFirestoreErrorCode(error: unknown): string {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code?: unknown }).code === "string"
+  ) {
+    return String((error as { code?: string }).code || "");
+  }
+  return "";
+}
+
+function mapChatLoadError(code: string): {
+  normalizedCode: DoctorChatLoadErrorCode;
+  message: string;
+} {
+  if (code === "permission-denied") {
+    return {
+      normalizedCode: "permission-denied",
+      message: userMessages.doctorChats.permissionDenied,
+    };
+  }
+
+  if (
+    code === "unauthenticated" ||
+    code === "auth/invalid-user-token" ||
+    code === "auth/user-token-expired"
+  ) {
+    return {
+      normalizedCode: "unauthenticated",
+      message: userMessages.doctorChats.authMismatch,
+    };
+  }
+
+  if (code === "failed-precondition") {
+    return {
+      normalizedCode: "failed-precondition",
+      message:
+        "Konfigurasi query chat belum siap (index/aturan). Silakan deploy index terbaru lalu coba lagi.",
+    };
+  }
+
+  if (code === "unavailable") {
+    return {
+      normalizedCode: "unavailable",
+      message: "Layanan chat sementara tidak tersedia. Silakan coba lagi.",
+    };
+  }
+
+  return {
+    normalizedCode: "unknown",
+    message: userMessages.doctorChats.loadError,
+  };
 }
 
 function formatLastMessageAt(date?: Date): string {
@@ -53,117 +118,150 @@ function formatLastMessageAt(date?: Date): string {
 
 export function DoctorChats() {
   const navigate = useNavigate();
-  const session = getDesktopSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [errorCode, setErrorCode] = useState<DoctorChatLoadErrorCode | null>(
+    null,
+  );
   const [sessions, setSessions] = useState<ChatSessionListItem[]>([]);
   const [patientMetaMap, setPatientMetaMap] = useState<Record<string, PatientMeta>>({});
+  const [reloadToken, setReloadToken] = useState(0);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  const reloadSessions = useCallback(() => {
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
+    setLoading(true);
+    setError("");
+    setErrorCode(null);
+    setReloadToken((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
-    if (!session?.uid) {
-      setError("Sesi login dokter tidak ditemukan.");
-      setLoading(false);
-      return;
-    }
+    let disposed = false;
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
 
-    const firebaseUid = firebaseAuth.currentUser?.uid;
-    if (firebaseUid && firebaseUid !== session.uid) {
-      setError(userMessages.doctorChats.authMismatch);
-      setLoading(false);
-      return;
-    }
+    const bootstrap = async () => {
+      setLoading(true);
+      setError("");
+      setErrorCode(null);
 
-    const sessionsQuery = query(
-      collection(firestore, "chat_sessions"),
-      where("dokterId", "==", session.uid),
-      orderBy("lastMessageAt", "desc"),
-    );
+      await resolveDesktopSession();
+      const session = getDesktopSession();
 
-    const unsubscribe = onSnapshot(
-      sessionsQuery,
-      async (snapshot) => {
-        const mapped: ChatSessionListItem[] = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data() as Record<string, unknown>;
-          return {
-            id: docSnap.id,
-            pasienId: String(data.pasienId || ""),
-            lastMessage: String(data.lastMessage || ""),
-            lastMessageAt: toDateSafe(data.lastMessageAt),
-            unreadCountDokter: Number(data.unreadCountDokter || 0),
-          };
-        });
-
-        setSessions(mapped);
-        setError("");
+      if (!session?.uid) {
+        if (disposed) return;
+        setError("Sesi login dokter tidak ditemukan.");
+        setErrorCode("unauthenticated");
         setLoading(false);
+        return;
+      }
 
-        const pasienIds = Array.from(
-          new Set(mapped.map((item) => item.pasienId).filter((id) => id.trim().length > 0)),
-        );
+      const firebaseUid = firebaseAuth.currentUser?.uid;
+      if (!firebaseUid || firebaseUid !== session.uid) {
+        if (disposed) return;
+        setError(userMessages.doctorChats.authMismatch);
+        setErrorCode("auth-mismatch");
+        setLoading(false);
+        return;
+      }
 
-        if (pasienIds.length === 0) {
-          setPatientMetaMap({});
-          return;
-        }
+      const sessionsQuery = query(
+        collection(firestore, "chat_sessions"),
+        where("dokterId", "==", session.uid),
+      );
 
-        const resolvedMetaEntries = await Promise.all(
-          pasienIds.map(async (pasienId) => {
-            try {
-              const pasienSnap = await getDoc(doc(firestore, "pasien_profiles", pasienId));
-              if (!pasienSnap.exists()) {
+      unsubscribeRef.current = onSnapshot(
+        sessionsQuery,
+        async (snapshot) => {
+          if (disposed) return;
+
+          const mapped: ChatSessionListItem[] = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data() as Record<string, unknown>;
+            return {
+              id: docSnap.id,
+              pasienId: String(data.pasienId || ""),
+              lastMessage: String(data.lastMessage || ""),
+              lastMessageAt: toDateSafe(data.lastMessageAt),
+              unreadCountDokter: Number(data.unreadCountDokter || 0),
+            };
+          });
+
+          setSessions(mapped);
+          setError("");
+          setErrorCode(null);
+          setLoading(false);
+
+          const pasienIds = Array.from(
+            new Set(mapped.map((item) => item.pasienId).filter((id) => id.trim().length > 0)),
+          );
+
+          if (pasienIds.length === 0) {
+            setPatientMetaMap({});
+            return;
+          }
+
+          const resolvedMetaEntries = await Promise.all(
+            pasienIds.map(async (pasienId) => {
+              try {
+                const pasienSnap = await getDoc(doc(firestore, "pasien_profiles", pasienId));
+                if (!pasienSnap.exists()) {
+                  return [
+                    pasienId,
+                    { name: "Pasien tidak ditemukan", mrn: "-" } satisfies PatientMeta,
+                  ] as const;
+                }
+
+                const data = pasienSnap.data() as Record<string, unknown>;
                 return [
                   pasienId,
-                  { name: "Pasien tidak ditemukan", mrn: "-" } satisfies PatientMeta,
+                  {
+                    name: String(data.namaLengkap || data.fullName || "Pasien"),
+                    mrn: String(data.noRekamMedis || data.mrn || "-"),
+                  } satisfies PatientMeta,
+                ] as const;
+              } catch {
+                return [
+                  pasienId,
+                  { name: "Pasien tidak tersedia", mrn: "-" } satisfies PatientMeta,
                 ] as const;
               }
+            }),
+          );
 
-              const data = pasienSnap.data() as Record<string, unknown>;
-              return [
-                pasienId,
-                {
-                  name: String(data.namaLengkap || data.fullName || "Pasien"),
-                  mrn: String(data.noRekamMedis || data.mrn || "-"),
-                } satisfies PatientMeta,
-              ] as const;
-            } catch {
-              return [
-                pasienId,
-                { name: "Pasien tidak tersedia", mrn: "-" } satisfies PatientMeta,
-              ] as const;
-            }
-          }),
-        );
+          if (disposed) return;
+          setPatientMetaMap(Object.fromEntries(resolvedMetaEntries));
+        },
+        (snapshotError: unknown) => {
+          if (disposed) return;
+          const code = parseFirestoreErrorCode(snapshotError);
+          const mappedError = mapChatLoadError(code);
 
-        setPatientMetaMap(Object.fromEntries(resolvedMetaEntries));
-      },
-      (snapshotError: unknown) => {
-        const code =
-          typeof snapshotError === "object" &&
-          snapshotError !== null &&
-          "code" in snapshotError
-            ? String((snapshotError as { code?: string }).code || "")
-            : "";
+          setError(mappedError.message);
+          setErrorCode(mappedError.normalizedCode);
+          setSessions([]);
+          setLoading(false);
 
-        if (code === "permission-denied") {
-          setError(userMessages.doctorChats.permissionDenied);
-        } else if (code === "unauthenticated") {
-          setError(userMessages.doctorChats.authMismatch);
-        } else {
-          setError(userMessages.doctorChats.loadError);
-        }
+          console.error("[DoctorChats] failed to load sessions", {
+            code: code || "unknown",
+            doctorUid: session.uid,
+            firebaseUid: firebaseAuth.currentUser?.uid || null,
+            queryMode: "safe_where_only",
+            timestamp: new Date().toISOString(),
+          });
+        },
+      );
+    };
 
-        console.error("[DoctorChats] failed to load sessions", {
-          code: code || "unknown",
-          doctor_uid: session.uid,
-        });
+    void bootstrap();
 
-        setSessions([]);
-        setLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, [session?.uid]);
+    return () => {
+      disposed = true;
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = null;
+    };
+  }, [reloadToken]);
 
   const sortedSessions = useMemo(() => {
     return [...sessions].sort((a, b) => {
@@ -198,7 +296,12 @@ export function DoctorChats() {
             <CardContent className="pt-6 text-center text-red-700">
               <AlertCircle className="w-8 h-8 mx-auto mb-2" />
               <p>{error}</p>
-              <Button className="mt-4" variant="outline" onClick={() => window.location.reload()}>
+              {errorCode === "failed-precondition" && (
+                <p className="text-xs text-red-600 mt-2">
+                  Pastikan index Firestore untuk `chat_sessions` sudah ter-deploy.
+                </p>
+              )}
+              <Button className="mt-4" variant="outline" onClick={reloadSessions}>
                 Coba Lagi
               </Button>
             </CardContent>

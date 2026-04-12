@@ -176,6 +176,13 @@ service cloud.firestore {
         );
     }
 
+    function pasienOwnProfileByField(data) {
+      return isPasienLike()
+        && ('uid' in data)
+        && data.uid is string
+        && data.uid == request.auth.uid;
+    }
+
     function dokterNotChangingSensitivePasienFields() {
       return !request.resource.data.diff(resource.data).changedKeys().hasAny([
         'status',
@@ -362,12 +369,17 @@ service cloud.firestore {
 
       allow read: if
         (isOwner(uid) && isPasienLike())
+        || pasienOwnProfileByField(resource.data)
         || isAdminOrSystem()
         || (isDokterLike() && pasienAssignedDokterId(resource.data) == request.auth.uid);
 
       allow update: if
         // pasien update own profile
         (isOwner(uid) && isPasienLike())
+        || (
+          pasienOwnProfileByField(resource.data)
+          && request.resource.data.uid == request.auth.uid
+        )
         // dokter update pasien in scope
         || (
           isDokterLike()
@@ -502,7 +514,18 @@ service cloud.firestore {
     match /quiz_results/{resultId} {
       allow create: if
         isAdminOrSystem()
-        || (isPasienLike() && request.resource.data.pasienId == request.auth.uid);
+        || (
+          isPasienLike()
+          && request.resource.data.pasienId == request.auth.uid
+          && request.resource.data.dokterId is string
+          && request.resource.data.dokterId.size() > 0
+          && (
+            !exists(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid))
+            || pasienAssignedDokterId(
+              get(/databases/$(database)/documents/pasien_profiles/$(request.auth.uid)).data
+            ) == request.resource.data.dokterId
+          )
+        );
 
       allow read: if
         isAdminOrSystem()

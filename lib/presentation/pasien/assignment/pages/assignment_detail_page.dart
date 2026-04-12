@@ -7,8 +7,6 @@ import 'package:aconsia_app/core/ui/components/aconsia_surface.dart';
 import 'package:aconsia_app/core/ui/tokens/ui_palette.dart';
 import 'package:aconsia_app/presentation/dokter/konten/controllers/get_sections_by_konten_id/fetch_sections_by_konten_id_provider.dart';
 import 'package:aconsia_app/presentation/pasien/home/widgets/tag_widgets.dart';
-import 'package:aconsia_app/presentation/pasien/quiz/controllers/quiz_result_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -27,21 +25,10 @@ class AssignmentDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-
     // Fetch sections for progress tracking
     final sectionsAsync = ref.watch(
       fetchSectionsByKontenIdProvider(kontenId: konten.id!),
     );
-
-    // Check if sesi pembelajaran sudah punya ringkasan hasil
-    final quizResultAsync = ref.watch(
-      fetchQuizResultByKontenProvider(
-        pasienId: uid,
-        kontenId: konten.id!,
-      ),
-    );
-    final hasCompletedQuiz = quizResultAsync.valueOrNull != null;
 
     // Calculate progress
     final totalSections = konten.jumlahBagian ?? 1;
@@ -116,7 +103,7 @@ class AssignmentDetailPage extends ConsumerWidget {
                   const AconsiaInfoBanner(
                     icon: Icons.menu_book_outlined,
                     message:
-                        'Selesaikan bacaan sampai akhir, lalu lanjutkan sesi AI untuk menuntaskan tugas.',
+                        'Selesaikan bacaan sampai akhir. Evaluasi pemahaman dilakukan melalui menu Chat AI Assistant.',
                     backgroundColor: UiPalette.blue50,
                     borderColor: UiPalette.blue100,
                     iconColor: UiPalette.blue600,
@@ -171,14 +158,13 @@ class AssignmentDetailPage extends ConsumerWidget {
                     totalSections,
                     currentSection,
                     progressPercentage,
-                    hasCompletedQuiz,
                   ),
                   const Gap(24),
 
                   // Section checklist
                   sectionsAsync.when(
                     data: (sections) {
-                      if (sections == null || sections.isEmpty) {
+                      if (sections.isEmpty) {
                         return const SizedBox.shrink();
                       }
 
@@ -223,19 +209,6 @@ class AssignmentDetailPage extends ConsumerWidget {
                 label: assignment.isCompleted
                     ? 'Tugas Selesai ✓'
                     : 'Lanjutkan Baca Materi',
-              ),
-              const Gap(10),
-              Button.outlined(
-                onPressed: () {
-                  context.pushNamed(
-                    RouteName.chatAi,
-                    extra: {
-                      'kontenId': konten.id,
-                      'source': 'assignment_detail',
-                    },
-                  );
-                },
-                label: 'Diskusi dengan AI',
               ),
             ],
           ),
@@ -352,7 +325,6 @@ class AssignmentDetailPage extends ConsumerWidget {
     int totalSections,
     int currentSection,
     double progressPercentage,
-    bool hasCompletedQuiz,
   ) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -453,10 +425,12 @@ class AssignmentDetailPage extends ConsumerWidget {
                 color: Colors.grey.shade300,
               ),
               _buildProgressIndicator(
-                icon: Icons.smart_toy_outlined,
-                label: 'Sesi AI',
-                value: hasCompletedQuiz ? 'Selesai' : 'Belum',
-                color: hasCompletedQuiz ? Colors.green : Colors.orange,
+                icon: assignment.isCompleted
+                    ? Icons.check_circle_outline
+                    : Icons.pending_actions_outlined,
+                label: 'Status Tugas',
+                value: assignment.isCompleted ? 'Selesai' : 'Berjalan',
+                color: assignment.isCompleted ? Colors.green : Colors.orange,
               ),
             ],
           ),

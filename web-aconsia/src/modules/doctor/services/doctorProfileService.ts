@@ -1,5 +1,23 @@
-import { doc, getDoc, query, collection, where, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  query,
+  collection,
+  where,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 import { firestore } from "../../../core/firebase/client";
+import {
+  getLatestQuizScoreForDoctor,
+  resolveComprehensionScoreFromProfile,
+} from "./doctorComprehension";
+import {
+  collectPasienIdentifiers,
+  mergePatientRowsByCanonicalUid,
+  resolveOperationalStatus,
+} from "./patientDataNormalizer";
 
 export type DoctorProfileData = {
   uid: string;
@@ -61,28 +79,88 @@ export async function getDoctorProfile(uid: string): Promise<DoctorProfileData> 
 }
 
 export async function getDoctorPerformance(uid: string): Promise<DoctorPerformanceData> {
-  const pasienQuery = query(
-    collection(firestore, "pasien_profiles"),
+  const pasienRef = collection(firestore, "pasien_profiles");
+  const dokterIdQuery = query(pasienRef, where("dokterId", "==", uid));
+  const assignedDokterIdQuery = query(
+    pasienRef,
     where("assignedDokterId", "==", uid),
   );
-  const pasienSnap = await getDocs(pasienQuery);
 
-  const patients = pasienSnap.docs.map((d) => d.data() as Record<string, unknown>);
+  const [dokterIdSnap, assignedDokterIdSnap] = await Promise.all([
+    getDocs(dokterIdQuery),
+    getDocs(assignedDokterIdQuery),
+  ]);
+
+  const mergedRows = mergePatientRowsByCanonicalUid(
+    [...dokterIdSnap.docs, ...assignedDokterIdSnap.docs].map((docSnap) => ({
+      docId: docSnap.id,
+      data: docSnap.data() as Record<string, unknown>,
+    })),
+  );
+  const patients = mergedRows.map((row) => ({
+    id: row.primaryDocId,
+    canonicalUid: row.canonicalUid,
+    data: row.data,
+  }));
+  const operationalStatuses = patients.map((entry) =>
+    resolveOperationalStatus(entry.data),
+  );
 
   const totalPatients = patients.length;
-  const approvedPatients = patients.filter((p) =>
-    ["approved", "in_progress", "ready", "completed"].includes(String(p.status || "")),
+  const approvedPatients = operationalStatuses.filter((status) =>
+    ["approved", "in_progress", "ready", "completed"].includes(status),
   ).length;
-  const pendingPatients = patients.filter((p) => String(p.status || "") === "pending").length;
+  const pendingPatients = operationalStatuses.filter((status) => status === "pending").length;
+
+  const latestScoreByPatientId = new Map<string, number>();
+  await Promise.all(
+    patients.map(async (entry) => {
+      try {
+        const latest = await getLatestQuizScoreForDoctor({
+          candidateIds: collectPasienIdentifiers(entry.id, {
+            ...entry.data,
+            uid: entry.canonicalUid,
+          }),
+          doctorUid: uid,
+        });
+        if (latest !== null) {
+          latestScoreByPatientId.set(entry.id, latest);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn("[doctorProfileService] latest quiz fallback failed", {
+            patientId: entry.id,
+            doctorUid: uid,
+            error,
+          });
+        }
+      }
+    }),
+  );
 
   const scored = patients
-    .map((p) => Number(p.comprehensionScore || 0))
+    .map((entry) => {
+      const cacheScore = resolveComprehensionScoreFromProfile(entry.data);
+      return latestScoreByPatientId.get(entry.id) ?? cacheScore;
+    })
     .filter((x) => Number.isFinite(x) && x > 0);
 
   const avgComprehension =
     scored.length > 0
       ? Math.round(scored.reduce((sum, val) => sum + val, 0) / scored.length)
       : 0;
+
+  if (import.meta.env.DEV) {
+    console.info("[doctorProfileService] performance_metrics", {
+      doctorUid: uid,
+      dokterIdCount: dokterIdSnap.size,
+      assignedDokterIdCount: assignedDokterIdSnap.size,
+      mergedCount: totalPatients,
+      approvedCount: approvedPatients,
+      pendingCount: pendingPatients,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   return {
     totalPatients,

@@ -24,8 +24,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
-import { firestore } from "../../../core/firebase/client";
-import { getDesktopSession } from "../../../core/auth/session";
+import { firebaseAuth, firestore } from "../../../core/firebase/client";
+import {
+  getDesktopSession,
+  resolveDesktopSession,
+} from "../../../core/auth/session";
+import { userMessages } from "../../copy/userMessages";
 
 type ChatMessage = {
   id: string;
@@ -48,6 +52,38 @@ function toDateSafe(input: unknown): Date | undefined {
     return (input as Timestamp).toDate();
   }
   return undefined;
+}
+
+function parseFirestoreErrorCode(error: unknown): string {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code?: unknown }).code === "string"
+  ) {
+    return String((error as { code?: string }).code || "");
+  }
+  return "";
+}
+
+function mapDoctorChatErrorMessage(code: string): string {
+  if (code === "permission-denied") {
+    return userMessages.doctorChats.permissionDenied;
+  }
+  if (
+    code === "unauthenticated" ||
+    code === "auth/invalid-user-token" ||
+    code === "auth/user-token-expired"
+  ) {
+    return userMessages.doctorChats.authMismatch;
+  }
+  if (code === "failed-precondition") {
+    return "Konfigurasi chat belum siap (index/aturan). Silakan deploy konfigurasi terbaru lalu coba lagi.";
+  }
+  if (code === "unavailable") {
+    return "Layanan chat sementara tidak tersedia. Silakan coba lagi.";
+  }
+  return "Terjadi kendala pada ruang chat dokter.";
 }
 
 function formatTime(date?: Date): string {
@@ -82,14 +118,33 @@ export function DoctorChatRoom() {
   }, [messages]);
 
   useEffect(() => {
+    let disposed = false;
+
     const init = async () => {
-      if (!doctorUid) {
-        setError("Sesi dokter tidak ditemukan. Silakan login ulang.");
+      setLoading(true);
+      setError("");
+
+      await resolveDesktopSession();
+      const hydratedSession = getDesktopSession();
+      const hydratedDoctorUid = hydratedSession?.uid || "";
+
+      if (!hydratedDoctorUid) {
+        if (disposed) return;
+        setError(userMessages.doctorChats.authMismatch);
+        setLoading(false);
+        return;
+      }
+
+      const firebaseUid = firebaseAuth.currentUser?.uid;
+      if (!firebaseUid || firebaseUid !== hydratedDoctorUid) {
+        if (disposed) return;
+        setError(userMessages.doctorChats.authMismatch);
         setLoading(false);
         return;
       }
 
       if (!pasienId) {
+        if (disposed) return;
         setError("Pasien tidak valid.");
         setLoading(false);
         return;
@@ -99,12 +154,14 @@ export function DoctorChatRoom() {
         const patientRef = doc(firestore, "pasien_profiles", pasienId);
         const patientSnap = await getDoc(patientRef);
         if (!patientSnap.exists()) {
+          if (disposed) return;
           setError("Profil pasien tidak ditemukan.");
           setLoading(false);
           return;
         }
 
         const patientData = patientSnap.data() as Record<string, unknown>;
+        if (disposed) return;
         setPatient({
           id: pasienId,
           name: String(patientData.namaLengkap || patientData.fullName || "Pasien"),
@@ -114,7 +171,7 @@ export function DoctorChatRoom() {
         const sessionQuery = query(
           collection(firestore, "chat_sessions"),
           where("pasienId", "==", pasienId),
-          where("dokterId", "==", doctorUid),
+          where("dokterId", "==", hydratedDoctorUid),
           limit(1),
         );
         const sessionSnap = await getDocs(sessionQuery);
@@ -125,7 +182,7 @@ export function DoctorChatRoom() {
         } else {
           const created = await addDoc(collection(firestore, "chat_sessions"), {
             pasienId,
-            dokterId: doctorUid,
+            dokterId: hydratedDoctorUid,
             unreadCountPasien: 0,
             unreadCountDokter: 0,
             createdAt: serverTimestamp(),
@@ -136,17 +193,32 @@ export function DoctorChatRoom() {
           resolvedSessionId = created.id;
         }
 
+        if (disposed) return;
         setChatSessionId(resolvedSessionId);
         setError("");
       } catch (err) {
-        console.error("[DoctorChatRoom] init error", err);
-        setError("Gagal menyiapkan ruang chat dokter.");
+        const code = parseFirestoreErrorCode(err);
+        console.error("[DoctorChatRoom] init error", {
+          error: err,
+          code: code || "unknown",
+          doctorUid: hydratedDoctorUid,
+          pasienId,
+          firebaseUid: firebaseAuth.currentUser?.uid || null,
+          timestamp: new Date().toISOString(),
+        });
+        if (disposed) return;
+        setError(mapDoctorChatErrorMessage(code));
       } finally {
+        if (disposed) return;
         setLoading(false);
       }
     };
 
     void init();
+
+    return () => {
+      disposed = true;
+    };
   }, [doctorUid, pasienId]);
 
   useEffect(() => {
@@ -158,48 +230,71 @@ export function DoctorChatRoom() {
       limit(200),
     );
 
-    const unsubscribe = onSnapshot(nestedQuery, async (snap) => {
-      const mapped = snap.docs.map((docSnap) => {
-        const data = docSnap.data() as Record<string, unknown>;
-        return {
-          id: docSnap.id,
-          senderId: String(data.senderId || ""),
-          senderRole: (data.senderRole === "pasien" ? "pasien" : "dokter") as
-            | "dokter"
-            | "pasien",
-          message: String(data.message || ""),
-          createdAt: toDateSafe(data.createdAt),
-          isRead: Boolean(data.isRead ?? false),
-        } satisfies ChatMessage;
-      });
+    const unsubscribe = onSnapshot(
+      nestedQuery,
+      async (snap) => {
+        const mapped = snap.docs.map((docSnap) => {
+          const data = docSnap.data() as Record<string, unknown>;
+          return {
+            id: docSnap.id,
+            senderId: String(data.senderId || ""),
+            senderRole: (data.senderRole === "pasien" ? "pasien" : "dokter") as
+              | "dokter"
+              | "pasien",
+            message: String(data.message || ""),
+            createdAt: toDateSafe(data.createdAt),
+            isRead: Boolean(data.isRead ?? false),
+          } satisfies ChatMessage;
+        });
 
-      setMessages(mapped);
+        setMessages(mapped);
 
-      const unreadIncoming = snap.docs.filter((docSnap) => {
-        const data = docSnap.data();
-        return data.senderId !== doctorUid && data.isRead == false;
-      });
+        const unreadIncoming = snap.docs.filter((docSnap) => {
+          const data = docSnap.data();
+          return data.senderId !== doctorUid && data.isRead == false;
+        });
 
-      if (unreadIncoming.length > 0) {
-        const batch = writeBatch(firestore);
-        for (const item of unreadIncoming) {
-          batch.update(item.ref, {
-            isRead: true,
-            readAt: serverTimestamp(),
+        try {
+          if (unreadIncoming.length > 0) {
+            const batch = writeBatch(firestore);
+            for (const item of unreadIncoming) {
+              batch.update(item.ref, {
+                isRead: true,
+                readAt: serverTimestamp(),
+              });
+            }
+            batch.update(doc(firestore, "chat_sessions", chatSessionId), {
+              unreadCountDokter: 0,
+              updatedAt: serverTimestamp(),
+            });
+            await batch.commit();
+          } else {
+            await updateDoc(doc(firestore, "chat_sessions", chatSessionId), {
+              unreadCountDokter: 0,
+              updatedAt: serverTimestamp(),
+            });
+          }
+        } catch (markReadError) {
+          console.error("[DoctorChatRoom] mark read failed", {
+            error: markReadError,
+            code: parseFirestoreErrorCode(markReadError) || "unknown",
+            doctorUid,
+            chatSessionId,
           });
         }
-        batch.update(doc(firestore, "chat_sessions", chatSessionId), {
-          unreadCountDokter: 0,
-          updatedAt: serverTimestamp(),
+      },
+      (snapshotError: unknown) => {
+        const code = parseFirestoreErrorCode(snapshotError);
+        console.error("[DoctorChatRoom] messages subscription failed", {
+          code: code || "unknown",
+          doctorUid,
+          chatSessionId,
+          firebaseUid: firebaseAuth.currentUser?.uid || null,
+          timestamp: new Date().toISOString(),
         });
-        await batch.commit();
-      } else {
-        await updateDoc(doc(firestore, "chat_sessions", chatSessionId), {
-          unreadCountDokter: 0,
-          updatedAt: serverTimestamp(),
-        });
-      }
-    });
+        setError(mapDoctorChatErrorMessage(code));
+      },
+    );
 
     return () => unsubscribe();
   }, [chatSessionId, doctorUid]);
