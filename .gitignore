@@ -53,3 +53,5 @@ assets/.env
 !.env.example
 ui-figma/
 
+.env
+web-aconsia/.env
